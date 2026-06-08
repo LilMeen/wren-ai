@@ -150,21 +150,14 @@ jobs:
           port: ${{ secrets.VM_PORT }}
           script: |
             set -e
-          
+
+            cd /workspace/wren-ai
+            git pull origin main
+
             cd /workspace/wren-ai/docker
-          
-            docker compose --env-file .env -f docker-compose.prod.yaml pull \
-              wren-ui \
-              wren-ai-service \
-              wren-engine \
-              ibis-server
-          
-            docker compose --env-file .env -f docker-compose.prod.yaml up -d \
-              wren-ui \
-              wren-ai-service \
-              wren-engine \
-              ibis-server
-          
+
+            docker compose --env-file .env -f docker-compose.prod.yaml pull
+            docker compose --env-file .env -f docker-compose.prod.yaml up -d
             docker image prune -f
-          
+
             docker compose --env-file .env -f docker-compose.prod.yaml ps
