@@ -197,7 +197,8 @@ export interface IProjectRepository extends IBasicRepository<Project> {
 
 export class ProjectRepository
   extends BaseRepository<Project>
-  implements IProjectRepository {
+  implements IProjectRepository
+{
   private jsonTypeColumns = ['questions', 'questions_error', 'connection_info'];
 
   constructor(knexPg: Knex) {

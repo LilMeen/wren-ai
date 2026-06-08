@@ -26,8 +26,8 @@ export interface SampleDatasetData {
 
 export type DataSourceProperties = { displayName: string } & Partial<
   BigQueryDataSourceProperties &
-  DuckDBDataSourceProperties &
-  PGDataSourceProperties
+    DuckDBDataSourceProperties &
+    PGDataSourceProperties
 >;
 
 export interface BigQueryDataSourceProperties {
