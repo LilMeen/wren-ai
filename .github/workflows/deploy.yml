@@ -1,0 +1,93 @@
+name: Build and Deploy Wren AI
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - name: wren-ui
+            image: wren-ui
+            context: ./wren-ui
+            dockerfile: ./wren-ui/Dockerfile
+
+          - name: wren-ai-service
+            image: wren-ai-service
+            context: ./wren-ai-service
+            dockerfile: ./wren-ai-service/docker/Dockerfile
+
+          - name: wren-engine
+            image: wren-engine
+            context: ./wren-engine/wren-core-legacy
+            dockerfile: ./wren-engine/wren-core-legacy/docker/Dockerfile
+
+          - name: wren-engine-ibis
+            image: wren-engine-ibis
+            context: ./wren-engine/ibis-server
+            dockerfile: ./wren-engine/ibis-server/Dockerfile
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Check Dockerfile exists
+        run: |
+          echo "Checking Dockerfile: ${{ matrix.service.dockerfile }}"
+          test -f "${{ matrix.service.dockerfile }}"
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push ${{ matrix.service.name }}
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.service.context }}
+          file: ${{ matrix.service.dockerfile }}
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.service.image }}:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.service.image }}:${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.service.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service.name }}
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to VM
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          port: ${{ secrets.VM_PORT }}
+          script: |
+            set -e
+
+            cd /workspace/wren-ai
+            git pull origin main
+
+            cd /workspace/wren-ai/docker
+
+            docker compose --env-file .env -f docker-compose.prod.yaml pull
+            docker compose --env-file .env -f docker-compose.prod.yaml up -d
+            docker image prune -f
+
+            docker compose --env-file .env -f docker-compose.prod.yaml ps
