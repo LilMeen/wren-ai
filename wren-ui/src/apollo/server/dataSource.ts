@@ -29,6 +29,7 @@ import {
   DATABRICKS_CONNECTION_INFO,
   DATABRICKS_PERSONAL_ACCESS_TOKEN_AUTH,
   DATABRICKS_SERVICE_PRINCIPAL_AUTH,
+  STARROCKS_CONNECTION_INFO,
 } from './repositories';
 import { DataSourceName } from './types';
 import { getConfig } from './config';
@@ -489,6 +490,29 @@ const dataSource = {
   } as IDataSourceConnectionInfo<
     DATABRICKS_CONNECTION_INFO,
     IbisDatabricksConnectionInfo
+  >,
+
+  // StarRocks
+  [DataSourceName.STARROCKS]: {
+    sensitiveProps: ['password'],
+    toIbisConnectionInfo(connectionInfo) {
+      const decryptedConnectionInfo = decryptConnectionInfo(
+        DataSourceName.STARROCKS,
+        connectionInfo,
+      );
+      const { host, port, database, user, password } =
+        decryptedConnectionInfo as STARROCKS_CONNECTION_INFO;
+      return {
+        host,
+        port,
+        database,
+        user,
+        password,
+      };
+    },
+  } as IDataSourceConnectionInfo<
+    STARROCKS_CONNECTION_INFO,
+    HostBasedConnectionInfo
   >,
 };
 

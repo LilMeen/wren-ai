@@ -338,6 +338,7 @@ export enum DataSourceName {
   POSTGRES = 'POSTGRES',
   REDSHIFT = 'REDSHIFT',
   SNOWFLAKE = 'SNOWFLAKE',
+  STARROCKS = 'STARROCKS',
   TRINO = 'TRINO'
 }
 

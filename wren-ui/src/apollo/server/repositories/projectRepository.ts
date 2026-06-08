@@ -144,6 +144,14 @@ export type DATABRICKS_CONNECTION_INFO =
   | DATABRICKS_PERSONAL_ACCESS_TOKEN_AUTH
   | DATABRICKS_SERVICE_PRINCIPAL_AUTH;
 
+export interface STARROCKS_CONNECTION_INFO {
+  host: string;
+  port: number;
+  user: string;
+  password: string;
+  database: string;
+}
+
 export type WREN_AI_CONNECTION_INFO =
   | ATHENA_CONNECTION_INFO
   | BIG_QUERY_CONNECTION_INFO
@@ -156,7 +164,8 @@ export type WREN_AI_CONNECTION_INFO =
   | TRINO_CONNECTION_INFO
   | SNOWFLAKE_CONNECTION_INFO
   | REDSHIFT_CONNECTION_INFO
-  | DATABRICKS_CONNECTION_INFO;
+  | DATABRICKS_CONNECTION_INFO
+  | STARROCKS_CONNECTION_INFO;
 
 export interface RecommendationQuestionResult {
   question: string;

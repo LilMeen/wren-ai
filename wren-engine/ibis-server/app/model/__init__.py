@@ -71,6 +71,10 @@ class QueryDorisDTO(QueryDTO):
     connection_info: DorisConnectionInfo = connection_info_field
 
 
+class QueryStarRocksDTO(QueryDTO):
+    connection_info: StarRocksConnectionInfo = connection_info_field
+
+
 class QueryOracleDTO(QueryDTO):
     connection_info: ConnectionUrl | OracleConnectionInfo = connection_info_field
 
@@ -364,6 +368,29 @@ class DorisConnectionInfo(BaseConnectionInfo):
     )
     kwargs: dict[str, str] | None = Field(
         description="Additional keyword arguments to pass to PyMySQL", default=None
+    )
+
+
+class StarRocksConnectionInfo(BaseConnectionInfo):
+    host: SecretStr = Field(
+        description="the hostname of your StarRocks FE", examples=["localhost"]
+    )
+    port: SecretStr = Field(
+        description="the query port of your StarRocks FE (MySQL protocol)", examples=["9030"]
+    )
+    database: SecretStr = Field(
+        description="the default database to connect to", examples=["default_catalog"]
+    )
+    user: SecretStr = Field(
+        description="the username of your StarRocks database", examples=["root"]
+    )
+    password: SecretStr | None = Field(
+        description="the password of your StarRocks database",
+        examples=["password"],
+        default=None,
+    )
+    kwargs: dict[str, str] | None = Field(
+        description="Additional keyword arguments to pass to ibis.mysql.connect()", default=None
     )
 
 
@@ -682,6 +709,7 @@ ConnectionInfo = (
     | MSSqlConnectionInfo
     | MySqlConnectionInfo
     | DorisConnectionInfo
+    | StarRocksConnectionInfo
     | OracleConnectionInfo
     | PostgresConnectionInfo
     | RedshiftConnectionInfo
