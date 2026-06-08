@@ -1,0 +1,226 @@
+# Minimal local data stack:
+#   StarRocks (1FE + 1BE)  |  Trino (coord+worker)
+#   MinIO (S3)              |  Hive Metastore (Iceberg catalog)
+#
+# Usage:
+#   docker compose up -d
+#
+# Ports:
+#   StarRocks FE MySQL:  9030
+#   StarRocks FE HTTP:   8030
+#   Trino:               8085
+#   MinIO API:           9000
+#   MinIO Console:       9001
+#   Hive Metastore:      9083
+
+services:
+  # ── PostgreSQL (Hive Metastore backend) ────────────────────────────
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: hive
+      POSTGRES_PASSWORD: hive
+      POSTGRES_DB: metastore
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "hive"]
+      interval: 10s
+      retries: 5
+    restart: unless-stopped
+
+  # ── MinIO (S3-compatible storage) ──────────────────────────────────
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      retries: 5
+    restart: unless-stopped
+
+  # ── MinIO init — create warehouse bucket ───────────────────────────
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: |
+      /bin/sh -c "
+      mc alias set local http://minio:9000 minioadmin minioadmin;
+      mc mb --ignore-existing local/warehouse;
+      "
+    restart: "no"
+
+  # ── Hive Metastore (Iceberg + external table catalog) ──────────────
+  metastore:
+    image: apache/hive:4.2.0
+    hostname: metastore
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    environment:
+      SERVICE_NAME: metastore
+      DB_DRIVER: postgres
+      IS_RESUME: "false"
+      HIVE_AUX_JARS_PATH: /opt/hive/lib/postgresql.jar
+      SERVICE_OPTS: >-
+        -Djavax.jdo.option.ConnectionDriverName=org.postgresql.Driver
+        -Djavax.jdo.option.ConnectionURL=jdbc:postgresql://postgres:5432/metastore
+        -Djavax.jdo.option.ConnectionUserName=hive
+        -Djavax.jdo.option.ConnectionPassword=hive
+        -Dhive.metastore.warehouse.dir=s3a://warehouse/
+        -Dfs.s3a.endpoint=http://minio:9000
+        -Dfs.s3a.access.key=minioadmin
+        -Dfs.s3a.secret.key=minioadmin
+        -Dfs.s3a.path.style.access=true
+        -Dfs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem
+        -Dfs.s3a.connection.ssl.enabled=false
+    ports:
+      - "9083:9083"
+    volumes:
+      - ./lib/postgresql.jar:/opt/hive/lib/postgresql.jar:ro
+    healthcheck:
+      test: ["CMD", "bash", "-c", "echo > /dev/tcp/localhost/9083"]
+      interval: 15s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  # ── StarRocks FE (Frontend) ────────────────────────────────────────
+  starrocks-fe:
+    image: starrocks/fe-ubuntu:3.5.17
+    command: |
+      /bin/bash -c "
+      /opt/starrocks/fe/bin/start_fe.sh --host_type FQDN
+      "
+    environment:
+      HOST_TYPE: FQDN
+    ports:
+      - "8030:8030"
+      - "9030:9030"
+    volumes:
+      - starrocks-fe-data:/opt/starrocks/fe/meta
+      - starrocks-fe-log:/opt/starrocks/fe/log
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8030/api/health"]
+      interval: 15s
+      retries: 10
+      start_period: 60s
+    restart: unless-stopped
+
+  # ── StarRocks BE (Backend) ─────────────────────────────────────────
+  starrocks-be:
+    image: starrocks/be-ubuntu:3.5.17
+    command: |
+      /bin/bash -c "
+      /opt/starrocks/be/bin/start_be.sh
+      "
+    depends_on:
+      starrocks-fe:
+        condition: service_healthy
+    environment:
+      HOST_TYPE: FQDN
+    ports:
+      - "8040:8040"
+    volumes:
+      - starrocks-be-data:/opt/starrocks/be/storage
+      - starrocks-be-log:/opt/starrocks/be/log
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8040/api/health"]
+      interval: 15s
+      retries: 10
+      start_period: 60s
+    restart: unless-stopped
+
+  # ── StarRocks init — add BE + create external catalogs ──────────────
+  starrocks-init:
+    image: starrocks/fe-ubuntu:3.5.17
+    depends_on:
+      starrocks-fe:
+        condition: service_healthy
+      starrocks-be:
+        condition: service_healthy
+      metastore:
+        condition: service_healthy
+    entrypoint: |
+      /bin/bash -c "
+      echo 'Adding BE to StarRocks cluster...';
+      mysql -h starrocks-fe -P 9030 -u root -e \"ALTER SYSTEM ADD BACKEND 'starrocks-be:9050'\" 2>/dev/null || true;
+
+      echo 'Creating Hive catalog...';
+      mysql -h starrocks-fe -P 9030 -u root -e \"
+      CREATE EXTERNAL CATALOG IF NOT EXISTS sdp_dev_hive_catalog
+      PROPERTIES(
+        'type'='hive',
+        'hive.metastore.type'='hive',
+        'hive.metastore.uris'='thrift://metastore:9083',
+        'aws.s3.enable_ssl'='false',
+        'aws.s3.enable_path_style_access'='true',
+        'aws.s3.endpoint'='http://minio:9000',
+        'aws.s3.access_key'='minioadmin',
+        'aws.s3.secret_key'='minioadmin'
+      );
+      \";
+
+      echo 'Creating Iceberg catalog...';
+      mysql -h starrocks-fe -P 9030 -u root -e \"
+      CREATE EXTERNAL CATALOG IF NOT EXISTS sdp_dev_iceberg_catalog
+      PROPERTIES(
+        'type'='iceberg',
+        'iceberg.catalog.type'='hive',
+        'hive.metastore.uris'='thrift://metastore:9083',
+        'aws.s3.enable_ssl'='false',
+        'aws.s3.enable_path_style_access'='true',
+        'aws.s3.endpoint'='http://minio:9000',
+        'aws.s3.access_key'='minioadmin',
+        'aws.s3.secret_key'='minioadmin'
+      );
+      \";
+      "
+    restart: "no"
+
+  # ── Trino (coordinator + worker) ───────────────────────────────────
+  trino:
+    image: trinodb/trino:480
+    ports:
+      - "8085:8080"
+    environment:
+      AWS_ACCESS_KEY_ID: minioadmin
+      AWS_SECRET_ACCESS_KEY: minioadmin
+      AWS_REGION: us-east-1
+      AWS_ENDPOINT_URL_S3: http://minio:9000
+      S3_ENDPOINT: http://minio:9000
+    volumes:
+      - ./trino-config:/etc/trino
+    depends_on:
+      metastore:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/v1/info"]
+      interval: 15s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  minio-data:
+  starrocks-fe-data:
+  starrocks-fe-log:
+  starrocks-be-data:
+  starrocks-be-log:
+
+networks:
+  default:
+    name: devnet
