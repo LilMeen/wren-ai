@@ -1,0 +1,2 @@
+*.csv filter=lfs diff=lfs merge=lfs -text
+database/data/raw_dmp_tlm_raw.csv filter=lfs diff=lfs merge=lfs -text

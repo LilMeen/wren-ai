@@ -1,0 +1,32 @@
+﻿# Seed cố định để random deterministic, rerun ra cùng dữ liệu
+seed: 42
+
+# Số device lấy từ raw_dmp_public_device.csv để làm source of truth; dùng max để lấy toàn bộ file
+device_count: max
+
+# Số asset synthetic dùng để map với device
+asset_count: 1200
+
+# Số bãi đỗ synthetic cho domain parking
+parking_lot_count: 40
+
+# Số ngày dữ liệu date/fact/telemetry được generate
+days: 60
+
+# Độ chi tiết dim_time và time_key, tính theo phút
+time_grain_minutes: 15
+
+# Số lượt xe vào/ra generate mỗi ngày
+vehicle_events_per_day: 500
+
+# Số bản ghi telemetry generate cho mỗi device
+telemetry_events_per_device: 48
+
+# Số event connectivity generate cho mỗi device
+connectivity_events_per_device: 16
+
+# Số event trạng thái thiết bị generate cho mỗi device
+status_events_per_device: 8
+
+# Ngày bắt đầu generate dữ liệu time-series
+start_date: '2026-06-01'
