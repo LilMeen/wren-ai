@@ -1,0 +1,110 @@
+﻿# Local StarRocks service for database fake-data init.
+#
+# Run:
+#   docker compose -f database/docker/docker-compose.yaml up -d
+#
+# Ports:
+#   StarRocks FE HTTP:   8030
+#   StarRocks FE MySQL:  9030
+#   StarRocks BE HTTP:   8040
+
+services:
+  starrocks-fe:
+    image: starrocks/fe-ubuntu:3.5.17
+    command: |
+      /bin/bash -c "
+      /opt/starrocks/fe/bin/start_fe.sh --host_type FQDN
+      "
+    environment:
+      HOST_TYPE: FQDN
+    ports:
+      - "8030:8030"
+      - "9030:9030"
+    volumes:
+      - starrocks-fe-data:/opt/starrocks/fe/meta
+      - starrocks-fe-log:/opt/starrocks/fe/log
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8030/api/health"]
+      interval: 15s
+      retries: 10
+      start_period: 60s
+    restart: unless-stopped
+
+  starrocks-be:
+    image: starrocks/be-ubuntu:3.5.17
+    command: |
+      /bin/bash -c "
+      /opt/starrocks/be/bin/start_be.sh
+      "
+    depends_on:
+      starrocks-fe:
+        condition: service_healthy
+    environment:
+      HOST_TYPE: FQDN
+      FE_SERVERS: starrocks-fe:9010
+    ports:
+      - "8040:8040"
+    volumes:
+      - starrocks-be-data:/opt/starrocks/be/storage
+      - starrocks-be-log:/opt/starrocks/be/log
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8040/api/health"]
+      interval: 15s
+      retries: 10
+      start_period: 60s
+    restart: unless-stopped
+
+  starrocks-init:
+    image: starrocks/fe-ubuntu:3.5.17
+    depends_on:
+      starrocks-fe:
+        condition: service_healthy
+      starrocks-be:
+        condition: service_healthy
+    entrypoint: |
+      /bin/bash -c "
+      echo 'Waiting for StarRocks FE MySQL port...';
+      until mysql -h starrocks-fe -P 9030 -u root -e 'SELECT 1' >/dev/null 2>&1; do
+        sleep 5;
+      done;
+      echo 'Adding BE to StarRocks cluster...';
+      mysql -h starrocks-fe -P 9030 -u root -e \"ALTER SYSTEM ADD BACKEND 'starrocks-be:9050'\" 2>/dev/null || true;
+      mysql -h starrocks-fe -P 9030 -u root -e \"SHOW BACKENDS\";
+      echo 'StarRocks init done.';
+      "
+    restart: "no"
+
+  # Non-StarRocks services are intentionally commented for local fake-data flow.
+  # Enable them only if you need external Hive/Iceberg/S3/Trino integration.
+
+  # postgres:
+  #   image: postgres:16
+  #   environment:
+  #     POSTGRES_USER: hive
+  #     POSTGRES_PASSWORD: hive
+  #     POSTGRES_DB: metastore
+
+  # minio:
+  #   image: minio/minio:latest
+  #   command: server /data --console-address ":9001"
+
+  # minio-init:
+  #   image: minio/mc:latest
+
+  # metastore:
+  #   image: apache/hive:4.2.0
+
+  # trino:
+  #   image: trinodb/trino:480
+
+volumes:
+  starrocks-fe-data:
+  starrocks-fe-log:
+  starrocks-be-data:
+  starrocks-be-log:
+  # postgres-data:
+  # minio-data:
+
+networks:
+  default:
+    name: devnet
