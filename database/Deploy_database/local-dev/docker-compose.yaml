@@ -190,6 +190,46 @@ services:
       "
     restart: "no"
 
+  # ── StarRocks data loader — create schema + load mock data ──────────
+  starrocks-data-loader:
+    image: starrocks/fe-ubuntu:3.5.17
+    depends_on:
+      starrocks-init:
+        condition: service_completed_successfully
+    volumes:
+      - ./init:/docker-entrypoint-initdb.d:ro
+    entrypoint: |
+      /bin/bash -c "
+      echo '=== [data-loader] Waiting for StarRocks FE to be ready...';
+      until mysql -h starrocks-fe -P 9030 -u root -e 'SELECT 1' > /dev/null 2>&1; do
+        echo '  FE not ready yet, retrying in 5s...';
+        sleep 5;
+      done;
+      echo '=== [data-loader] StarRocks FE is ready.';
+
+      echo '=== [data-loader] Creating schema...';
+      mysql -h starrocks-fe -P 9030 -u root \
+        < /docker-entrypoint-initdb.d/01_schema.sql \
+        && echo 'Schema OK' || { echo 'Schema FAILED'; exit 1; };
+
+      echo '=== [data-loader] Loading mock data...';
+      mysql -h starrocks-fe -P 9030 -u root sdp_near_realtime \
+        < /docker-entrypoint-initdb.d/02_mock_data.sql \
+        && echo 'Mock data OK' || { echo 'Mock data FAILED'; exit 1; };
+
+      echo '=== [data-loader] Row count check:';
+      mysql -h starrocks-fe -P 9030 -u root sdp_near_realtime -e \"
+        SELECT 'raw_dmp_evt_connectivity' AS table_name, COUNT(*) AS rows
+        FROM raw_dmp_evt_connectivity
+        UNION ALL
+        SELECT 'raw_dmp_tlm_raw', COUNT(*)
+        FROM raw_dmp_tlm_raw;
+      \";
+
+      echo '=== [data-loader] Done.';
+      "
+    restart: "no"
+
   # ── Trino (coordinator + worker) ───────────────────────────────────
   trino:
     image: trinodb/trino:480
