@@ -23,12 +23,12 @@ if ($LASTEXITCODE -ne 0) { Err "gen_mock.py failed." }
 Pop-Location
 Ok "mock_data.sql generated."
 
-# ── Step 2: Copy to init/ ─────────────────────────────────────────────────────
+# ── Step 2: Verify outputs (gen_mock.py copies to init/ automatically) ───────
 if (-not (Test-Path $MOCK_SRC)) { Err "Source not found: $MOCK_SRC" }
-
-New-Item -ItemType Directory -Path (Join-Path $SCRIPT_DIR "init") -Force | Out-Null
-Copy-Item -Path $MOCK_SRC -Destination $MOCK_DST -Force
-Ok "Copied to: $MOCK_DST"
+$SCHEMA_DST = Join-Path $SCRIPT_DIR "init\01_schema.sql"
+if (-not (Test-Path $SCHEMA_DST)) { Err "Schema not found: $SCHEMA_DST (gen_mock.py should write this)" }
+if (-not (Test-Path $MOCK_DST)) { Err "Mock data not found: $MOCK_DST" }
+Ok "Schema + mock data ready in init/"
 
 # ── Step 3: Ask to start stack ────────────────────────────────────────────────
 $answer = Read-Host "Start docker compose now? [Y/n]"

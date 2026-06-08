@@ -81,11 +81,12 @@ else
   fi
 fi
 
-# ── Step 2: Copy SQL into init/ ────────────────────────────────────────────────
-log "Copying mock data SQL to init/..."
-mkdir -p "$SCRIPT_DIR/init"
-cp "$MOCK_SRC" "$MOCK_DST"
-ok "Copied to: $MOCK_DST"
+# ── Step 2: Verify outputs (gen_mock.py copies to init/ automatically) ─────────
+log "Verifying generated SQL in init/..."
+SCHEMA_DST="$SCRIPT_DIR/init/01_schema.sql"
+[ -f "$SCHEMA_DST" ] || err "01_schema.sql not found — gen_mock.py should write this"
+[ -f "$MOCK_DST" ]     || err "02_mock_data.sql not found — gen_mock.py should write this"
+ok "Schema + mock data ready in init/"
 
 # ── Step 3: Start the stack ────────────────────────────────────────────────────
 log "Starting docker compose stack..."
@@ -150,23 +151,43 @@ done
 log "Verifying data..."
 MYSQL_CMD="docker compose -f $COMPOSE_FILE exec -T starrocks-fe mysql -h 127.0.0.1 -P 9030 -u root --batch --silent"
 
-EVT_COUNT=$($MYSQL_CMD -e "SELECT COUNT(*) FROM sdp_near_realtime.raw_dmp_evt_connectivity;" 2>/dev/null | tail -1 || echo "0")
-TLM_COUNT=$($MYSQL_CMD -e "SELECT COUNT(*) FROM sdp_near_realtime.raw_dmp_tlm_raw;" 2>/dev/null | tail -1 || echo "0")
+ROW_COUNTS=$($MYSQL_CMD -e "
+  SELECT 'raw_dmp_public_asset' AS tbl, COUNT(*) AS n FROM sdp_dev_hive_catalog.sdp_raw.raw_dmp_public_asset
+  UNION ALL SELECT 'raw_dmp_public_asset_profile', COUNT(*) FROM sdp_dev_hive_catalog.sdp_raw.raw_dmp_public_asset_profile
+  UNION ALL SELECT 'raw_dmp_public_device', COUNT(*) FROM sdp_dev_hive_catalog.sdp_raw.raw_dmp_public_device
+  UNION ALL SELECT 'raw_dmp_public_device_profile', COUNT(*) FROM sdp_dev_hive_catalog.sdp_raw.raw_dmp_public_device_profile
+  UNION ALL SELECT 'raw_dmp_public_relation', COUNT(*) FROM sdp_dev_hive_catalog.sdp_raw.raw_dmp_public_relation
+  UNION ALL SELECT 'raw_parking_db_vehicle_histories', COUNT(*) FROM sdp_dev_hive_catalog.sdp_raw.raw_parking_db_vehicle_histories
+  UNION ALL SELECT 'stg_dmp_asset_profiles', COUNT(*) FROM sdp_dev_iceberg_catalog.sdp_staging.stg_dmp_asset_profiles
+  UNION ALL SELECT 'stg_dmp_assets', COUNT(*) FROM sdp_dev_iceberg_catalog.sdp_staging.stg_dmp_assets
+  UNION ALL SELECT 'stg_dmp_device_profiles', COUNT(*) FROM sdp_dev_iceberg_catalog.sdp_staging.stg_dmp_device_profiles
+  UNION ALL SELECT 'stg_dmp_device_status_events', COUNT(*) FROM sdp_dev_iceberg_catalog.sdp_staging.stg_dmp_device_status_events
+  UNION ALL SELECT 'stg_dmp_devices', COUNT(*) FROM sdp_dev_iceberg_catalog.sdp_staging.stg_dmp_devices
+  UNION ALL SELECT 'stg_dmp_evt_connectivity', COUNT(*) FROM sdp_dev_iceberg_catalog.sdp_staging.stg_dmp_evt_connectivity
+  UNION ALL SELECT 'stg_dmp_relations', COUNT(*) FROM sdp_dev_iceberg_catalog.sdp_staging.stg_dmp_relations
+  UNION ALL SELECT 'stg_vehicle_histories', COUNT(*) FROM sdp_dev_iceberg_catalog.sdp_staging.stg_vehicle_histories
+  UNION ALL SELECT 'dim_asset', COUNT(*) FROM sdp_dev_iceberg_catalog.sdp_golden.dim_asset
+  UNION ALL SELECT 'dim_asset_profile', COUNT(*) FROM sdp_dev_iceberg_catalog.sdp_golden.dim_asset_profile
+  UNION ALL SELECT 'dim_date', COUNT(*) FROM sdp_dev_iceberg_catalog.sdp_golden.dim_date;
+" 2>/dev/null || echo "")
 
 echo ""
 echo -e "${GREEN}┌─────────────────────────────────────────────────┐${NC}"
-echo -e "${GREEN}│             Init complete — Row counts           │${NC}"
+echo -e "${GREEN}│        Init complete — Row counts (17 tables)    │${NC}"
 echo -e "${GREEN}├─────────────────────────────────────────────────┤${NC}"
-printf "${GREEN}│  %-40s %6s │${NC}\n" "raw_dmp_evt_connectivity"  "$EVT_COUNT"
-printf "${GREEN}│  %-40s %6s │${NC}\n" "raw_dmp_tlm_raw"           "$TLM_COUNT"
+EMPTY=0
+while IFS=$'\t' read -r tbl cnt; do
+  [ -z "$tbl" ] && continue
+  printf "${GREEN}│  %-40s %6s │${NC}\n" "$tbl" "$cnt"
+  [ "$cnt" = "0" ] && EMPTY=$((EMPTY + 1))
+done <<< "$ROW_COUNTS"
 echo -e "${GREEN}└─────────────────────────────────────────────────┘${NC}"
 echo ""
 
-# Warn if counts look wrong (not fail — user may have run with --no-data on empty SQL)
-if [ "$EVT_COUNT" = "0" ] && [ "$TLM_COUNT" = "0" ]; then
-  warn "Both tables are empty. If this is unexpected, check: docker compose logs starrocks-data-loader"
+if [ "$EMPTY" -gt 0 ]; then
+  warn "$EMPTY table(s) are empty. Check: docker compose logs starrocks-data-loader"
 else
-  ok "Data verification passed"
+  ok "All 17 tables have data"
 fi
 
 # ── Done ───────────────────────────────────────────────────────────────────────

@@ -223,6 +223,8 @@ class Connector:
             self._connector = MySqlConnector(connection_info)
         elif data_source == DataSource.doris:
             self._connector = DorisConnector(connection_info)
+        elif data_source == DataSource.starrocks:
+            self._connector = StarRocksConnector(connection_info)
         elif data_source == DataSource.oracle:
             self._connector = OracleConnector(connection_info)
         else:
@@ -517,6 +519,43 @@ class DorisConnector(IbisConnector):
                 )
             elif isinstance(dtype, dt.JSON):
                 # Doris JSON columns need the same handling as MySQL
+                result_table = self._cast_json_columns(
+                    result_table=result_table, col_name=name
+                )
+
+        return result_table
+
+    def _cast_json_columns(self, result_table: Table, col_name: str) -> Table:
+        col = result_table[col_name]
+        casted_col = col.cast("string")
+        return result_table.mutate(**{col_name: casted_col})
+
+
+class StarRocksConnector(IbisConnector):
+    """StarRocks connector — uses MySQL protocol via ibis.mysql backend.
+
+    StarRocks is an OLAP database that is MySQL-protocol compatible.
+    Autocommit is forced on in get_starrocks_connection() because StarRocks
+    does not properly reflect SERVER_STATUS_AUTOCOMMIT in the MySQL handshake,
+    which would cause ibis to wrap every query in BEGIN/ROLLBACK unnecessarily.
+    """
+
+    def __init__(self, connection_info: ConnectionInfo):
+        super().__init__(DataSource.starrocks, connection_info)
+
+    def _handle_pyarrow_unsupported_type(self, ibis_table: Table, **kwargs) -> Table:
+        result_table = ibis_table
+        for name, dtype in ibis_table.schema().items():
+            if isinstance(dtype, Decimal):
+                result_table = self._round_decimal_columns(
+                    result_table=result_table, col_name=name, **kwargs
+                )
+            elif isinstance(dtype, UUID):
+                result_table = self._cast_uuid_columns(
+                    result_table=result_table, col_name=name
+                )
+            elif isinstance(dtype, dt.JSON):
+                # StarRocks JSON columns need to be cast to string for PyArrow compatibility
                 result_table = self._cast_json_columns(
                     result_table=result_table, col_name=name
                 )

@@ -11,6 +11,7 @@ export enum DataSourceName {
   ATHENA = 'ATHENA',
   REDSHIFT = 'REDSHIFT',
   DATABRICKS = 'DATABRICKS',
+  STARROCKS = 'STARROCKS',
 }
 
 export interface DataSource {
@@ -25,8 +26,8 @@ export interface SampleDatasetData {
 
 export type DataSourceProperties = { displayName: string } & Partial<
   BigQueryDataSourceProperties &
-    DuckDBDataSourceProperties &
-    PGDataSourceProperties
+  DuckDBDataSourceProperties &
+  PGDataSourceProperties
 >;
 
 export interface BigQueryDataSourceProperties {

@@ -70,6 +70,7 @@ export const typeDefs = gql`
     SNOWFLAKE
     REDSHIFT
     DATABRICKS
+    STARROCKS
   }
 
   enum RedshiftConnectionType {
