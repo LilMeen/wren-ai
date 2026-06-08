@@ -117,6 +117,11 @@ export const DATA_SOURCE_OPTIONS = {
     guide: 'https://docs.getwren.ai/oss/guide/connect/databricks',
     disabled: false,
   },
+  [DATA_SOURCES.STARROCKS]: {
+    ...getDataSourceConfig(DATA_SOURCES.STARROCKS),
+    guide: 'https://docs.starrocks.io/docs/quick_start/',
+    disabled: false,
+  },
 } as { [key: string]: ButtonOption };
 
 export const TEMPLATE_OPTIONS = {
