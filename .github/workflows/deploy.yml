@@ -66,20 +66,22 @@ jobs:
         working-directory: ./wren-engine/wren-core-legacy
         run: |
           set -e
+      
+          chmod +x ./mvnw
           ./mvnw clean package -DskipTests
-
+      
           JAR_PATH=$(find . -name "wren-server-*-executable.jar" | head -n 1)
-
+      
           if [ -z "$JAR_PATH" ]; then
             echo "Cannot find wren-server executable jar"
             find . -name "*.jar"
             exit 1
           fi
-
+      
           echo "Found jar: $JAR_PATH"
-
+      
           cp "$JAR_PATH" ./docker/wren-server-${{ env.WREN_ENGINE_VERSION }}-executable.jar
-
+      
           ls -lah ./docker
 
       - name: Check wren-engine docker context
