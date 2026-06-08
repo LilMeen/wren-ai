@@ -8,7 +8,7 @@ from app.model.metadata.doris import DorisMetadata
 from app.model.metadata.metadata import Metadata
 from app.model.metadata.mssql import MSSQLMetadata
 from app.model.metadata.mysql import MySQLMetadata
-from app.model.metadata.object_storage import (
+from app.model.metadata.starrocks import StarRocksMetadatafrom app.model.metadata.object_storage import (
     DuckDBMetadata,
     GcsFileMetadata,
     LocalFileMetadata,
@@ -35,6 +35,7 @@ mapping = {
     DataSource.redshift: RedshiftMetadata,
     DataSource.trino: TrinoMetadata,
     DataSource.snowflake: SnowflakeMetadata,
+    DataSource.starrocks: StarRocksMetadata,
     DataSource.local_file: LocalFileMetadata,
     DataSource.s3_file: S3FileMetadata,
     DataSource.minio_file: MinioFileMetadata,

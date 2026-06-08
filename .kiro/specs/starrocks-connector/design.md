@@ -341,7 +341,7 @@ def get_table_list(self) -> list[Table]:
                     )
                 )
         except Exception as e:
-            logger.warning(f"Failed to list tables from catalog {catalog}: {e}")
+            logger.warning(f"[StarRocks] Catalog '{catalog}' không lấy được tables: {e} — bỏ qua catalog này, tiếp tục với catalog còn lại.")
 
     return list(unique_tables.values())
 
@@ -394,7 +394,7 @@ def get_schema_list(self, filter_info=None, limit=None) -> list[Catalog]:
             schemas = response["SCHEMA_NAME"].tolist()
             result.append(Catalog(name=catalog_name, schemas=schemas))
         except Exception as e:
-            logger.warning(f"Failed to list schemas from catalog {catalog_name}: {e}")
+            logger.warning(f"[StarRocks] Catalog '{catalog_name}' không lấy được schemas: {e} — bỏ qua catalog này, tiếp tục với catalog còn lại.")
 
     return result
 
@@ -415,8 +415,8 @@ def _get_catalog_names(self) -> list[str]:
             )
         return response[col_name].tolist()
     except Exception as e:
-        logger.warning(f"Failed to list catalogs, falling back to default_catalog: {e}")
-        return ["default_catalog"]
+        # Không fallback — báo lỗi rõ ràng để người dùng biết SHOW CATALOGS thất bại
+        raise WrenError(ErrorCode.GET_CONNECTION_ERROR, f"Failed to list StarRocks catalogs: {e}") from e
 ```
 
 #### get_constraints() và get_version()
@@ -682,7 +682,7 @@ if mapped_type == RustWrenEngineColumnType.UNKNOWN:
 | `test_type_mapping_with_precision` | `decimal(18,4)` → `DECIMAL` (strip precision trước khi lookup) |
 | `test_get_table_list_multi_catalog` | Mock `SHOW CATALOGS` trả về 2 catalogs, verify table list gộp từ cả hai |
 | `test_get_schema_list_multi_catalog` | Verify mỗi catalog xuất hiện một lần trong kết quả |
-| `test_get_catalog_names_fallback` | Khi `SHOW CATALOGS` fail → fallback về `["default_catalog"]` |
+| `test_get_catalog_names_fallback` | Khi `SHOW CATALOGS` fail → raise `WrenError` với message rõ ràng, không fallback |
 | `test_get_constraints_empty` | `get_constraints()` luôn trả về `[]` |
 | `test_table_naming_all_catalogs` | Tất cả catalogs kể cả `default_catalog` → format đầy đủ `catalog.schema.table` |
 | `test_catalog_failure_graceful` | Một catalog fail → catalog còn lại vẫn được query |
@@ -739,9 +739,9 @@ Nếu `k` trong tổng số `n` catalogs không query được (k < n), `get_tab
 
 **Validates: Requirements 2.1**
 
-### Property 5: Catalog fallback
+### Property 5: SHOW CATALOGS failure raises error
 
-Nếu `SHOW CATALOGS` thất bại hoàn toàn, `_get_catalog_names()` trả về `["default_catalog"]` thay vì raise exception.
+Nếu `SHOW CATALOGS` thất bại hoàn toàn, `_get_catalog_names()` phải raise `WrenError` rõ ràng — không fallback silently về `["default_catalog"]`.
 
 **Validates: Requirements 2.1**
 

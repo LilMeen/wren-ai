@@ -212,18 +212,30 @@ services:
         < /docker-entrypoint-initdb.d/01_schema.sql \
         && echo 'Schema OK' || { echo 'Schema FAILED'; exit 1; };
 
-      echo '=== [data-loader] Loading mock data...';
-      mysql -h starrocks-fe -P 9030 -u root sdp_near_realtime \
+      echo '=== [data-loader] Loading mock data (all 17 tables)...';
+      mysql -h starrocks-fe -P 9030 -u root \
         < /docker-entrypoint-initdb.d/02_mock_data.sql \
         && echo 'Mock data OK' || { echo 'Mock data FAILED'; exit 1; };
 
-      echo '=== [data-loader] Row count check:';
-      mysql -h starrocks-fe -P 9030 -u root sdp_near_realtime -e \"
-        SELECT 'raw_dmp_evt_connectivity' AS table_name, COUNT(*) AS rows
-        FROM raw_dmp_evt_connectivity
-        UNION ALL
-        SELECT 'raw_dmp_tlm_raw', COUNT(*)
-        FROM raw_dmp_tlm_raw;
+      echo '=== [data-loader] Row count check (all 17 tables):';
+      mysql -h starrocks-fe -P 9030 -u root -e \"
+        SELECT 'raw_dmp_public_asset' AS tbl, COUNT(*) AS rows FROM sdp_dev_hive_catalog.sdp_raw.raw_dmp_public_asset
+        UNION ALL SELECT 'raw_dmp_public_asset_profile', COUNT(*) FROM sdp_dev_hive_catalog.sdp_raw.raw_dmp_public_asset_profile
+        UNION ALL SELECT 'raw_dmp_public_device', COUNT(*) FROM sdp_dev_hive_catalog.sdp_raw.raw_dmp_public_device
+        UNION ALL SELECT 'raw_dmp_public_device_profile', COUNT(*) FROM sdp_dev_hive_catalog.sdp_raw.raw_dmp_public_device_profile
+        UNION ALL SELECT 'raw_dmp_public_relation', COUNT(*) FROM sdp_dev_hive_catalog.sdp_raw.raw_dmp_public_relation
+        UNION ALL SELECT 'raw_parking_db_vehicle_histories', COUNT(*) FROM sdp_dev_hive_catalog.sdp_raw.raw_parking_db_vehicle_histories
+        UNION ALL SELECT 'stg_dmp_asset_profiles', COUNT(*) FROM sdp_dev_iceberg_catalog.sdp_staging.stg_dmp_asset_profiles
+        UNION ALL SELECT 'stg_dmp_assets', COUNT(*) FROM sdp_dev_iceberg_catalog.sdp_staging.stg_dmp_assets
+        UNION ALL SELECT 'stg_dmp_device_profiles', COUNT(*) FROM sdp_dev_iceberg_catalog.sdp_staging.stg_dmp_device_profiles
+        UNION ALL SELECT 'stg_dmp_device_status_events', COUNT(*) FROM sdp_dev_iceberg_catalog.sdp_staging.stg_dmp_device_status_events
+        UNION ALL SELECT 'stg_dmp_devices', COUNT(*) FROM sdp_dev_iceberg_catalog.sdp_staging.stg_dmp_devices
+        UNION ALL SELECT 'stg_dmp_evt_connectivity', COUNT(*) FROM sdp_dev_iceberg_catalog.sdp_staging.stg_dmp_evt_connectivity
+        UNION ALL SELECT 'stg_dmp_relations', COUNT(*) FROM sdp_dev_iceberg_catalog.sdp_staging.stg_dmp_relations
+        UNION ALL SELECT 'stg_vehicle_histories', COUNT(*) FROM sdp_dev_iceberg_catalog.sdp_staging.stg_vehicle_histories
+        UNION ALL SELECT 'dim_asset', COUNT(*) FROM sdp_dev_iceberg_catalog.sdp_golden.dim_asset
+        UNION ALL SELECT 'dim_asset_profile', COUNT(*) FROM sdp_dev_iceberg_catalog.sdp_golden.dim_asset_profile
+        UNION ALL SELECT 'dim_date', COUNT(*) FROM sdp_dev_iceberg_catalog.sdp_golden.dim_date;
       \";
 
       echo '=== [data-loader] Done.';

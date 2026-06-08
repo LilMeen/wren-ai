@@ -51,6 +51,7 @@ from app.model import (
     QueryS3FileDTO,
     QuerySnowflakeDTO,
     QuerySparkDTO,
+    QueryStarRocksDTO,
     QueryTrinoDTO,
     RedshiftConnectionInfo,
     RedshiftIAMConnectionInfo,
@@ -58,6 +59,7 @@ from app.model import (
     SnowflakeConnectionInfo,
     SparkConnectionInfo,
     SSLMode,
+    StarRocksConnectionInfo,
     TrinoConnectionInfo,
 )
 from app.model.error import ErrorCode, WrenError
@@ -77,6 +79,7 @@ class DataSource(StrEnum):
     postgres = auto()
     redshift = auto()
     snowflake = auto()
+    starrocks = auto()
     trino = auto()
     local_file = auto()
     s3_file = auto()
@@ -174,6 +177,8 @@ class DataSource(StrEnum):
                 return MySqlConnectionInfo.model_validate(data)
             case DataSource.doris:
                 return DorisConnectionInfo.model_validate(data)
+            case DataSource.starrocks:
+                return StarRocksConnectionInfo.model_validate(data)
             case DataSource.oracle:
                 return OracleConnectionInfo.model_validate(data)
             case DataSource.postgres:
@@ -250,6 +255,7 @@ class DataSourceExtension(Enum):
     postgres = QueryPostgresDTO
     redshift = QueryRedshiftDTO
     snowflake = QuerySnowflakeDTO
+    starrocks = QueryStarRocksDTO
     trino = QueryTrinoDTO
     local_file = QueryLocalFileDTO
     duckdb = QueryDuckDBDTO
@@ -441,6 +447,34 @@ class DataSourceExtension(Enum):
         # that ibis skips the BEGIN/ROLLBACK wrapping. This is a per-object
         # attribute override — it does NOT affect the MySQLdb class, other
         # MySQL connections, or any other data-source driver.
+        connection.con.get_autocommit = lambda: True
+        return connection
+
+    @classmethod
+    def get_starrocks_connection(cls, info: StarRocksConnectionInfo) -> BaseBackend:
+        kwargs = {}
+
+        # utf8mb4 charset — StarRocks is MySQL-protocol compatible
+        kwargs.setdefault("charset", "utf8mb4")
+
+        if info.kwargs:
+            kwargs.update(info.kwargs)
+
+        # StarRocks uses MySQL protocol via ibis.mysql.connect()
+        connection = ibis.mysql.connect(
+            host=info.host.get_secret_value(),
+            port=int(info.port.get_secret_value()),
+            database=info.database.get_secret_value(),
+            user=info.user.get_secret_value(),
+            password=info.password.get_secret_value() if info.password else "",
+            **kwargs,
+        )
+        # StarRocks does not properly reflect SERVER_STATUS_AUTOCOMMIT in its
+        # MySQL protocol handshake. Without this patch, ibis wraps every query
+        # in BEGIN/ROLLBACK which StarRocks rejects with:
+        # "This is in a transaction, only insert, update, delete,
+        #  commit, rollback is acceptable."
+        # Per-instance override — does not affect other connections.
         connection.con.get_autocommit = lambda: True
         return connection
 
