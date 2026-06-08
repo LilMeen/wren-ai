@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 env:
-  WREN_ENGINE_VERSION: 0.22.0
+  WREN_ENGINE_VERSION: 0.24.7-SNAPSHOT
 
 jobs:
   build:
@@ -34,7 +34,7 @@ jobs:
             context: ./wren-engine/wren-core-legacy/docker
             dockerfile: ./wren-engine/wren-core-legacy/docker/Dockerfile
             build_args: |
-               WREN_JAR=wren-server.jar
+               WREN_VERSION=0.24.7-SNAPSHOT
 
           - name: wren-engine-ibis
             image: wren-engine-ibis
@@ -85,7 +85,7 @@ jobs:
       
           echo "Found jar: $JAR_PATH"
       
-          cp "$JAR_PATH" ./docker/wren-server.jar
+          cp "$JAR_PATH" ./docker/wren-server-${{ env.WREN_ENGINE_VERSION }}-executable.jar
       
           ls -lah ./docker
 
@@ -93,7 +93,7 @@ jobs:
         if: matrix.service.name == 'wren-engine'
         run: |
           test -f ./wren-engine/wren-core-legacy/docker/entrypoint.sh
-          test -f ./wren-engine/wren-core-legacy/docker/wren-server.jar
+          test -f ./wren-engine/wren-core-legacy/docker/wren-server-${{ env.WREN_ENGINE_VERSION }}-executable.jar
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
