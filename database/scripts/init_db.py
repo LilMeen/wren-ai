@@ -6,6 +6,8 @@ import base64
 import json
 import os
 import re
+import shutil
+import subprocess
 import sys
 import time
 import urllib.error
@@ -138,6 +140,7 @@ def stream_load(env: dict[str, str], database: str, table: str, csv_path: Path) 
         "escape": "\\",
         "Expect": "100-continue",
     }
+    print(f"LOAD {database}.{table} <- {csv_path} ({csv_path.stat().st_size} bytes)")
     data = csv_path.read_bytes()
     req = urllib.request.Request(url, data=data, headers=headers, method="PUT")
     try:
@@ -151,12 +154,57 @@ def stream_load(env: dict[str, str], database: str, table: str, csv_path: Path) 
         else:
             detail = err.read().decode("utf-8", errors="replace")
             raise SystemExit(f"Stream load failed for {database}.{table}: HTTP {err.code}\n{detail}") from err
+    except urllib.error.URLError as err:
+        body = stream_load_with_curl(env, url, user, password, headers, csv_path, database, table, err)
     result = json.loads(body)
     status = result.get("Status")
     if status not in ("Success", "Publish Timeout"):
         raise SystemExit(f"Stream load failed for {database}.{table}: {body}")
     print(f"LOAD {database}.{table}: {status}, rows={result.get('NumberTotalRows')}, label={label}")
 
+
+def stream_load_with_curl(
+    env: dict[str, str],
+    url: str,
+    user: str,
+    password: str,
+    headers: dict[str, str],
+    csv_path: Path,
+    database: str,
+    table: str,
+    original_error: Exception,
+) -> str:
+    curl = shutil.which("curl")
+    if not curl:
+        raise SystemExit(f"Stream load failed for {database}.{table}: {original_error}") from original_error
+    cmd = [
+        curl,
+        "--fail-with-body",
+        "--location-trusted",
+        "--silent",
+        "--show-error",
+        "--max-time",
+        env.get("STARROCKS_HTTP_TIMEOUT", "300"),
+        "-u",
+        f"{user}:{password}",
+        "-T",
+        str(csv_path),
+        "-X",
+        "PUT",
+    ]
+    for key, value in headers.items():
+        if key == "Authorization":
+            continue
+        cmd.extend(["-H", f"{key}: {value}"])
+    cmd.append(url)
+    print(f"Retry with curl after urllib error: {original_error}")
+    proc = subprocess.run(cmd, text=True, capture_output=True)
+    if proc.returncode != 0:
+        detail = (proc.stdout + "\n" + proc.stderr).strip()
+        raise SystemExit(
+            f"Stream load failed for {database}.{table}: curl exit {proc.returncode}\n{detail}"
+        ) from original_error
+    return proc.stdout
 
 def import_csv(env: dict[str, str]) -> None:
     objects = schema_objects()
