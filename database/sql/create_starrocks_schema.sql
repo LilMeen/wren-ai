@@ -35,7 +35,7 @@ PROPERTIES (
 "enable_persistent_index" = "true",
 "fast_schema_evolution" = "true",
 "replicated_storage" = "true",
-"replication_num" = "2"
+"replication_num" = "1"
 );
 
 -- Source object: `default_catalog`.`sdp_near_realtime`.`raw_dmp_tlm_raw`
@@ -59,7 +59,7 @@ PROPERTIES (
 "enable_persistent_index" = "true",
 "fast_schema_evolution" = "true",
 "replicated_storage" = "true",
-"replication_num" = "2"
+"replication_num" = "1"
 );
 
 USE `sdp_raw`;
@@ -764,7 +764,7 @@ CREATE TABLE IF NOT EXISTS `fct_vehicle_events` (
   `lane_in_name` varchar(1073741824) DEFAULT NULL,
   `entry_point_out_name` varchar(1073741824) DEFAULT NULL,
   `lane_out_name` varchar(1073741824) DEFAULT NULL,
-  `open_mode_in` varchar(1073741824) DEFAULT NULL,
+  `open_mode_in` varchar(1073741824) DEFAULT NULL,raw_dmp_tlm_raw
   `open_mode_out` varchar(1073741824) DEFAULT NULL,
   `check_in_date_key` int(11) DEFAULT NULL,
   `check_in_time_key` TIME DEFAULT NULL,
@@ -803,7 +803,7 @@ DISTRIBUTED BY HASH(`deviceId`) BUCKETS 4
 REFRESH ASYNC
 PROPERTIES (
 "replicated_storage" = "true",
-"replication_num" = "2",
+"replication_num" = "1",
 "storage_medium" = "HDD"
 )
 AS SELECT `raw_dmp_tlm_raw`.`deviceId`, `raw_dmp_tlm_raw`.`ts`, `raw_dmp_tlm_raw`.`eventTime`, `raw_dmp_tlm_raw`.`tenantId`, `raw_dmp_tlm_raw`.`customerId`, get_json_int(`raw_dmp_tlm_raw`.`telemetry`, '$.cpu_usage_pct') AS `cpu_usage_pct`, get_json_int(`raw_dmp_tlm_raw`.`telemetry`, '$.memory_free_mb') AS `memory_free_mb`, get_json_int(`raw_dmp_tlm_raw`.`telemetry`, '$.memory_used_mb') AS `memory_used_mb`, get_json_bool(`raw_dmp_tlm_raw`.`telemetry`, '$.fan_state') AS `fan_state`, get_json_bool(`raw_dmp_tlm_raw`.`telemetry`, '$.heater_state') AS `heater_state`, get_json_int(`raw_dmp_tlm_raw`.`telemetry`, '$.reboot_count_total') AS `reboot_count_total`, get_json_int(`raw_dmp_tlm_raw`.`telemetry`, '$.uptime_seconds') AS `uptime_seconds`, `raw_dmp_tlm_raw`.`tsDt`
@@ -816,7 +816,7 @@ DISTRIBUTED BY HASH(`deviceId`) BUCKETS 4
 REFRESH ASYNC
 PROPERTIES (
 "replicated_storage" = "true",
-"replication_num" = "2",
+"replication_num" = "1",
 "storage_medium" = "HDD"
 )
 AS SELECT `raw_dmp_tlm_raw`.`deviceId`, `raw_dmp_tlm_raw`.`ts`, `raw_dmp_tlm_raw`.`eventTime`, `raw_dmp_tlm_raw`.`tenantId`, `raw_dmp_tlm_raw`.`customerId`, get_json_bool(`raw_dmp_tlm_raw`.`telemetry`, '$.chiller_state') AS `chiller_state`, get_json_bool(`raw_dmp_tlm_raw`.`telemetry`, '$.fault') AS `fault`, get_json_bool(`raw_dmp_tlm_raw`.`telemetry`, '$.mode') AS `mode`, get_json_bool(`raw_dmp_tlm_raw`.`telemetry`, '$.return_valve_open_limit') AS `return_valve_open_limit`, get_json_bool(`raw_dmp_tlm_raw`.`telemetry`, '$.supply_valve_open_limit') AS `supply_valve_open_limit`, get_json_bool(`raw_dmp_tlm_raw`.`telemetry`, '$.supply_valve_close_limit') AS `supply_valve_close_limit`, `raw_dmp_tlm_raw`.`tsDt`
@@ -829,7 +829,7 @@ DISTRIBUTED BY HASH(`deviceId`) BUCKETS 4
 REFRESH ASYNC
 PROPERTIES (
 "replicated_storage" = "true",
-"replication_num" = "2",
+"replication_num" = "1",
 "storage_medium" = "HDD"
 )
 AS SELECT `raw_dmp_tlm_raw`.`deviceId`, `raw_dmp_tlm_raw`.`ts`, `raw_dmp_tlm_raw`.`eventTime`, `raw_dmp_tlm_raw`.`tenantId`, `raw_dmp_tlm_raw`.`customerId`, get_json_double(`raw_dmp_tlm_raw`.`telemetry`, '$.current_a') AS `current_a`, get_json_double(`raw_dmp_tlm_raw`.`telemetry`, '$.energy_active_kwh_total') AS `energy_active_kwh_total`, get_json_double(`raw_dmp_tlm_raw`.`telemetry`, '$.energy_reactive_kvarh_total') AS `energy_reactive_kvarh_total`, get_json_double(`raw_dmp_tlm_raw`.`telemetry`, '$.frequency_hz') AS `frequency_hz`, get_json_double(`raw_dmp_tlm_raw`.`telemetry`, '$.power_active_kw') AS `power_active_kw`, get_json_double(`raw_dmp_tlm_raw`.`telemetry`, '$.power_factor') AS `power_factor`, get_json_double(`raw_dmp_tlm_raw`.`telemetry`, '$.voltage_l1_v') AS `voltage_l1_v`, get_json_double(`raw_dmp_tlm_raw`.`telemetry`, '$.voltage_l2_v') AS `voltage_l2_v`, get_json_double(`raw_dmp_tlm_raw`.`telemetry`, '$.voltage_l3_v') AS `voltage_l3_v`, get_json_double(`raw_dmp_tlm_raw`.`telemetry`, '$.water_volume_m3_total') AS `water_volume_m3_total`, `raw_dmp_tlm_raw`.`tsDt`
@@ -842,7 +842,7 @@ DISTRIBUTED BY HASH(`deviceId`) BUCKETS 4
 REFRESH ASYNC
 PROPERTIES (
 "replicated_storage" = "true",
-"replication_num" = "2",
+"replication_num" = "1",
 "storage_medium" = "HDD"
 )
 AS SELECT `raw_dmp_tlm_raw`.`deviceId`, `raw_dmp_tlm_raw`.`ts`, `raw_dmp_tlm_raw`.`eventTime`, `raw_dmp_tlm_raw`.`tenantId`, `raw_dmp_tlm_raw`.`customerId`, get_json_int(`raw_dmp_tlm_raw`.`telemetry`, '$.cpu_usage_pct') AS `cpu_usage_pct`, get_json_double(`raw_dmp_tlm_raw`.`telemetry`, '$.memory_free_mb') AS `memory_free_mb`, get_json_double(`raw_dmp_tlm_raw`.`telemetry`, '$.memory_used_mb') AS `memory_used_mb`, get_json_int(`raw_dmp_tlm_raw`.`telemetry`, '$.uptime_seconds') AS `uptime_seconds`, `raw_dmp_tlm_raw`.`tsDt`
