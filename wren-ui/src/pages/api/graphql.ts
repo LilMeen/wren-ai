@@ -124,7 +124,7 @@ const bootstrapServer = async () => {
       }
       return defaultApolloErrorHandler(error);
     },
-    introspection: process.env.NODE_ENV !== 'production',
+    introspection: true, //process.env.NODE_ENV !== 'production',
     context: (): IContext => ({
       config: serverConfig,
       telemetry,
