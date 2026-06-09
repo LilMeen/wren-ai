@@ -171,13 +171,36 @@ Với local fake data:
 - Materialized view không load CSV trực tiếp.
 - Các MV như `stg_mv_dmp_tlm_camera` lấy dữ liệu từ `raw_dmp_tlm_raw`.
 
-Nếu cần refresh MV thủ công:
+Telemetry MVs are created in database `sdp_near_realtime`:
+
+| Materialized view | Database | Source table |
+| --- | --- | --- |
+| `stg_mv_dmp_tlm_camera` | `sdp_near_realtime` | `sdp_near_realtime.raw_dmp_tlm_raw` |
+| `stg_mv_dmp_tlm_chiller` | `sdp_near_realtime` | `sdp_near_realtime.raw_dmp_tlm_raw` |
+| `stg_mv_dmp_tlm_energy_meter` | `sdp_near_realtime` | `sdp_near_realtime.raw_dmp_tlm_raw` |
+| `stg_mv_dmp_tlm_nvr` | `sdp_near_realtime` | `sdp_near_realtime.raw_dmp_tlm_raw` |
+
+Fake CSV `raw_dmp_tlm_raw.deviceType` values used by these MVs are `CAMERA`, `CHILLER`, `ENERGY_METER`, and `NVR`.
+
+To refresh manually, select the database first or use fully-qualified names. Otherwise StarRocks returns `No database selected`.
+
+Option 1, select database first:
 
 ```sql
+USE sdp_near_realtime;
 REFRESH MATERIALIZED VIEW stg_mv_dmp_tlm_camera;
 REFRESH MATERIALIZED VIEW stg_mv_dmp_tlm_chiller;
 REFRESH MATERIALIZED VIEW stg_mv_dmp_tlm_energy_meter;
 REFRESH MATERIALIZED VIEW stg_mv_dmp_tlm_nvr;
+```
+
+Option 2, use fully-qualified names:
+
+```sql
+REFRESH MATERIALIZED VIEW sdp_near_realtime.stg_mv_dmp_tlm_camera;
+REFRESH MATERIALIZED VIEW sdp_near_realtime.stg_mv_dmp_tlm_chiller;
+REFRESH MATERIALIZED VIEW sdp_near_realtime.stg_mv_dmp_tlm_energy_meter;
+REFRESH MATERIALIZED VIEW sdp_near_realtime.stg_mv_dmp_tlm_nvr;
 ```
 
 ## 9. Relationship cho WrenAI
