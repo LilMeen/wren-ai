@@ -857,7 +857,8 @@ PROPERTIES ("replication_num" = "1");
 USE `sdp_near_realtime`;
 
 -- Source object: `default_catalog`.`sdp_near_realtime`.`stg_mv_dmp_tlm_camera`
-CREATE MATERIALIZED VIEW IF NOT EXISTS `stg_mv_dmp_tlm_camera` (`deviceId`, `ts`, `eventTime`, `tenantId`, `customerId`, `cpu_usage_pct`, `memory_free_mb`, `memory_used_mb`, `fan_state`, `heater_state`, `reboot_count_total`, `uptime_seconds`, `tsDt`)
+DROP MATERIALIZED VIEW IF EXISTS `stg_mv_dmp_tlm_camera`;
+CREATE MATERIALIZED VIEW `stg_mv_dmp_tlm_camera` (`deviceId`, `ts`, `eventTime`, `tenantId`, `customerId`, `cpu_usage_pct`, `memory_free_mb`, `memory_used_mb`, `fan_state`, `heater_state`, `reboot_count_total`, `uptime_seconds`, `tsDt`)
 DISTRIBUTED BY HASH(`deviceId`) BUCKETS 4 
 REFRESH ASYNC
 PROPERTIES (
@@ -870,7 +871,8 @@ FROM `sdp_near_realtime`.`raw_dmp_tlm_raw`
 WHERE `raw_dmp_tlm_raw`.`deviceType` = 'CAMERA';
 
 -- Source object: `default_catalog`.`sdp_near_realtime`.`stg_mv_dmp_tlm_chiller`
-CREATE MATERIALIZED VIEW IF NOT EXISTS `stg_mv_dmp_tlm_chiller` (`deviceId`, `ts`, `eventTime`, `tenantId`, `customerId`, `chiller_state`, `fault`, `mode`, `return_valve_open_limit`, `supply_valve_open_limit`, `supply_valve_close_limit`, `tsDt`)
+DROP MATERIALIZED VIEW IF EXISTS `stg_mv_dmp_tlm_chiller`;
+CREATE MATERIALIZED VIEW `stg_mv_dmp_tlm_chiller` (`deviceId`, `ts`, `eventTime`, `tenantId`, `customerId`, `chiller_state`, `fault`, `mode`, `return_valve_open_limit`, `supply_valve_open_limit`, `supply_valve_close_limit`, `tsDt`)
 DISTRIBUTED BY HASH(`deviceId`) BUCKETS 4 
 REFRESH ASYNC
 PROPERTIES (
@@ -880,10 +882,11 @@ PROPERTIES (
 )
 AS SELECT `raw_dmp_tlm_raw`.`deviceId`, `raw_dmp_tlm_raw`.`ts`, `raw_dmp_tlm_raw`.`eventTime`, `raw_dmp_tlm_raw`.`tenantId`, `raw_dmp_tlm_raw`.`customerId`, get_json_bool(`raw_dmp_tlm_raw`.`telemetry`, '$.chiller_state') AS `chiller_state`, get_json_bool(`raw_dmp_tlm_raw`.`telemetry`, '$.fault') AS `fault`, get_json_bool(`raw_dmp_tlm_raw`.`telemetry`, '$.mode') AS `mode`, get_json_bool(`raw_dmp_tlm_raw`.`telemetry`, '$.return_valve_open_limit') AS `return_valve_open_limit`, get_json_bool(`raw_dmp_tlm_raw`.`telemetry`, '$.supply_valve_open_limit') AS `supply_valve_open_limit`, get_json_bool(`raw_dmp_tlm_raw`.`telemetry`, '$.supply_valve_close_limit') AS `supply_valve_close_limit`, `raw_dmp_tlm_raw`.`tsDt`
 FROM `sdp_near_realtime`.`raw_dmp_tlm_raw`
-WHERE `raw_dmp_tlm_raw`.`deviceType` = 'siemens-chiller';
+WHERE `raw_dmp_tlm_raw`.`deviceType` = 'CHILLER';
 
 -- Source object: `default_catalog`.`sdp_near_realtime`.`stg_mv_dmp_tlm_energy_meter`
-CREATE MATERIALIZED VIEW IF NOT EXISTS `stg_mv_dmp_tlm_energy_meter` (`deviceId`, `ts`, `eventTime`, `tenantId`, `customerId`, `current_a`, `energy_active_kwh_total`, `energy_reactive_kvarh_total`, `frequency_hz`, `power_active_kw`, `power_factor`, `voltage_l1_v`, `voltage_l2_v`, `voltage_l3_v`, `water_volume_m3_total`, `tsDt`)
+DROP MATERIALIZED VIEW IF EXISTS `stg_mv_dmp_tlm_energy_meter`;
+CREATE MATERIALIZED VIEW `stg_mv_dmp_tlm_energy_meter` (`deviceId`, `ts`, `eventTime`, `tenantId`, `customerId`, `current_a`, `energy_active_kwh_total`, `energy_reactive_kvarh_total`, `frequency_hz`, `power_active_kw`, `power_factor`, `voltage_l1_v`, `voltage_l2_v`, `voltage_l3_v`, `water_volume_m3_total`, `tsDt`)
 DISTRIBUTED BY HASH(`deviceId`) BUCKETS 4 
 REFRESH ASYNC
 PROPERTIES (
@@ -893,10 +896,11 @@ PROPERTIES (
 )
 AS SELECT `raw_dmp_tlm_raw`.`deviceId`, `raw_dmp_tlm_raw`.`ts`, `raw_dmp_tlm_raw`.`eventTime`, `raw_dmp_tlm_raw`.`tenantId`, `raw_dmp_tlm_raw`.`customerId`, get_json_double(`raw_dmp_tlm_raw`.`telemetry`, '$.current_a') AS `current_a`, get_json_double(`raw_dmp_tlm_raw`.`telemetry`, '$.energy_active_kwh_total') AS `energy_active_kwh_total`, get_json_double(`raw_dmp_tlm_raw`.`telemetry`, '$.energy_reactive_kvarh_total') AS `energy_reactive_kvarh_total`, get_json_double(`raw_dmp_tlm_raw`.`telemetry`, '$.frequency_hz') AS `frequency_hz`, get_json_double(`raw_dmp_tlm_raw`.`telemetry`, '$.power_active_kw') AS `power_active_kw`, get_json_double(`raw_dmp_tlm_raw`.`telemetry`, '$.power_factor') AS `power_factor`, get_json_double(`raw_dmp_tlm_raw`.`telemetry`, '$.voltage_l1_v') AS `voltage_l1_v`, get_json_double(`raw_dmp_tlm_raw`.`telemetry`, '$.voltage_l2_v') AS `voltage_l2_v`, get_json_double(`raw_dmp_tlm_raw`.`telemetry`, '$.voltage_l3_v') AS `voltage_l3_v`, get_json_double(`raw_dmp_tlm_raw`.`telemetry`, '$.water_volume_m3_total') AS `water_volume_m3_total`, `raw_dmp_tlm_raw`.`tsDt`
 FROM `sdp_near_realtime`.`raw_dmp_tlm_raw`
-WHERE `raw_dmp_tlm_raw`.`deviceType` = 'siemens-energy-meter';
+WHERE `raw_dmp_tlm_raw`.`deviceType` = 'ENERGY_METER';
 
 -- Source object: `default_catalog`.`sdp_near_realtime`.`stg_mv_dmp_tlm_nvr`
-CREATE MATERIALIZED VIEW IF NOT EXISTS `stg_mv_dmp_tlm_nvr` (`deviceId`, `ts`, `eventTime`, `tenantId`, `customerId`, `cpu_usage_pct`, `memory_free_mb`, `memory_used_mb`, `uptime_seconds`, `tsDt`)
+DROP MATERIALIZED VIEW IF EXISTS `stg_mv_dmp_tlm_nvr`;
+CREATE MATERIALIZED VIEW `stg_mv_dmp_tlm_nvr` (`deviceId`, `ts`, `eventTime`, `tenantId`, `customerId`, `cpu_usage_pct`, `memory_free_mb`, `memory_used_mb`, `uptime_seconds`, `tsDt`)
 DISTRIBUTED BY HASH(`deviceId`) BUCKETS 4 
 REFRESH ASYNC
 PROPERTIES (
