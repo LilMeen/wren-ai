@@ -15914,6 +15914,7 @@ __metadata:
     "@typescript-eslint/parser": "npm:6.18.0"
     ace-builds: "npm:^1.32.3"
     antd: "npm:4.20.4"
+    apollo-server-core: "npm:^3.13.0"
     apollo-server-micro: "npm:^3.10.2"
     axios: "npm:^1.13.5"
     bcryptjs: "npm:^2.4.3"
