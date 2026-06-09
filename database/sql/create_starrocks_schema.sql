@@ -745,8 +745,8 @@ PROPERTIES ("replication_num" = "1");
 
 -- Source object: `sdp_dev_iceberg_catalog`.`sdp_golden`.`dim_time`
 CREATE TABLE IF NOT EXISTS `dim_time` (
-  `time_key` TIME DEFAULT NULL,
-  `time_of_day` TIME DEFAULT NULL,
+  `time_key` varchar(4) DEFAULT NULL,
+  `time_of_day` varchar(8) DEFAULT NULL,
   `hour` int(11) DEFAULT NULL,
   `minute` int(11) DEFAULT NULL,
   `time_label` varchar(1048576) DEFAULT NULL,
@@ -819,12 +819,12 @@ CREATE TABLE IF NOT EXISTS `fct_vehicle_events` (
   `lane_in_name` varchar(1048576) DEFAULT NULL,
   `entry_point_out_name` varchar(1048576) DEFAULT NULL,
   `lane_out_name` varchar(1048576) DEFAULT NULL,
-  `open_mode_in` varchar(1048576) DEFAULT NULL,raw_dmp_tlm_raw
+  `open_mode_in` varchar(1048576) DEFAULT NULL,
   `open_mode_out` varchar(1048576) DEFAULT NULL,
   `check_in_date_key` int(11) DEFAULT NULL,
-  `check_in_time_key` TIME DEFAULT NULL,
+  `check_in_time_key` varchar(4) DEFAULT NULL,
   `check_out_date_key` int(11) DEFAULT NULL,
-  `check_out_time_key` TIME DEFAULT NULL,
+  `check_out_time_key` varchar(4) DEFAULT NULL,
   `created_at` datetime DEFAULT NULL,
   `last_modified_at` datetime DEFAULT NULL,
   `_dbt_loaded_at` datetime DEFAULT NULL
@@ -843,7 +843,7 @@ CREATE TABLE IF NOT EXISTS `fct_parking_occupancy` (
   `occupancy_hour` datetime DEFAULT NULL,
   `occupancy_date` date DEFAULT NULL,
   `occupancy_date_key` int(11) DEFAULT NULL,
-  `occupancy_time_key` TIME DEFAULT NULL,
+  `occupancy_time_key` varchar(4) DEFAULT NULL,
   `vehicles_in` bigint(20) DEFAULT NULL,
   `vehicles_out` bigint(20) DEFAULT NULL,
   `current_occupancy` bigint(20) DEFAULT NULL,
