@@ -66,18 +66,18 @@ USE `sdp_raw`;
 
 -- Source object: `sdp_dev_hive_catalog`.`sdp_raw`.`raw_dmp_public_asset`
 CREATE TABLE IF NOT EXISTS `raw_dmp_public_asset` (
-  `id` varchar(1073741824) DEFAULT NULL,
+  `id` varchar(1048576) DEFAULT NULL,
   `created_time` bigint(20) DEFAULT NULL,
-  `additional_info` varchar(1073741824) DEFAULT NULL,
-  `customer_id` varchar(1073741824) DEFAULT NULL,
-  `asset_profile_id` varchar(1073741824) DEFAULT NULL,
-  `name` varchar(1073741824) DEFAULT NULL,
-  `label` varchar(1073741824) DEFAULT NULL,
-  `tenant_id` varchar(1073741824) DEFAULT NULL,
-  `type` varchar(1073741824) DEFAULT NULL,
-  `external_id` varchar(1073741824) DEFAULT NULL,
+  `additional_info` varchar(1048576) DEFAULT NULL,
+  `customer_id` varchar(1048576) DEFAULT NULL,
+  `asset_profile_id` varchar(1048576) DEFAULT NULL,
+  `name` varchar(1048576) DEFAULT NULL,
+  `label` varchar(1048576) DEFAULT NULL,
+  `tenant_id` varchar(1048576) DEFAULT NULL,
+  `type` varchar(1048576) DEFAULT NULL,
+  `external_id` varchar(1048576) DEFAULT NULL,
   `version` bigint(20) DEFAULT NULL,
-  `processing_day` varchar(1073741824) DEFAULT NULL
+  `processing_day` varchar(1048576) DEFAULT NULL
 )
 ENGINE=OLAP
 DUPLICATE KEY(`id`)
@@ -86,20 +86,20 @@ PROPERTIES ("replication_num" = "1");
 
 -- Source object: `sdp_dev_hive_catalog`.`sdp_raw`.`raw_dmp_public_asset_profile`
 CREATE TABLE IF NOT EXISTS `raw_dmp_public_asset_profile` (
-  `id` varchar(1073741824) DEFAULT NULL,
+  `id` varchar(1048576) DEFAULT NULL,
   `created_time` bigint(20) DEFAULT NULL,
-  `name` varchar(1073741824) DEFAULT NULL,
-  `image` varchar(1073741824) DEFAULT NULL,
-  `description` varchar(1073741824) DEFAULT NULL,
+  `name` varchar(1048576) DEFAULT NULL,
+  `image` varchar(1048576) DEFAULT NULL,
+  `description` varchar(1048576) DEFAULT NULL,
   `is_default` boolean DEFAULT NULL,
-  `tenant_id` varchar(1073741824) DEFAULT NULL,
-  `default_rule_chain_id` varchar(1073741824) DEFAULT NULL,
-  `default_dashboard_id` varchar(1073741824) DEFAULT NULL,
-  `default_queue_name` varchar(1073741824) DEFAULT NULL,
-  `default_edge_rule_chain_id` varchar(1073741824) DEFAULT NULL,
-  `external_id` varchar(1073741824) DEFAULT NULL,
+  `tenant_id` varchar(1048576) DEFAULT NULL,
+  `default_rule_chain_id` varchar(1048576) DEFAULT NULL,
+  `default_dashboard_id` varchar(1048576) DEFAULT NULL,
+  `default_queue_name` varchar(1048576) DEFAULT NULL,
+  `default_edge_rule_chain_id` varchar(1048576) DEFAULT NULL,
+  `external_id` varchar(1048576) DEFAULT NULL,
   `version` bigint(20) DEFAULT NULL,
-  `processing_day` varchar(1073741824) DEFAULT NULL
+  `processing_day` varchar(1048576) DEFAULT NULL
 )
 ENGINE=OLAP
 DUPLICATE KEY(`id`)
@@ -108,21 +108,21 @@ PROPERTIES ("replication_num" = "1");
 
 -- Source object: `sdp_dev_hive_catalog`.`sdp_raw`.`raw_dmp_public_device`
 CREATE TABLE IF NOT EXISTS `raw_dmp_public_device` (
-  `id` varchar(1073741824) DEFAULT NULL,
+  `id` varchar(1048576) DEFAULT NULL,
   `created_time` bigint(20) DEFAULT NULL,
-  `additional_info` varchar(1073741824) DEFAULT NULL,
-  `customer_id` varchar(1073741824) DEFAULT NULL,
-  `device_profile_id` varchar(1073741824) DEFAULT NULL,
-  `device_data` varchar(1073741824) DEFAULT NULL,
-  `type` varchar(1073741824) DEFAULT NULL,
-  `name` varchar(1073741824) DEFAULT NULL,
-  `label` varchar(1073741824) DEFAULT NULL,
-  `tenant_id` varchar(1073741824) DEFAULT NULL,
-  `firmware_id` varchar(1073741824) DEFAULT NULL,
-  `software_id` varchar(1073741824) DEFAULT NULL,
-  `external_id` varchar(1073741824) DEFAULT NULL,
+  `additional_info` varchar(1048576) DEFAULT NULL,
+  `customer_id` varchar(1048576) DEFAULT NULL,
+  `device_profile_id` varchar(1048576) DEFAULT NULL,
+  `device_data` varchar(1048576) DEFAULT NULL,
+  `type` varchar(1048576) DEFAULT NULL,
+  `name` varchar(1048576) DEFAULT NULL,
+  `label` varchar(1048576) DEFAULT NULL,
+  `tenant_id` varchar(1048576) DEFAULT NULL,
+  `firmware_id` varchar(1048576) DEFAULT NULL,
+  `software_id` varchar(1048576) DEFAULT NULL,
+  `external_id` varchar(1048576) DEFAULT NULL,
   `version` bigint(20) DEFAULT NULL,
-  `processing_day` varchar(1073741824) DEFAULT NULL
+  `processing_day` varchar(1048576) DEFAULT NULL
 )
 ENGINE=OLAP
 DUPLICATE KEY(`id`)
@@ -131,27 +131,27 @@ PROPERTIES ("replication_num" = "1");
 
 -- Source object: `sdp_dev_hive_catalog`.`sdp_raw`.`raw_dmp_public_device_profile`
 CREATE TABLE IF NOT EXISTS `raw_dmp_public_device_profile` (
-  `id` varchar(1073741824) DEFAULT NULL,
+  `id` varchar(1048576) DEFAULT NULL,
   `created_time` bigint(20) DEFAULT NULL,
-  `name` varchar(1073741824) DEFAULT NULL,
-  `type` varchar(1073741824) DEFAULT NULL,
-  `image` varchar(1073741824) DEFAULT NULL,
-  `transport_type` varchar(1073741824) DEFAULT NULL,
-  `provision_type` varchar(1073741824) DEFAULT NULL,
-  `profile_data` varchar(1073741824) DEFAULT NULL,
-  `description` varchar(1073741824) DEFAULT NULL,
+  `name` varchar(1048576) DEFAULT NULL,
+  `type` varchar(1048576) DEFAULT NULL,
+  `image` varchar(1048576) DEFAULT NULL,
+  `transport_type` varchar(1048576) DEFAULT NULL,
+  `provision_type` varchar(1048576) DEFAULT NULL,
+  `profile_data` varchar(1048576) DEFAULT NULL,
+  `description` varchar(1048576) DEFAULT NULL,
   `is_default` boolean DEFAULT NULL,
-  `tenant_id` varchar(1073741824) DEFAULT NULL,
-  `firmware_id` varchar(1073741824) DEFAULT NULL,
-  `software_id` varchar(1073741824) DEFAULT NULL,
-  `default_rule_chain_id` varchar(1073741824) DEFAULT NULL,
-  `default_dashboard_id` varchar(1073741824) DEFAULT NULL,
-  `default_queue_name` varchar(1073741824) DEFAULT NULL,
-  `provision_device_key` varchar(1073741824) DEFAULT NULL,
-  `default_edge_rule_chain_id` varchar(1073741824) DEFAULT NULL,
-  `external_id` varchar(1073741824) DEFAULT NULL,
+  `tenant_id` varchar(1048576) DEFAULT NULL,
+  `firmware_id` varchar(1048576) DEFAULT NULL,
+  `software_id` varchar(1048576) DEFAULT NULL,
+  `default_rule_chain_id` varchar(1048576) DEFAULT NULL,
+  `default_dashboard_id` varchar(1048576) DEFAULT NULL,
+  `default_queue_name` varchar(1048576) DEFAULT NULL,
+  `provision_device_key` varchar(1048576) DEFAULT NULL,
+  `default_edge_rule_chain_id` varchar(1048576) DEFAULT NULL,
+  `external_id` varchar(1048576) DEFAULT NULL,
   `version` bigint(20) DEFAULT NULL,
-  `processing_day` varchar(1073741824) DEFAULT NULL
+  `processing_day` varchar(1048576) DEFAULT NULL
 )
 ENGINE=OLAP
 DUPLICATE KEY(`id`)
@@ -160,15 +160,15 @@ PROPERTIES ("replication_num" = "1");
 
 -- Source object: `sdp_dev_hive_catalog`.`sdp_raw`.`raw_dmp_public_relation`
 CREATE TABLE IF NOT EXISTS `raw_dmp_public_relation` (
-  `from_id` varchar(1073741824) DEFAULT NULL,
-  `from_type` varchar(1073741824) DEFAULT NULL,
-  `to_id` varchar(1073741824) DEFAULT NULL,
-  `to_type` varchar(1073741824) DEFAULT NULL,
-  `relation_type_group` varchar(1073741824) DEFAULT NULL,
-  `relation_type` varchar(1073741824) DEFAULT NULL,
-  `additional_info` varchar(1073741824) DEFAULT NULL,
+  `from_id` varchar(1048576) DEFAULT NULL,
+  `from_type` varchar(1048576) DEFAULT NULL,
+  `to_id` varchar(1048576) DEFAULT NULL,
+  `to_type` varchar(1048576) DEFAULT NULL,
+  `relation_type_group` varchar(1048576) DEFAULT NULL,
+  `relation_type` varchar(1048576) DEFAULT NULL,
+  `additional_info` varchar(1048576) DEFAULT NULL,
   `version` bigint(20) DEFAULT NULL,
-  `processing_day` varchar(1073741824) DEFAULT NULL
+  `processing_day` varchar(1048576) DEFAULT NULL
 )
 ENGINE=OLAP
 DUPLICATE KEY(`from_id`)
@@ -177,33 +177,33 @@ PROPERTIES ("replication_num" = "1");
 
 -- Source object: `sdp_dev_hive_catalog`.`sdp_raw`.`raw_parking_db_vehicle_histories`
 CREATE TABLE IF NOT EXISTS `raw_parking_db_vehicle_histories` (
-  `id` varchar(1073741824) DEFAULT NULL,
-  `card_number` varchar(1073741824) DEFAULT NULL,
-  `lpn` varchar(1073741824) DEFAULT NULL,
-  `lpn_cmp` varchar(1073741824) DEFAULT NULL,
-  `lpn_camera_in` varchar(1073741824) DEFAULT NULL,
-  `lpn_in_edited` varchar(1073741824) DEFAULT NULL,
-  `lpn_camera_out` varchar(1073741824) DEFAULT NULL,
-  `lpn_out_edited` varchar(1073741824) DEFAULT NULL,
-  `service_id` varchar(1073741824) DEFAULT NULL,
-  `service_name` varchar(1073741824) DEFAULT NULL,
-  `owner_customer_id` varchar(1073741824) DEFAULT NULL,
-  `org_unit_code` varchar(1073741824) DEFAULT NULL,
-  `org_unit_name` varchar(1073741824) DEFAULT NULL,
-  `pk_lot_id` varchar(1073741824) DEFAULT NULL,
-  `pk_lot_name` varchar(1073741824) DEFAULT NULL,
-  `entry_point_in_id` varchar(1073741824) DEFAULT NULL,
-  `entry_point_in_name` varchar(1073741824) DEFAULT NULL,
-  `lane_in_id` varchar(1073741824) DEFAULT NULL,
-  `lane_in_name` varchar(1073741824) DEFAULT NULL,
-  `entry_point_out_id` varchar(1073741824) DEFAULT NULL,
-  `entry_point_out_name` varchar(1073741824) DEFAULT NULL,
-  `lane_out_id` varchar(1073741824) DEFAULT NULL,
-  `lane_out_name` varchar(1073741824) DEFAULT NULL,
-  `direction_type` varchar(1073741824) DEFAULT NULL,
-  `check_in_at` varchar(1073741824) DEFAULT NULL,
-  `check_out_at` varchar(1073741824) DEFAULT NULL,
-  `payment_type` varchar(1073741824) DEFAULT NULL,
+  `id` varchar(1048576) DEFAULT NULL,
+  `card_number` varchar(1048576) DEFAULT NULL,
+  `lpn` varchar(1048576) DEFAULT NULL,
+  `lpn_cmp` varchar(1048576) DEFAULT NULL,
+  `lpn_camera_in` varchar(1048576) DEFAULT NULL,
+  `lpn_in_edited` varchar(1048576) DEFAULT NULL,
+  `lpn_camera_out` varchar(1048576) DEFAULT NULL,
+  `lpn_out_edited` varchar(1048576) DEFAULT NULL,
+  `service_id` varchar(1048576) DEFAULT NULL,
+  `service_name` varchar(1048576) DEFAULT NULL,
+  `owner_customer_id` varchar(1048576) DEFAULT NULL,
+  `org_unit_code` varchar(1048576) DEFAULT NULL,
+  `org_unit_name` varchar(1048576) DEFAULT NULL,
+  `pk_lot_id` varchar(1048576) DEFAULT NULL,
+  `pk_lot_name` varchar(1048576) DEFAULT NULL,
+  `entry_point_in_id` varchar(1048576) DEFAULT NULL,
+  `entry_point_in_name` varchar(1048576) DEFAULT NULL,
+  `lane_in_id` varchar(1048576) DEFAULT NULL,
+  `lane_in_name` varchar(1048576) DEFAULT NULL,
+  `entry_point_out_id` varchar(1048576) DEFAULT NULL,
+  `entry_point_out_name` varchar(1048576) DEFAULT NULL,
+  `lane_out_id` varchar(1048576) DEFAULT NULL,
+  `lane_out_name` varchar(1048576) DEFAULT NULL,
+  `direction_type` varchar(1048576) DEFAULT NULL,
+  `check_in_at` varchar(1048576) DEFAULT NULL,
+  `check_out_at` varchar(1048576) DEFAULT NULL,
+  `payment_type` varchar(1048576) DEFAULT NULL,
   `use_voucher` boolean DEFAULT NULL,
   `wallet_balance_before` bigint(20) DEFAULT NULL,
   `wallet_balance_after` bigint(20) DEFAULT NULL,
@@ -215,37 +215,37 @@ CREATE TABLE IF NOT EXISTS `raw_parking_db_vehicle_histories` (
   `promotion_vinfast_amount` bigint(20) DEFAULT NULL,
   `amount_due` bigint(20) DEFAULT NULL,
   `used_change` bigint(20) DEFAULT NULL,
-  `open_mode_in` varchar(1073741824) DEFAULT NULL,
-  `open_mode_out` varchar(1073741824) DEFAULT NULL,
-  `check_in_lane_image_id` varchar(1073741824) DEFAULT NULL,
-  `check_out_lane_image_id` varchar(1073741824) DEFAULT NULL,
-  `history_state` varchar(1073741824) DEFAULT NULL,
-  `description` varchar(1073741824) DEFAULT NULL,
-  `area_id` varchar(1073741824) DEFAULT NULL,
-  `computer_inid` varchar(1073741824) DEFAULT NULL,
-  `computer_outid` varchar(1073741824) DEFAULT NULL,
-  `haunt_id` varchar(1073741824) DEFAULT NULL,
-  `haunt_name` varchar(1073741824) DEFAULT NULL,
-  `vehicle_type` varchar(1073741824) DEFAULT NULL,
+  `open_mode_in` varchar(1048576) DEFAULT NULL,
+  `open_mode_out` varchar(1048576) DEFAULT NULL,
+  `check_in_lane_image_id` varchar(1048576) DEFAULT NULL,
+  `check_out_lane_image_id` varchar(1048576) DEFAULT NULL,
+  `history_state` varchar(1048576) DEFAULT NULL,
+  `description` varchar(1048576) DEFAULT NULL,
+  `area_id` varchar(1048576) DEFAULT NULL,
+  `computer_inid` varchar(1048576) DEFAULT NULL,
+  `computer_outid` varchar(1048576) DEFAULT NULL,
+  `haunt_id` varchar(1048576) DEFAULT NULL,
+  `haunt_name` varchar(1048576) DEFAULT NULL,
+  `vehicle_type` varchar(1048576) DEFAULT NULL,
   `park_duration` bigint(20) DEFAULT NULL,
   `has_manual_edits` boolean DEFAULT NULL,
-  `service_category` varchar(1073741824) DEFAULT NULL,
-  `check_in_note` varchar(1073741824) DEFAULT NULL,
-  `check_out_note` varchar(1073741824) DEFAULT NULL,
+  `service_category` varchar(1048576) DEFAULT NULL,
+  `check_in_note` varchar(1048576) DEFAULT NULL,
+  `check_out_note` varchar(1048576) DEFAULT NULL,
   `is_exception` boolean DEFAULT NULL,
-  `created_by_user_id` varchar(1073741824) DEFAULT NULL,
-  `created_by_username` varchar(1073741824) DEFAULT NULL,
-  `last_modified_by_user_id` varchar(1073741824) DEFAULT NULL,
-  `last_modified_by_username` varchar(1073741824) DEFAULT NULL,
-  `created_at` varchar(1073741824) DEFAULT NULL,
-  `last_modified_at` varchar(1073741824) DEFAULT NULL,
-  `face_id_in` varchar(1073741824) DEFAULT NULL,
-  `face_id_out` varchar(1073741824) DEFAULT NULL,
-  `feature_vector_in` varchar(1073741824) DEFAULT NULL,
-  `feature_vector_out` varchar(1073741824) DEFAULT NULL,
-  `checkin_customer_id` varchar(1073741824) DEFAULT NULL,
-  `checkout_customer_id` varchar(1073741824) DEFAULT NULL,
-  `processing_day` varchar(1073741824) DEFAULT NULL
+  `created_by_user_id` varchar(1048576) DEFAULT NULL,
+  `created_by_username` varchar(1048576) DEFAULT NULL,
+  `last_modified_by_user_id` varchar(1048576) DEFAULT NULL,
+  `last_modified_by_username` varchar(1048576) DEFAULT NULL,
+  `created_at` varchar(1048576) DEFAULT NULL,
+  `last_modified_at` varchar(1048576) DEFAULT NULL,
+  `face_id_in` varchar(1048576) DEFAULT NULL,
+  `face_id_out` varchar(1048576) DEFAULT NULL,
+  `feature_vector_in` varchar(1048576) DEFAULT NULL,
+  `feature_vector_out` varchar(1048576) DEFAULT NULL,
+  `checkin_customer_id` varchar(1048576) DEFAULT NULL,
+  `checkout_customer_id` varchar(1048576) DEFAULT NULL,
+  `processing_day` varchar(1048576) DEFAULT NULL
 )
 ENGINE=OLAP
 DUPLICATE KEY(`id`)
@@ -256,82 +256,91 @@ USE `sdp_staging`;
 
 -- Source object: `sdp_dev_iceberg_catalog`.`sdp_staging`.`stg_dmp_asset_profiles`
 CREATE TABLE IF NOT EXISTS `stg_dmp_asset_profiles` (
-  `asset_profile_id` varchar(1073741824) DEFAULT NULL,
-  `name` varchar(1073741824) DEFAULT NULL,
-  `image` varchar(1073741824) DEFAULT NULL,
-  `description` varchar(1073741824) DEFAULT NULL,
+  `asset_profile_id` varchar(1048576) DEFAULT NULL,
+  `name` varchar(1048576) DEFAULT NULL,
+  `image` varchar(1048576) DEFAULT NULL,
+  `description` varchar(1048576) DEFAULT NULL,
   `is_default` boolean DEFAULT NULL,
-  `tenant_id` varchar(1073741824) DEFAULT NULL,
-  `default_rule_chain_id` varchar(1073741824) DEFAULT NULL,
-  `default_dashboard_id` varchar(1073741824) DEFAULT NULL,
-  `default_queue_name` varchar(1073741824) DEFAULT NULL,
-  `default_edge_rule_chain_id` varchar(1073741824) DEFAULT NULL,
-  `external_id` varchar(1073741824) DEFAULT NULL,
+  `tenant_id` varchar(1048576) DEFAULT NULL,
+  `default_rule_chain_id` varchar(1048576) DEFAULT NULL,
+  `default_dashboard_id` varchar(1048576) DEFAULT NULL,
+  `default_queue_name` varchar(1048576) DEFAULT NULL,
+  `default_edge_rule_chain_id` varchar(1048576) DEFAULT NULL,
+  `external_id` varchar(1048576) DEFAULT NULL,
   `version` bigint(20) DEFAULT NULL,
   `processing_day` date DEFAULT NULL,
   `created_at` datetime DEFAULT NULL,
   `_dbt_loaded_at` datetime DEFAULT NULL
 )
-PROPERTIES ("write.format.default" = "PARQUET", "location" = "s3://sdp-dev-staging-803067574897/staging/stg_dmp_asset_profiles__dbt_tmp-e0cbe1323fea46ecba6d62e65a3bc709");
+ENGINE=OLAP
+DUPLICATE KEY(`asset_profile_id`)
+DISTRIBUTED BY HASH(`asset_profile_id`) BUCKETS 4
+PROPERTIES ("replication_num" = "1");
 
 -- Source object: `sdp_dev_iceberg_catalog`.`sdp_staging`.`stg_dmp_assets`
 CREATE TABLE IF NOT EXISTS `stg_dmp_assets` (
-  `asset_id` varchar(1073741824) DEFAULT NULL,
-  `additional_info` varchar(1073741824) DEFAULT NULL,
-  `customer_id` varchar(1073741824) DEFAULT NULL,
-  `asset_profile_id` varchar(1073741824) DEFAULT NULL,
-  `name` varchar(1073741824) DEFAULT NULL,
-  `label` varchar(1073741824) DEFAULT NULL,
-  `tenant_id` varchar(1073741824) DEFAULT NULL,
-  `type` varchar(1073741824) DEFAULT NULL,
-  `external_id` varchar(1073741824) DEFAULT NULL,
+  `asset_id` varchar(1048576) DEFAULT NULL,
+  `additional_info` varchar(1048576) DEFAULT NULL,
+  `customer_id` varchar(1048576) DEFAULT NULL,
+  `asset_profile_id` varchar(1048576) DEFAULT NULL,
+  `name` varchar(1048576) DEFAULT NULL,
+  `label` varchar(1048576) DEFAULT NULL,
+  `tenant_id` varchar(1048576) DEFAULT NULL,
+  `type` varchar(1048576) DEFAULT NULL,
+  `external_id` varchar(1048576) DEFAULT NULL,
   `version` bigint(20) DEFAULT NULL,
   `processing_day` date DEFAULT NULL,
   `created_at` datetime DEFAULT NULL,
   `_dbt_loaded_at` datetime DEFAULT NULL
 )
-PROPERTIES ("write.format.default" = "PARQUET", "location" = "s3://sdp-dev-staging-803067574897/staging/stg_dmp_assets__dbt_tmp-3d55830c970845b281f5bbfaeee01d4e");
+ENGINE=OLAP
+DUPLICATE KEY(`asset_id`)
+DISTRIBUTED BY HASH(`asset_id`) BUCKETS 4
+PROPERTIES ("replication_num" = "1");
 
 -- Source object: `sdp_dev_iceberg_catalog`.`sdp_staging`.`stg_dmp_device_profiles`
 CREATE TABLE IF NOT EXISTS `stg_dmp_device_profiles` (
-  `device_profile_id` varchar(1073741824) DEFAULT NULL,
-  `name` varchar(1073741824) DEFAULT NULL,
-  `type` varchar(1073741824) DEFAULT NULL,
-  `image` varchar(1073741824) DEFAULT NULL,
-  `transport_type` varchar(1073741824) DEFAULT NULL,
-  `provision_type` varchar(1073741824) DEFAULT NULL,
-  `profile_data` varchar(1073741824) DEFAULT NULL,
-  `description` varchar(1073741824) DEFAULT NULL,
+  `device_profile_id` varchar(1048576) DEFAULT NULL,
+  `name` varchar(1048576) DEFAULT NULL,
+  `type` varchar(1048576) DEFAULT NULL,
+  `image` varchar(1048576) DEFAULT NULL,
+  `transport_type` varchar(1048576) DEFAULT NULL,
+  `provision_type` varchar(1048576) DEFAULT NULL,
+  `profile_data` varchar(1048576) DEFAULT NULL,
+  `description` varchar(1048576) DEFAULT NULL,
   `is_default` boolean DEFAULT NULL,
-  `tenant_id` varchar(1073741824) DEFAULT NULL,
-  `firmware_id` varchar(1073741824) DEFAULT NULL,
-  `software_id` varchar(1073741824) DEFAULT NULL,
-  `default_rule_chain_id` varchar(1073741824) DEFAULT NULL,
-  `default_dashboard_id` varchar(1073741824) DEFAULT NULL,
-  `default_queue_name` varchar(1073741824) DEFAULT NULL,
-  `provision_device_key` varchar(1073741824) DEFAULT NULL,
-  `default_edge_rule_chain_id` varchar(1073741824) DEFAULT NULL,
-  `external_id` varchar(1073741824) DEFAULT NULL,
+  `tenant_id` varchar(1048576) DEFAULT NULL,
+  `firmware_id` varchar(1048576) DEFAULT NULL,
+  `software_id` varchar(1048576) DEFAULT NULL,
+  `default_rule_chain_id` varchar(1048576) DEFAULT NULL,
+  `default_dashboard_id` varchar(1048576) DEFAULT NULL,
+  `default_queue_name` varchar(1048576) DEFAULT NULL,
+  `provision_device_key` varchar(1048576) DEFAULT NULL,
+  `default_edge_rule_chain_id` varchar(1048576) DEFAULT NULL,
+  `external_id` varchar(1048576) DEFAULT NULL,
   `version` bigint(20) DEFAULT NULL,
   `processing_day` date DEFAULT NULL,
   `created_at` datetime DEFAULT NULL,
   `_dbt_loaded_at` datetime DEFAULT NULL
 )
-PROPERTIES ("write.format.default" = "PARQUET", "location" = "s3://sdp-dev-staging-803067574897/staging/stg_dmp_device_profiles__dbt_tmp-b4ea167d15274b9290e7ed38a61be383");
+ENGINE=OLAP
+DUPLICATE KEY(`device_profile_id`)
+DISTRIBUTED BY HASH(`device_profile_id`) BUCKETS 4
+PROPERTIES ("replication_num" = "1");
 
 -- Source object: `sdp_dev_iceberg_catalog`.`sdp_staging`.`stg_dmp_device_status_events`
 CREATE TABLE IF NOT EXISTS `stg_dmp_device_status_events` (
-  `event_id` varchar(1073741824) DEFAULT NULL,
-  `device_id` varchar(1073741824) DEFAULT NULL,
-  `tenant_id` varchar(1073741824) DEFAULT NULL,
-  `event_type` varchar(1073741824) DEFAULT NULL,
-  `source_system` varchar(1073741824) DEFAULT NULL,
-  `device_code` varchar(1073741824) DEFAULT NULL,
-  `device_type` varchar(1073741824) DEFAULT NULL,
-  `ip_address` varchar(1073741824) DEFAULT NULL,
-  `current_status` varchar(1073741824) DEFAULT NULL,
-  `previous_status` varchar(1073741824) DEFAULT NULL,
-  `status_change_reason` varchar(1073741824) DEFAULT NULL,
+  `event_id` varchar(1048576) DEFAULT NULL,
+  `device_id` varchar(1048576) DEFAULT NULL,
+  `tenant_id` varchar(1048576) DEFAULT NULL,
+  `event_type` varchar(1048576) DEFAULT NULL,
+  `source_system` varchar(1048576) DEFAULT NULL,
+  `device_code` varchar(1048576) DEFAULT NULL,
+  `device_type` varchar(1048576) DEFAULT NULL,
+  `ip_address` varchar(1048576) DEFAULT NULL,
+  `current_status` varchar(1048576) DEFAULT NULL,
+  `previous_status` varchar(1048576) DEFAULT NULL,
+  `status_change_reason` varchar(1048576) DEFAULT NULL,
   `event_time` datetime DEFAULT NULL,
   `event_date` date DEFAULT NULL,
   `event_hour` datetime DEFAULT NULL,
@@ -340,182 +349,201 @@ CREATE TABLE IF NOT EXISTS `stg_dmp_device_status_events` (
   `is_status_change_event` boolean DEFAULT NULL,
   `_dbt_loaded_at` datetime DEFAULT NULL
 )
-PARTITION BY (event_date, device_type)
-PROPERTIES ("write.format.default" = "PARQUET", "location" = "s3://sdp-dev-staging-803067574897/staging/stg_dmp_device_status_events-9f959651b6f1425cba0c9bcd15ac9f39");
+ENGINE=OLAP
+DUPLICATE KEY(`event_id`)
+DISTRIBUTED BY HASH(`event_id`) BUCKETS 4
+PROPERTIES ("replication_num" = "1");
 
 -- Source object: `sdp_dev_iceberg_catalog`.`sdp_staging`.`stg_dmp_devices`
 CREATE TABLE IF NOT EXISTS `stg_dmp_devices` (
-  `device_id` varchar(1073741824) DEFAULT NULL,
-  `additional_info` varchar(1073741824) DEFAULT NULL,
-  `customer_id` varchar(1073741824) DEFAULT NULL,
-  `device_profile_id` varchar(1073741824) DEFAULT NULL,
-  `device_data` varchar(1073741824) DEFAULT NULL,
-  `type` varchar(1073741824) DEFAULT NULL,
-  `name` varchar(1073741824) DEFAULT NULL,
-  `label` varchar(1073741824) DEFAULT NULL,
-  `tenant_id` varchar(1073741824) DEFAULT NULL,
-  `firmware_id` varchar(1073741824) DEFAULT NULL,
-  `software_id` varchar(1073741824) DEFAULT NULL,
-  `external_id` varchar(1073741824) DEFAULT NULL,
+  `device_id` varchar(1048576) DEFAULT NULL,
+  `additional_info` varchar(1048576) DEFAULT NULL,
+  `customer_id` varchar(1048576) DEFAULT NULL,
+  `device_profile_id` varchar(1048576) DEFAULT NULL,
+  `device_data` varchar(1048576) DEFAULT NULL,
+  `type` varchar(1048576) DEFAULT NULL,
+  `name` varchar(1048576) DEFAULT NULL,
+  `label` varchar(1048576) DEFAULT NULL,
+  `tenant_id` varchar(1048576) DEFAULT NULL,
+  `firmware_id` varchar(1048576) DEFAULT NULL,
+  `software_id` varchar(1048576) DEFAULT NULL,
+  `external_id` varchar(1048576) DEFAULT NULL,
   `version` bigint(20) DEFAULT NULL,
   `processing_day` date DEFAULT NULL,
   `created_at` datetime DEFAULT NULL,
   `_dbt_loaded_at` datetime DEFAULT NULL
 )
-PROPERTIES ("write.format.default" = "PARQUET", "location" = "s3://sdp-dev-staging-803067574897/staging/stg_dmp_devices__dbt_tmp-342e67060a26482585cc63dbf135ece8");
+ENGINE=OLAP
+DUPLICATE KEY(`device_id`)
+DISTRIBUTED BY HASH(`device_id`) BUCKETS 4
+PROPERTIES ("replication_num" = "1");
 
 -- Source object: `sdp_dev_iceberg_catalog`.`sdp_staging`.`stg_dmp_evt_connectivity`
 CREATE TABLE IF NOT EXISTS `stg_dmp_evt_connectivity` (
-  `msgtype` varchar(1073741824) DEFAULT NULL,
-  `deviceid` varchar(1073741824) DEFAULT NULL,
-  `tenantid` varchar(1073741824) DEFAULT NULL,
-  `customerid` varchar(1073741824) DEFAULT NULL,
-  `devicecode` varchar(1073741824) DEFAULT NULL,
-  `status` varchar(1073741824) DEFAULT NULL,
-  `offlinereason` varchar(1073741824) DEFAULT NULL,
+  `msgtype` varchar(1048576) DEFAULT NULL,
+  `deviceid` varchar(1048576) DEFAULT NULL,
+  `tenantid` varchar(1048576) DEFAULT NULL,
+  `customerid` varchar(1048576) DEFAULT NULL,
+  `devicecode` varchar(1048576) DEFAULT NULL,
+  `status` varchar(1048576) DEFAULT NULL,
+  `offlinereason` varchar(1048576) DEFAULT NULL,
   `qualityscore` int(11) DEFAULT NULL,
-  `icmpreachable` varchar(1073741824) DEFAULT NULL,
+  `icmpreachable` varchar(1048576) DEFAULT NULL,
   `ts` bigint(20) DEFAULT NULL,
-  `processing_day` varchar(1073741824) DEFAULT NULL
+  `processing_day` varchar(1048576) DEFAULT NULL
 )
-PROPERTIES ("write.format.default" = "PARQUET", "location" = "s3://sdp-dev-staging-803067574897/staging/stg_dmp_evt_connectivity-53180a18bb96408d9de61b7acd55a4e7");
+ENGINE=OLAP
+DUPLICATE KEY(`msgtype`)
+DISTRIBUTED BY HASH(`msgtype`) BUCKETS 4
+PROPERTIES ("replication_num" = "1");
 
 -- Source object: `sdp_dev_iceberg_catalog`.`sdp_staging`.`stg_dmp_relations`
 CREATE TABLE IF NOT EXISTS `stg_dmp_relations` (
-  `from_id` varchar(1073741824) DEFAULT NULL,
-  `from_type` varchar(1073741824) DEFAULT NULL,
-  `to_id` varchar(1073741824) DEFAULT NULL,
-  `to_type` varchar(1073741824) DEFAULT NULL,
-  `relation_type_group` varchar(1073741824) DEFAULT NULL,
-  `relation_type` varchar(1073741824) DEFAULT NULL,
-  `additional_info` varchar(1073741824) DEFAULT NULL,
+  `from_id` varchar(1048576) DEFAULT NULL,
+  `from_type` varchar(1048576) DEFAULT NULL,
+  `to_id` varchar(1048576) DEFAULT NULL,
+  `to_type` varchar(1048576) DEFAULT NULL,
+  `relation_type_group` varchar(1048576) DEFAULT NULL,
+  `relation_type` varchar(1048576) DEFAULT NULL,
+  `additional_info` varchar(1048576) DEFAULT NULL,
   `version` bigint(20) DEFAULT NULL,
   `processing_day` date DEFAULT NULL,
   `_dbt_loaded_at` datetime DEFAULT NULL
 )
-PROPERTIES ("write.format.default" = "PARQUET", "location" = "s3://sdp-dev-staging-803067574897/staging/stg_dmp_relations__dbt_tmp-8a06837257e54f8586b589bfe1c7742c");
+ENGINE=OLAP
+DUPLICATE KEY(`from_id`)
+DISTRIBUTED BY HASH(`from_id`) BUCKETS 4
+PROPERTIES ("replication_num" = "1");
 
 -- Source object: `sdp_dev_iceberg_catalog`.`sdp_staging`.`stg_vehicle_histories`
 CREATE TABLE IF NOT EXISTS `stg_vehicle_histories` (
-  `event_id` varchar(1073741824) DEFAULT NULL,
-  `card_number` varchar(1073741824) DEFAULT NULL,
-  `lpn` varchar(1073741824) DEFAULT NULL,
-  `lpn_cmp` varchar(1073741824) DEFAULT NULL,
-  `lpn_camera_in` varchar(1073741824) DEFAULT NULL,
-  `lpn_in_edited` varchar(1073741824) DEFAULT NULL,
-  `lpn_camera_out` varchar(1073741824) DEFAULT NULL,
-  `lpn_out_edited` varchar(1073741824) DEFAULT NULL,
-  `service_id` varchar(1073741824) DEFAULT NULL,
-  `service_name` varchar(1073741824) DEFAULT NULL,
-  `owner_customer_id` varchar(1073741824) DEFAULT NULL,
-  `org_unit_code` varchar(1073741824) DEFAULT NULL,
-  `org_unit_name` varchar(1073741824) DEFAULT NULL,
-  `pk_lot_id` varchar(1073741824) DEFAULT NULL,
-  `pk_lot_name` varchar(1073741824) DEFAULT NULL,
-  `entry_point_in_id` varchar(1073741824) DEFAULT NULL,
-  `entry_point_in_name` varchar(1073741824) DEFAULT NULL,
-  `lane_in_id` varchar(1073741824) DEFAULT NULL,
-  `lane_in_name` varchar(1073741824) DEFAULT NULL,
-  `entry_point_out_id` varchar(1073741824) DEFAULT NULL,
-  `entry_point_out_name` varchar(1073741824) DEFAULT NULL,
-  `lane_out_id` varchar(1073741824) DEFAULT NULL,
-  `lane_out_name` varchar(1073741824) DEFAULT NULL,
-  `direction_type` varchar(1073741824) DEFAULT NULL,
-  `check_in_at_raw` varchar(1073741824) DEFAULT NULL,
-  `check_out_at_raw` varchar(1073741824) DEFAULT NULL,
+  `event_id` varchar(1048576) DEFAULT NULL,
+  `card_number` varchar(1048576) DEFAULT NULL,
+  `lpn` varchar(1048576) DEFAULT NULL,
+  `lpn_cmp` varchar(1048576) DEFAULT NULL,
+  `lpn_camera_in` varchar(1048576) DEFAULT NULL,
+  `lpn_in_edited` varchar(1048576) DEFAULT NULL,
+  `lpn_camera_out` varchar(1048576) DEFAULT NULL,
+  `lpn_out_edited` varchar(1048576) DEFAULT NULL,
+  `service_id` varchar(1048576) DEFAULT NULL,
+  `service_name` varchar(1048576) DEFAULT NULL,
+  `owner_customer_id` varchar(1048576) DEFAULT NULL,
+  `org_unit_code` varchar(1048576) DEFAULT NULL,
+  `org_unit_name` varchar(1048576) DEFAULT NULL,
+  `pk_lot_id` varchar(1048576) DEFAULT NULL,
+  `pk_lot_name` varchar(1048576) DEFAULT NULL,
+  `entry_point_in_id` varchar(1048576) DEFAULT NULL,
+  `entry_point_in_name` varchar(1048576) DEFAULT NULL,
+  `lane_in_id` varchar(1048576) DEFAULT NULL,
+  `lane_in_name` varchar(1048576) DEFAULT NULL,
+  `entry_point_out_id` varchar(1048576) DEFAULT NULL,
+  `entry_point_out_name` varchar(1048576) DEFAULT NULL,
+  `lane_out_id` varchar(1048576) DEFAULT NULL,
+  `lane_out_name` varchar(1048576) DEFAULT NULL,
+  `direction_type` varchar(1048576) DEFAULT NULL,
+  `check_in_at_raw` varchar(1048576) DEFAULT NULL,
+  `check_out_at_raw` varchar(1048576) DEFAULT NULL,
   `check_in_at` datetime DEFAULT NULL,
   `check_out_at` datetime DEFAULT NULL,
-  `payment_type` varchar(1073741824) DEFAULT NULL,
-  `use_voucher` varchar(1073741824) DEFAULT NULL,
-  `wallet_balance_before_raw` varchar(1073741824) DEFAULT NULL,
-  `wallet_balance_after_raw` varchar(1073741824) DEFAULT NULL,
-  `total_topup_raw` varchar(1073741824) DEFAULT NULL,
-  `bank_transfer_raw` varchar(1073741824) DEFAULT NULL,
-  `parking_fee_raw` varchar(1073741824) DEFAULT NULL,
-  `lost_card_fee_raw` varchar(1073741824) DEFAULT NULL,
-  `promotion_amount_raw` varchar(1073741824) DEFAULT NULL,
-  `promotion_vinfast_amount_raw` varchar(1073741824) DEFAULT NULL,
-  `amount_due_raw` varchar(1073741824) DEFAULT NULL,
-  `used_change_raw` varchar(1073741824) DEFAULT NULL,
-  `open_mode_in` varchar(1073741824) DEFAULT NULL,
-  `open_mode_out` varchar(1073741824) DEFAULT NULL,
-  `check_in_lane_image_id` varchar(1073741824) DEFAULT NULL,
-  `check_out_lane_image_id` varchar(1073741824) DEFAULT NULL,
-  `history_state` varchar(1073741824) DEFAULT NULL,
-  `description` varchar(1073741824) DEFAULT NULL,
-  `area_id` varchar(1073741824) DEFAULT NULL,
-  `computer_inid` varchar(1073741824) DEFAULT NULL,
-  `computer_outid` varchar(1073741824) DEFAULT NULL,
-  `haunt_id` varchar(1073741824) DEFAULT NULL,
-  `haunt_name` varchar(1073741824) DEFAULT NULL,
-  `vehicle_type` varchar(1073741824) DEFAULT NULL,
+  `payment_type` varchar(1048576) DEFAULT NULL,
+  `use_voucher` varchar(1048576) DEFAULT NULL,
+  `wallet_balance_before_raw` varchar(1048576) DEFAULT NULL,
+  `wallet_balance_after_raw` varchar(1048576) DEFAULT NULL,
+  `total_topup_raw` varchar(1048576) DEFAULT NULL,
+  `bank_transfer_raw` varchar(1048576) DEFAULT NULL,
+  `parking_fee_raw` varchar(1048576) DEFAULT NULL,
+  `lost_card_fee_raw` varchar(1048576) DEFAULT NULL,
+  `promotion_amount_raw` varchar(1048576) DEFAULT NULL,
+  `promotion_vinfast_amount_raw` varchar(1048576) DEFAULT NULL,
+  `amount_due_raw` varchar(1048576) DEFAULT NULL,
+  `used_change_raw` varchar(1048576) DEFAULT NULL,
+  `open_mode_in` varchar(1048576) DEFAULT NULL,
+  `open_mode_out` varchar(1048576) DEFAULT NULL,
+  `check_in_lane_image_id` varchar(1048576) DEFAULT NULL,
+  `check_out_lane_image_id` varchar(1048576) DEFAULT NULL,
+  `history_state` varchar(1048576) DEFAULT NULL,
+  `description` varchar(1048576) DEFAULT NULL,
+  `area_id` varchar(1048576) DEFAULT NULL,
+  `computer_inid` varchar(1048576) DEFAULT NULL,
+  `computer_outid` varchar(1048576) DEFAULT NULL,
+  `haunt_id` varchar(1048576) DEFAULT NULL,
+  `haunt_name` varchar(1048576) DEFAULT NULL,
+  `vehicle_type` varchar(1048576) DEFAULT NULL,
   `park_duration_ms` bigint(20) DEFAULT NULL,
-  `has_manual_edits` varchar(1073741824) DEFAULT NULL,
-  `service_category` varchar(1073741824) DEFAULT NULL,
-  `check_in_note` varchar(1073741824) DEFAULT NULL,
-  `check_out_note` varchar(1073741824) DEFAULT NULL,
-  `is_exception` varchar(1073741824) DEFAULT NULL,
-  `created_by_user_id` varchar(1073741824) DEFAULT NULL,
-  `created_by_username` varchar(1073741824) DEFAULT NULL,
-  `last_modified_by_user_id` varchar(1073741824) DEFAULT NULL,
-  `last_modified_by_username` varchar(1073741824) DEFAULT NULL,
+  `has_manual_edits` varchar(1048576) DEFAULT NULL,
+  `service_category` varchar(1048576) DEFAULT NULL,
+  `check_in_note` varchar(1048576) DEFAULT NULL,
+  `check_out_note` varchar(1048576) DEFAULT NULL,
+  `is_exception` varchar(1048576) DEFAULT NULL,
+  `created_by_user_id` varchar(1048576) DEFAULT NULL,
+  `created_by_username` varchar(1048576) DEFAULT NULL,
+  `last_modified_by_user_id` varchar(1048576) DEFAULT NULL,
+  `last_modified_by_username` varchar(1048576) DEFAULT NULL,
   `created_at` datetime DEFAULT NULL,
   `last_modified_at` datetime DEFAULT NULL,
-  `face_id_in` varchar(1073741824) DEFAULT NULL,
-  `face_id_out` varchar(1073741824) DEFAULT NULL,
-  `feature_vector_in` varchar(1073741824) DEFAULT NULL,
-  `feature_vector_out` varchar(1073741824) DEFAULT NULL,
-  `checkin_customer_id` varchar(1073741824) DEFAULT NULL,
-  `checkout_customer_id` varchar(1073741824) DEFAULT NULL,
+  `face_id_in` varchar(1048576) DEFAULT NULL,
+  `face_id_out` varchar(1048576) DEFAULT NULL,
+  `feature_vector_in` varchar(1048576) DEFAULT NULL,
+  `feature_vector_out` varchar(1048576) DEFAULT NULL,
+  `checkin_customer_id` varchar(1048576) DEFAULT NULL,
+  `checkout_customer_id` varchar(1048576) DEFAULT NULL,
   `event_date` date DEFAULT NULL,
   `_dbt_loaded_at` datetime DEFAULT NULL
 )
-PARTITION BY (event_date)
-PROPERTIES ("write.format.default" = "PARQUET", "location" = "s3://sdp-dev-staging-803067574897/staging/stg_vehicle_histories__dbt_tmp-d8748b5ab0934f20949dc0e9c2be39b8");
+ENGINE=OLAP
+DUPLICATE KEY(`event_id`)
+DISTRIBUTED BY HASH(`event_id`) BUCKETS 4
+PROPERTIES ("replication_num" = "1");
 
 USE `sdp_golden`;
 
 -- Source object: `sdp_dev_iceberg_catalog`.`sdp_golden`.`dim_asset`
 CREATE TABLE IF NOT EXISTS `dim_asset` (
-  `asset_sk` varchar(1073741824) DEFAULT NULL,
-  `asset_id` varchar(1073741824) DEFAULT NULL,
-  `asset_name` varchar(1073741824) DEFAULT NULL,
-  `asset_label` varchar(1073741824) DEFAULT NULL,
-  `asset_type` varchar(1073741824) DEFAULT NULL,
-  `additional_info` varchar(1073741824) DEFAULT NULL,
-  `customer_id` varchar(1073741824) DEFAULT NULL,
-  `tenant_id` varchar(1073741824) DEFAULT NULL,
-  `external_id` varchar(1073741824) DEFAULT NULL,
-  `asset_profile_id` varchar(1073741824) DEFAULT NULL,
-  `asset_profile_name` varchar(1073741824) DEFAULT NULL,
-  `asset_profile_description` varchar(1073741824) DEFAULT NULL,
+  `asset_sk` varchar(1048576) DEFAULT NULL,
+  `asset_id` varchar(1048576) DEFAULT NULL,
+  `asset_name` varchar(1048576) DEFAULT NULL,
+  `asset_label` varchar(1048576) DEFAULT NULL,
+  `asset_type` varchar(1048576) DEFAULT NULL,
+  `additional_info` varchar(1048576) DEFAULT NULL,
+  `customer_id` varchar(1048576) DEFAULT NULL,
+  `tenant_id` varchar(1048576) DEFAULT NULL,
+  `external_id` varchar(1048576) DEFAULT NULL,
+  `asset_profile_id` varchar(1048576) DEFAULT NULL,
+  `asset_profile_name` varchar(1048576) DEFAULT NULL,
+  `asset_profile_description` varchar(1048576) DEFAULT NULL,
   `asset_profile_is_default` boolean DEFAULT NULL,
-  `default_rule_chain_id` varchar(1073741824) DEFAULT NULL,
-  `default_dashboard_id` varchar(1073741824) DEFAULT NULL,
-  `default_queue_name` varchar(1073741824) DEFAULT NULL,
-  `default_edge_rule_chain_id` varchar(1073741824) DEFAULT NULL,
+  `default_rule_chain_id` varchar(1048576) DEFAULT NULL,
+  `default_dashboard_id` varchar(1048576) DEFAULT NULL,
+  `default_queue_name` varchar(1048576) DEFAULT NULL,
+  `default_edge_rule_chain_id` varchar(1048576) DEFAULT NULL,
   `created_at` datetime DEFAULT NULL,
   `_dbt_loaded_at` datetime DEFAULT NULL
 )
-PROPERTIES ("write.format.default" = "PARQUET", "location" = "s3://sdp-dev-golden-803067574897/golden/dim_asset__dbt_tmp-c5c39a55115b4b4e85c8729fb4e9f2a9");
+ENGINE=OLAP
+DUPLICATE KEY(`asset_sk`)
+DISTRIBUTED BY HASH(`asset_sk`) BUCKETS 4
+PROPERTIES ("replication_num" = "1");
 
 -- Source object: `sdp_dev_iceberg_catalog`.`sdp_golden`.`dim_asset_profile`
 CREATE TABLE IF NOT EXISTS `dim_asset_profile` (
-  `asset_profile_sk` varchar(1073741824) DEFAULT NULL,
-  `asset_profile_id` varchar(1073741824) DEFAULT NULL,
-  `asset_profile_name` varchar(1073741824) DEFAULT NULL,
-  `asset_profile_description` varchar(1073741824) DEFAULT NULL,
+  `asset_profile_sk` varchar(1048576) DEFAULT NULL,
+  `asset_profile_id` varchar(1048576) DEFAULT NULL,
+  `asset_profile_name` varchar(1048576) DEFAULT NULL,
+  `asset_profile_description` varchar(1048576) DEFAULT NULL,
   `is_default` boolean DEFAULT NULL,
-  `tenant_id` varchar(1073741824) DEFAULT NULL,
-  `default_rule_chain_id` varchar(1073741824) DEFAULT NULL,
-  `default_dashboard_id` varchar(1073741824) DEFAULT NULL,
-  `default_queue_name` varchar(1073741824) DEFAULT NULL,
-  `default_edge_rule_chain_id` varchar(1073741824) DEFAULT NULL,
-  `image` varchar(1073741824) DEFAULT NULL,
+  `tenant_id` varchar(1048576) DEFAULT NULL,
+  `default_rule_chain_id` varchar(1048576) DEFAULT NULL,
+  `default_dashboard_id` varchar(1048576) DEFAULT NULL,
+  `default_queue_name` varchar(1048576) DEFAULT NULL,
+  `default_edge_rule_chain_id` varchar(1048576) DEFAULT NULL,
+  `image` varchar(1048576) DEFAULT NULL,
   `created_at` datetime DEFAULT NULL,
   `_dbt_loaded_at` datetime DEFAULT NULL
 )
-PROPERTIES ("write.format.default" = "PARQUET", "location" = "s3://sdp-dev-golden-803067574897/golden/dim_asset_profile__dbt_tmp-096936ee8cb6496384b89467671c698c");
+ENGINE=OLAP
+DUPLICATE KEY(`asset_profile_sk`)
+DISTRIBUTED BY HASH(`asset_profile_sk`) BUCKETS 4
+PROPERTIES ("replication_num" = "1");
 
 -- Source object: `sdp_dev_iceberg_catalog`.`sdp_golden`.`dim_date`
 CREATE TABLE IF NOT EXISTS `dim_date` (
@@ -525,174 +553,195 @@ CREATE TABLE IF NOT EXISTS `dim_date` (
   `quarter` int(11) DEFAULT NULL,
   `month` int(11) DEFAULT NULL,
   `day` int(11) DEFAULT NULL,
-  `year_month` varchar(1073741824) DEFAULT NULL,
-  `year_week` varchar(1073741824) DEFAULT NULL,
+  `year_month` varchar(1048576) DEFAULT NULL,
+  `year_week` varchar(1048576) DEFAULT NULL,
   `day_of_year` int(11) DEFAULT NULL,
   `day_of_week` int(11) DEFAULT NULL,
-  `day_name` varchar(1073741824) DEFAULT NULL,
-  `day_name_short` varchar(1073741824) DEFAULT NULL,
+  `day_name` varchar(1048576) DEFAULT NULL,
+  `day_name_short` varchar(1048576) DEFAULT NULL,
   `is_weekend` boolean DEFAULT NULL,
-  `month_name` varchar(1073741824) DEFAULT NULL,
-  `month_name_short` varchar(1073741824) DEFAULT NULL
+  `month_name` varchar(1048576) DEFAULT NULL,
+  `month_name_short` varchar(1048576) DEFAULT NULL
 )
-PROPERTIES ("write.format.default" = "PARQUET", "location" = "s3://sdp-dev-golden-803067574897/golden/dim_date__dbt_tmp-cb3669ec78d045cb8ced4cb7562b4163");
+ENGINE=OLAP
+DUPLICATE KEY(`date_key`)
+DISTRIBUTED BY HASH(`date_key`) BUCKETS 4
+PROPERTIES ("replication_num" = "1");
 
 -- Source object: `sdp_dev_iceberg_catalog`.`sdp_golden`.`dim_device`
 CREATE TABLE IF NOT EXISTS `dim_device` (
-  `device_sk` varchar(1073741824) DEFAULT NULL,
-  `device_id` varchar(1073741824) DEFAULT NULL,
-  `device_name` varchar(1073741824) DEFAULT NULL,
-  `device_label` varchar(1073741824) DEFAULT NULL,
-  `device_type` varchar(1073741824) DEFAULT NULL,
-  `additional_info` varchar(1073741824) DEFAULT NULL,
-  `device_data` varchar(1073741824) DEFAULT NULL,
-  `customer_id` varchar(1073741824) DEFAULT NULL,
-  `tenant_id` varchar(1073741824) DEFAULT NULL,
-  `firmware_id` varchar(1073741824) DEFAULT NULL,
-  `software_id` varchar(1073741824) DEFAULT NULL,
-  `external_id` varchar(1073741824) DEFAULT NULL,
-  `device_profile_id` varchar(1073741824) DEFAULT NULL,
-  `device_profile_name` varchar(1073741824) DEFAULT NULL,
-  `device_profile_description` varchar(1073741824) DEFAULT NULL,
-  `transport_type` varchar(1073741824) DEFAULT NULL,
-  `provision_type` varchar(1073741824) DEFAULT NULL,
+  `device_sk` varchar(1048576) DEFAULT NULL,
+  `device_id` varchar(1048576) DEFAULT NULL,
+  `device_name` varchar(1048576) DEFAULT NULL,
+  `device_label` varchar(1048576) DEFAULT NULL,
+  `device_type` varchar(1048576) DEFAULT NULL,
+  `additional_info` varchar(1048576) DEFAULT NULL,
+  `device_data` varchar(1048576) DEFAULT NULL,
+  `customer_id` varchar(1048576) DEFAULT NULL,
+  `tenant_id` varchar(1048576) DEFAULT NULL,
+  `firmware_id` varchar(1048576) DEFAULT NULL,
+  `software_id` varchar(1048576) DEFAULT NULL,
+  `external_id` varchar(1048576) DEFAULT NULL,
+  `device_profile_id` varchar(1048576) DEFAULT NULL,
+  `device_profile_name` varchar(1048576) DEFAULT NULL,
+  `device_profile_description` varchar(1048576) DEFAULT NULL,
+  `transport_type` varchar(1048576) DEFAULT NULL,
+  `provision_type` varchar(1048576) DEFAULT NULL,
   `device_profile_is_default` boolean DEFAULT NULL,
   `created_at` datetime DEFAULT NULL,
   `_dbt_loaded_at` datetime DEFAULT NULL
 )
-PROPERTIES ("write.format.default" = "PARQUET", "location" = "s3://sdp-dev-golden-803067574897/golden/dim_device__dbt_tmp-260c3be852b54c61813174949b7b7976");
+ENGINE=OLAP
+DUPLICATE KEY(`device_sk`)
+DISTRIBUTED BY HASH(`device_sk`) BUCKETS 4
+PROPERTIES ("replication_num" = "1");
 
 -- Source object: `sdp_dev_iceberg_catalog`.`sdp_golden`.`dim_device_asset`
 CREATE TABLE IF NOT EXISTS `dim_device_asset` (
-  `device_sk` varchar(1073741824) DEFAULT NULL,
-  `asset_sk` varchar(1073741824) DEFAULT NULL,
-  `device_id` varchar(1073741824) DEFAULT NULL,
-  `device_name` varchar(1073741824) DEFAULT NULL,
-  `device_label` varchar(1073741824) DEFAULT NULL,
-  `device_type` varchar(1073741824) DEFAULT NULL,
-  `device_additional_info` varchar(1073741824) DEFAULT NULL,
-  `device_data` varchar(1073741824) DEFAULT NULL,
-  `device_customer_id` varchar(1073741824) DEFAULT NULL,
-  `device_tenant_id` varchar(1073741824) DEFAULT NULL,
-  `firmware_id` varchar(1073741824) DEFAULT NULL,
-  `software_id` varchar(1073741824) DEFAULT NULL,
-  `device_external_id` varchar(1073741824) DEFAULT NULL,
-  `device_profile_name` varchar(1073741824) DEFAULT NULL,
-  `device_profile_description` varchar(1073741824) DEFAULT NULL,
-  `transport_type` varchar(1073741824) DEFAULT NULL,
-  `provision_type` varchar(1073741824) DEFAULT NULL,
+  `device_sk` varchar(1048576) DEFAULT NULL,
+  `asset_sk` varchar(1048576) DEFAULT NULL,
+  `device_id` varchar(1048576) DEFAULT NULL,
+  `device_name` varchar(1048576) DEFAULT NULL,
+  `device_label` varchar(1048576) DEFAULT NULL,
+  `device_type` varchar(1048576) DEFAULT NULL,
+  `device_additional_info` varchar(1048576) DEFAULT NULL,
+  `device_data` varchar(1048576) DEFAULT NULL,
+  `device_customer_id` varchar(1048576) DEFAULT NULL,
+  `device_tenant_id` varchar(1048576) DEFAULT NULL,
+  `firmware_id` varchar(1048576) DEFAULT NULL,
+  `software_id` varchar(1048576) DEFAULT NULL,
+  `device_external_id` varchar(1048576) DEFAULT NULL,
+  `device_profile_name` varchar(1048576) DEFAULT NULL,
+  `device_profile_description` varchar(1048576) DEFAULT NULL,
+  `transport_type` varchar(1048576) DEFAULT NULL,
+  `provision_type` varchar(1048576) DEFAULT NULL,
   `device_profile_is_default` boolean DEFAULT NULL,
   `device_created_at` datetime DEFAULT NULL,
-  `asset_id` varchar(1073741824) DEFAULT NULL,
-  `asset_name` varchar(1073741824) DEFAULT NULL,
-  `asset_label` varchar(1073741824) DEFAULT NULL,
-  `asset_type` varchar(1073741824) DEFAULT NULL,
-  `asset_additional_info` varchar(1073741824) DEFAULT NULL,
-  `asset_customer_id` varchar(1073741824) DEFAULT NULL,
-  `asset_tenant_id` varchar(1073741824) DEFAULT NULL,
-  `asset_external_id` varchar(1073741824) DEFAULT NULL,
-  `asset_profile_name` varchar(1073741824) DEFAULT NULL,
-  `asset_profile_description` varchar(1073741824) DEFAULT NULL,
+  `asset_id` varchar(1048576) DEFAULT NULL,
+  `asset_name` varchar(1048576) DEFAULT NULL,
+  `asset_label` varchar(1048576) DEFAULT NULL,
+  `asset_type` varchar(1048576) DEFAULT NULL,
+  `asset_additional_info` varchar(1048576) DEFAULT NULL,
+  `asset_customer_id` varchar(1048576) DEFAULT NULL,
+  `asset_tenant_id` varchar(1048576) DEFAULT NULL,
+  `asset_external_id` varchar(1048576) DEFAULT NULL,
+  `asset_profile_name` varchar(1048576) DEFAULT NULL,
+  `asset_profile_description` varchar(1048576) DEFAULT NULL,
   `asset_profile_is_default` boolean DEFAULT NULL,
-  `default_rule_chain_id` varchar(1073741824) DEFAULT NULL,
-  `default_dashboard_id` varchar(1073741824) DEFAULT NULL,
-  `default_queue_name` varchar(1073741824) DEFAULT NULL,
-  `default_edge_rule_chain_id` varchar(1073741824) DEFAULT NULL,
+  `default_rule_chain_id` varchar(1048576) DEFAULT NULL,
+  `default_dashboard_id` varchar(1048576) DEFAULT NULL,
+  `default_queue_name` varchar(1048576) DEFAULT NULL,
+  `default_edge_rule_chain_id` varchar(1048576) DEFAULT NULL,
   `asset_created_at` datetime DEFAULT NULL,
   `_dbt_loaded_at` datetime DEFAULT NULL
 )
-PROPERTIES ("write.format.default" = "PARQUET", "location" = "s3://sdp-dev-golden-803067574897/golden/dim_device_asset__dbt_tmp-48604e3b056747609d189f8e041aff78");
+ENGINE=OLAP
+DUPLICATE KEY(`device_sk`)
+DISTRIBUTED BY HASH(`device_sk`) BUCKETS 4
+PROPERTIES ("replication_num" = "1");
 
 -- Source object: `sdp_dev_iceberg_catalog`.`sdp_golden`.`dim_device_asset_snapshot`
 CREATE TABLE IF NOT EXISTS `dim_device_asset_snapshot` (
-  `device_asset_sk` varchar(1073741824) DEFAULT NULL,
-  `device_sk` varchar(1073741824) DEFAULT NULL,
-  `asset_sk` varchar(1073741824) DEFAULT NULL,
-  `device_id` varchar(1073741824) DEFAULT NULL,
-  `device_name` varchar(1073741824) DEFAULT NULL,
-  `device_label` varchar(1073741824) DEFAULT NULL,
-  `device_type` varchar(1073741824) DEFAULT NULL,
-  `device_additional_info` varchar(1073741824) DEFAULT NULL,
-  `device_data` varchar(1073741824) DEFAULT NULL,
-  `device_customer_id` varchar(1073741824) DEFAULT NULL,
-  `device_tenant_id` varchar(1073741824) DEFAULT NULL,
-  `firmware_id` varchar(1073741824) DEFAULT NULL,
-  `software_id` varchar(1073741824) DEFAULT NULL,
-  `device_external_id` varchar(1073741824) DEFAULT NULL,
-  `device_profile_name` varchar(1073741824) DEFAULT NULL,
-  `device_profile_description` varchar(1073741824) DEFAULT NULL,
-  `transport_type` varchar(1073741824) DEFAULT NULL,
-  `provision_type` varchar(1073741824) DEFAULT NULL,
+  `device_asset_sk` varchar(1048576) DEFAULT NULL,
+  `device_sk` varchar(1048576) DEFAULT NULL,
+  `asset_sk` varchar(1048576) DEFAULT NULL,
+  `device_id` varchar(1048576) DEFAULT NULL,
+  `device_name` varchar(1048576) DEFAULT NULL,
+  `device_label` varchar(1048576) DEFAULT NULL,
+  `device_type` varchar(1048576) DEFAULT NULL,
+  `device_additional_info` varchar(1048576) DEFAULT NULL,
+  `device_data` varchar(1048576) DEFAULT NULL,
+  `device_customer_id` varchar(1048576) DEFAULT NULL,
+  `device_tenant_id` varchar(1048576) DEFAULT NULL,
+  `firmware_id` varchar(1048576) DEFAULT NULL,
+  `software_id` varchar(1048576) DEFAULT NULL,
+  `device_external_id` varchar(1048576) DEFAULT NULL,
+  `device_profile_name` varchar(1048576) DEFAULT NULL,
+  `device_profile_description` varchar(1048576) DEFAULT NULL,
+  `transport_type` varchar(1048576) DEFAULT NULL,
+  `provision_type` varchar(1048576) DEFAULT NULL,
   `device_profile_is_default` boolean DEFAULT NULL,
   `device_created_at` datetime DEFAULT NULL,
-  `asset_id` varchar(1073741824) DEFAULT NULL,
-  `asset_name` varchar(1073741824) DEFAULT NULL,
-  `asset_label` varchar(1073741824) DEFAULT NULL,
-  `asset_type` varchar(1073741824) DEFAULT NULL,
-  `asset_additional_info` varchar(1073741824) DEFAULT NULL,
-  `asset_customer_id` varchar(1073741824) DEFAULT NULL,
-  `asset_tenant_id` varchar(1073741824) DEFAULT NULL,
-  `asset_external_id` varchar(1073741824) DEFAULT NULL,
-  `asset_profile_name` varchar(1073741824) DEFAULT NULL,
-  `asset_profile_description` varchar(1073741824) DEFAULT NULL,
+  `asset_id` varchar(1048576) DEFAULT NULL,
+  `asset_name` varchar(1048576) DEFAULT NULL,
+  `asset_label` varchar(1048576) DEFAULT NULL,
+  `asset_type` varchar(1048576) DEFAULT NULL,
+  `asset_additional_info` varchar(1048576) DEFAULT NULL,
+  `asset_customer_id` varchar(1048576) DEFAULT NULL,
+  `asset_tenant_id` varchar(1048576) DEFAULT NULL,
+  `asset_external_id` varchar(1048576) DEFAULT NULL,
+  `asset_profile_name` varchar(1048576) DEFAULT NULL,
+  `asset_profile_description` varchar(1048576) DEFAULT NULL,
   `asset_profile_is_default` boolean DEFAULT NULL,
-  `default_rule_chain_id` varchar(1073741824) DEFAULT NULL,
-  `default_dashboard_id` varchar(1073741824) DEFAULT NULL,
-  `default_queue_name` varchar(1073741824) DEFAULT NULL,
-  `default_edge_rule_chain_id` varchar(1073741824) DEFAULT NULL,
+  `default_rule_chain_id` varchar(1048576) DEFAULT NULL,
+  `default_dashboard_id` varchar(1048576) DEFAULT NULL,
+  `default_queue_name` varchar(1048576) DEFAULT NULL,
+  `default_edge_rule_chain_id` varchar(1048576) DEFAULT NULL,
   `asset_created_at` datetime DEFAULT NULL,
   `_dbt_loaded_at` datetime DEFAULT NULL,
-  `dbt_scd_id` varchar(1073741824) DEFAULT NULL,
+  `dbt_scd_id` varchar(1048576) DEFAULT NULL,
   `dbt_updated_at` datetime DEFAULT NULL,
   `dbt_valid_from` datetime DEFAULT NULL,
   `dbt_valid_to` datetime DEFAULT NULL
 )
-PROPERTIES ("write.format.default" = "PARQUET", "location" = "s3://sdp-dev-golden-803067574897/golden/dim_device_asset_snapshot-9cd4bd60b44948ef9af95a6f6d00dbd8");
+ENGINE=OLAP
+DUPLICATE KEY(`device_asset_sk`)
+DISTRIBUTED BY HASH(`device_asset_sk`) BUCKETS 4
+PROPERTIES ("replication_num" = "1");
 
 -- Source object: `sdp_dev_iceberg_catalog`.`sdp_golden`.`dim_device_profile`
 CREATE TABLE IF NOT EXISTS `dim_device_profile` (
-  `device_profile_sk` varchar(1073741824) DEFAULT NULL,
-  `device_profile_id` varchar(1073741824) DEFAULT NULL,
-  `device_profile_name` varchar(1073741824) DEFAULT NULL,
-  `profile_type` varchar(1073741824) DEFAULT NULL,
-  `transport_type` varchar(1073741824) DEFAULT NULL,
-  `provision_type` varchar(1073741824) DEFAULT NULL,
-  `profile_data` varchar(1073741824) DEFAULT NULL,
-  `device_profile_description` varchar(1073741824) DEFAULT NULL,
+  `device_profile_sk` varchar(1048576) DEFAULT NULL,
+  `device_profile_id` varchar(1048576) DEFAULT NULL,
+  `device_profile_name` varchar(1048576) DEFAULT NULL,
+  `profile_type` varchar(1048576) DEFAULT NULL,
+  `transport_type` varchar(1048576) DEFAULT NULL,
+  `provision_type` varchar(1048576) DEFAULT NULL,
+  `profile_data` varchar(1048576) DEFAULT NULL,
+  `device_profile_description` varchar(1048576) DEFAULT NULL,
   `is_default` boolean DEFAULT NULL,
-  `tenant_id` varchar(1073741824) DEFAULT NULL,
-  `firmware_id` varchar(1073741824) DEFAULT NULL,
-  `software_id` varchar(1073741824) DEFAULT NULL,
-  `default_rule_chain_id` varchar(1073741824) DEFAULT NULL,
-  `default_dashboard_id` varchar(1073741824) DEFAULT NULL,
-  `default_queue_name` varchar(1073741824) DEFAULT NULL,
-  `default_edge_rule_chain_id` varchar(1073741824) DEFAULT NULL,
-  `provision_device_key` varchar(1073741824) DEFAULT NULL,
-  `image` varchar(1073741824) DEFAULT NULL,
+  `tenant_id` varchar(1048576) DEFAULT NULL,
+  `firmware_id` varchar(1048576) DEFAULT NULL,
+  `software_id` varchar(1048576) DEFAULT NULL,
+  `default_rule_chain_id` varchar(1048576) DEFAULT NULL,
+  `default_dashboard_id` varchar(1048576) DEFAULT NULL,
+  `default_queue_name` varchar(1048576) DEFAULT NULL,
+  `default_edge_rule_chain_id` varchar(1048576) DEFAULT NULL,
+  `provision_device_key` varchar(1048576) DEFAULT NULL,
+  `image` varchar(1048576) DEFAULT NULL,
   `created_at` datetime DEFAULT NULL,
   `_dbt_loaded_at` datetime DEFAULT NULL
 )
-PROPERTIES ("write.format.default" = "PARQUET", "location" = "s3://sdp-dev-golden-803067574897/golden/dim_device_profile__dbt_tmp-46764c76617641ad9f28ed16ac2ea370");
+ENGINE=OLAP
+DUPLICATE KEY(`device_profile_sk`)
+DISTRIBUTED BY HASH(`device_profile_sk`) BUCKETS 4
+PROPERTIES ("replication_num" = "1");
 
 -- Source object: `sdp_dev_iceberg_catalog`.`sdp_golden`.`dim_parking_lot`
 CREATE TABLE IF NOT EXISTS `dim_parking_lot` (
-  `pk_lot_id` varchar(1073741824) DEFAULT NULL,
-  `pk_lot_name` varchar(1073741824) DEFAULT NULL,
-  `area_id` varchar(1073741824) DEFAULT NULL
+  `pk_lot_id` varchar(1048576) DEFAULT NULL,
+  `pk_lot_name` varchar(1048576) DEFAULT NULL,
+  `area_id` varchar(1048576) DEFAULT NULL
 )
-PROPERTIES ("write.format.default" = "PARQUET", "location" = "s3://sdp-dev-golden-803067574897/golden/dim_parking_lot__dbt_tmp-467c7890681e45ddb8c4aa010be9ae61");
+ENGINE=OLAP
+DUPLICATE KEY(`pk_lot_id`)
+DISTRIBUTED BY HASH(`pk_lot_id`) BUCKETS 4
+PROPERTIES ("replication_num" = "1");
 
 -- Source object: `sdp_dev_iceberg_catalog`.`sdp_golden`.`dim_parking_lot_snapshot`
 CREATE TABLE IF NOT EXISTS `dim_parking_lot_snapshot` (
-  `pk_lot_id` varchar(1073741824) DEFAULT NULL,
-  `pk_lot_name` varchar(1073741824) DEFAULT NULL,
-  `area_id` varchar(1073741824) DEFAULT NULL,
-  `dbt_scd_id` varchar(1073741824) DEFAULT NULL,
+  `pk_lot_id` varchar(1048576) DEFAULT NULL,
+  `pk_lot_name` varchar(1048576) DEFAULT NULL,
+  `area_id` varchar(1048576) DEFAULT NULL,
+  `dbt_scd_id` varchar(1048576) DEFAULT NULL,
   `dbt_updated_at` datetime DEFAULT NULL,
   `dbt_valid_from` datetime DEFAULT NULL,
   `dbt_valid_to` datetime DEFAULT NULL
 )
-PROPERTIES ("write.format.default" = "PARQUET", "location" = "s3://sdp-dev-golden-803067574897/golden/dim_parking_lot_snapshot-ef6912f511194aa2b0d53acd3e20ad9b");
+ENGINE=OLAP
+DUPLICATE KEY(`pk_lot_id`)
+DISTRIBUTED BY HASH(`pk_lot_id`) BUCKETS 4
+PROPERTIES ("replication_num" = "1");
 
 -- Source object: `sdp_dev_iceberg_catalog`.`sdp_golden`.`dim_time`
 CREATE TABLE IF NOT EXISTS `dim_time` (
@@ -700,51 +749,57 @@ CREATE TABLE IF NOT EXISTS `dim_time` (
   `time_of_day` TIME DEFAULT NULL,
   `hour` int(11) DEFAULT NULL,
   `minute` int(11) DEFAULT NULL,
-  `time_label` varchar(1073741824) DEFAULT NULL,
-  `hour_label` varchar(1073741824) DEFAULT NULL,
-  `period` varchar(1073741824) DEFAULT NULL,
-  `time_of_day_label` varchar(1073741824) DEFAULT NULL,
+  `time_label` varchar(1048576) DEFAULT NULL,
+  `hour_label` varchar(1048576) DEFAULT NULL,
+  `period` varchar(1048576) DEFAULT NULL,
+  `time_of_day_label` varchar(1048576) DEFAULT NULL,
   `minutes_since_midnight` int(11) DEFAULT NULL
 )
-PROPERTIES ("write.format.default" = "PARQUET", "location" = "s3://sdp-dev-golden-803067574897/golden/dim_time__dbt_tmp-fbd542a992b74ef9902179bfa0e0f189");
+ENGINE=OLAP
+DUPLICATE KEY(`time_key`)
+DISTRIBUTED BY HASH(`time_key`) BUCKETS 4
+PROPERTIES ("replication_num" = "1");
 
 -- Source object: `sdp_dev_iceberg_catalog`.`sdp_golden`.`fct_device_asset_assignment`
 CREATE TABLE IF NOT EXISTS `fct_device_asset_assignment` (
-  `device_sk` varchar(1073741824) DEFAULT NULL,
-  `asset_sk` varchar(1073741824) DEFAULT NULL,
-  `device_id` varchar(1073741824) DEFAULT NULL,
-  `device_tenant_id` varchar(1073741824) DEFAULT NULL,
-  `asset_id` varchar(1073741824) DEFAULT NULL,
-  `asset_tenant_id` varchar(1073741824) DEFAULT NULL,
-  `relation_type_group` varchar(1073741824) DEFAULT NULL,
-  `relation_type` varchar(1073741824) DEFAULT NULL,
-  `relation_additional_info` varchar(1073741824) DEFAULT NULL,
+  `device_sk` varchar(1048576) DEFAULT NULL,
+  `asset_sk` varchar(1048576) DEFAULT NULL,
+  `device_id` varchar(1048576) DEFAULT NULL,
+  `device_tenant_id` varchar(1048576) DEFAULT NULL,
+  `asset_id` varchar(1048576) DEFAULT NULL,
+  `asset_tenant_id` varchar(1048576) DEFAULT NULL,
+  `relation_type_group` varchar(1048576) DEFAULT NULL,
+  `relation_type` varchar(1048576) DEFAULT NULL,
+  `relation_additional_info` varchar(1048576) DEFAULT NULL,
   `relation_version` bigint(20) DEFAULT NULL,
   `_dbt_loaded_at` datetime DEFAULT NULL
 )
-PROPERTIES ("write.format.default" = "PARQUET", "location" = "s3://sdp-dev-golden-803067574897/golden/fct_device_asset_assignment__dbt_tmp-e11394a343df47b98f475f0e89271fd1");
+ENGINE=OLAP
+DUPLICATE KEY(`device_sk`)
+DISTRIBUTED BY HASH(`device_sk`) BUCKETS 4
+PROPERTIES ("replication_num" = "1");
 
 -- Source object: `sdp_dev_iceberg_catalog`.`sdp_golden`.`fct_vehicle_events`
 CREATE TABLE IF NOT EXISTS `fct_vehicle_events` (
-  `event_id` varchar(1073741824) DEFAULT NULL,
+  `event_id` varchar(1048576) DEFAULT NULL,
   `check_in_at` datetime DEFAULT NULL,
   `check_out_at` datetime DEFAULT NULL,
   `event_date` date DEFAULT NULL,
   `check_in_timestamp` datetime DEFAULT NULL,
   `check_out_timestamp` datetime DEFAULT NULL,
-  `parking_lot_id` varchar(1073741824) DEFAULT NULL,
-  `vehicle_type` varchar(1073741824) DEFAULT NULL,
-  `direction_type` varchar(1073741824) DEFAULT NULL,
-  `history_state` varchar(1073741824) DEFAULT NULL,
-  `payment_type` varchar(1073741824) DEFAULT NULL,
-  `lpn` varchar(1073741824) DEFAULT NULL,
-  `lpn_cmp` varchar(1073741824) DEFAULT NULL,
-  `service_id` varchar(1073741824) DEFAULT NULL,
-  `service_name` varchar(1073741824) DEFAULT NULL,
-  `service_category` varchar(1073741824) DEFAULT NULL,
-  `owner_customer_id` varchar(1073741824) DEFAULT NULL,
-  `card_number` varchar(1073741824) DEFAULT NULL,
-  `use_voucher` varchar(1073741824) DEFAULT NULL,
+  `parking_lot_id` varchar(1048576) DEFAULT NULL,
+  `vehicle_type` varchar(1048576) DEFAULT NULL,
+  `direction_type` varchar(1048576) DEFAULT NULL,
+  `history_state` varchar(1048576) DEFAULT NULL,
+  `payment_type` varchar(1048576) DEFAULT NULL,
+  `lpn` varchar(1048576) DEFAULT NULL,
+  `lpn_cmp` varchar(1048576) DEFAULT NULL,
+  `service_id` varchar(1048576) DEFAULT NULL,
+  `service_name` varchar(1048576) DEFAULT NULL,
+  `service_category` varchar(1048576) DEFAULT NULL,
+  `owner_customer_id` varchar(1048576) DEFAULT NULL,
+  `card_number` varchar(1048576) DEFAULT NULL,
+  `use_voucher` varchar(1048576) DEFAULT NULL,
   `wallet_balance_before` double DEFAULT NULL,
   `wallet_balance_after` double DEFAULT NULL,
   `total_topup` double DEFAULT NULL,
@@ -756,16 +811,16 @@ CREATE TABLE IF NOT EXISTS `fct_vehicle_events` (
   `amount_due` double DEFAULT NULL,
   `used_change` double DEFAULT NULL,
   `park_duration_ms` bigint(20) DEFAULT NULL,
-  `org_unit_code` varchar(1073741824) DEFAULT NULL,
-  `org_unit_name` varchar(1073741824) DEFAULT NULL,
-  `checkin_customer_id` varchar(1073741824) DEFAULT NULL,
-  `checkout_customer_id` varchar(1073741824) DEFAULT NULL,
-  `entry_point_in_name` varchar(1073741824) DEFAULT NULL,
-  `lane_in_name` varchar(1073741824) DEFAULT NULL,
-  `entry_point_out_name` varchar(1073741824) DEFAULT NULL,
-  `lane_out_name` varchar(1073741824) DEFAULT NULL,
-  `open_mode_in` varchar(1073741824) DEFAULT NULL,raw_dmp_tlm_raw
-  `open_mode_out` varchar(1073741824) DEFAULT NULL,
+  `org_unit_code` varchar(1048576) DEFAULT NULL,
+  `org_unit_name` varchar(1048576) DEFAULT NULL,
+  `checkin_customer_id` varchar(1048576) DEFAULT NULL,
+  `checkout_customer_id` varchar(1048576) DEFAULT NULL,
+  `entry_point_in_name` varchar(1048576) DEFAULT NULL,
+  `lane_in_name` varchar(1048576) DEFAULT NULL,
+  `entry_point_out_name` varchar(1048576) DEFAULT NULL,
+  `lane_out_name` varchar(1048576) DEFAULT NULL,
+  `open_mode_in` varchar(1048576) DEFAULT NULL,raw_dmp_tlm_raw
+  `open_mode_out` varchar(1048576) DEFAULT NULL,
   `check_in_date_key` int(11) DEFAULT NULL,
   `check_in_time_key` TIME DEFAULT NULL,
   `check_out_date_key` int(11) DEFAULT NULL,
@@ -774,15 +829,17 @@ CREATE TABLE IF NOT EXISTS `fct_vehicle_events` (
   `last_modified_at` datetime DEFAULT NULL,
   `_dbt_loaded_at` datetime DEFAULT NULL
 )
-PARTITION BY (event_date)
-PROPERTIES ("write.format.default" = "PARQUET", "location" = "s3://sdp-dev-golden-803067574897/golden/fct_vehicle_events__dbt_tmp-0ebfeaf62cf641bd8ea913994703af14");
+ENGINE=OLAP
+DUPLICATE KEY(`event_id`)
+DISTRIBUTED BY HASH(`event_id`) BUCKETS 4
+PROPERTIES ("replication_num" = "1");
 
 USE `sdp_mart`;
 
 -- Source object: `sdp_dev_iceberg_catalog`.`sdp_mart`.`fct_parking_occupancy`
 CREATE TABLE IF NOT EXISTS `fct_parking_occupancy` (
-  `parking_lot_id` varchar(1073741824) DEFAULT NULL,
-  `vehicle_type` varchar(1073741824) DEFAULT NULL,
+  `parking_lot_id` varchar(1048576) DEFAULT NULL,
+  `vehicle_type` varchar(1048576) DEFAULT NULL,
   `occupancy_hour` datetime DEFAULT NULL,
   `occupancy_date` date DEFAULT NULL,
   `occupancy_date_key` int(11) DEFAULT NULL,
@@ -792,8 +849,10 @@ CREATE TABLE IF NOT EXISTS `fct_parking_occupancy` (
   `current_occupancy` bigint(20) DEFAULT NULL,
   `_dbt_loaded_at` datetime DEFAULT NULL
 )
-PARTITION BY (occupancy_date)
-PROPERTIES ("write.format.default" = "PARQUET", "location" = "s3://sdp-dev-mart-803067574897/mart/fct_parking_occupancy__dbt_tmp-c2f02e1f68e24f3fa65f5f34e5f48cfd");
+ENGINE=OLAP
+DUPLICATE KEY(`parking_lot_id`)
+DISTRIBUTED BY HASH(`parking_lot_id`) BUCKETS 4
+PROPERTIES ("replication_num" = "1");
 
 USE `sdp_near_realtime`;
 
