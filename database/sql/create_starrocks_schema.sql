@@ -1,4 +1,4 @@
-﻿-- Auto-generated StarRocks local/fake-data init SQL from database/docs/starrock_schema.json
+-- Auto-generated StarRocks local/fake-data init SQL from database/docs/starrock_schema.json
 -- External raw tables are converted to internal OLAP tables so local CSV Stream Load can import data.
 -- Relationship section is documentation only; StarRocks does not enforce these FK mappings here.
 
