@@ -1,0 +1,1689 @@
+﻿docker : 2026-06-10T06:58:30.260Z	INFO	ForkJoinPool.commonPool-worker-3	com.zaxxer.hikari.HikariDataSource	DUCKDB_POOL 
+- Shutdown initiated...
+At line:2 char:1
++ docker logs --since 20m wrenai-wren-engine-1 2>&1 | Out-File -Encodin ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (2026-06-10T06:5...wn initiated...:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+2026-06-10T06:58:30.354Z	INFO	ForkJoinPool.commonPool-worker-3	com.zaxxer.hikari.HikariDataSource	DUCKDB_POOL - 
+Shutdown completed.
+2026-06-10T06:58:30.876Z	INFO	ForkJoinPool.commonPool-worker-3	io.wren.base.client.duckdb.DuckdbClient	Append session 
+SQL to connection init SQL
+2026-06-10T06:58:30.891Z	INFO	ForkJoinPool.commonPool-worker-3	com.zaxxer.hikari.HikariDataSource	DUCKDB_POOL - 
+Starting...
+2026-06-10T06:58:30.900Z	INFO	ForkJoinPool.commonPool-worker-3	com.zaxxer.hikari.pool.PoolBase	DUCKDB_POOL - Driver 
+does not support get/set network timeout for connections. (getNetworkTimeout)
+2026-06-10T06:58:30.906Z	INFO	ForkJoinPool.commonPool-worker-3	com.zaxxer.hikari.pool.HikariPool	DUCKDB_POOL - Added 
+connection org.duckdb.DuckDBConnection@4af59932
+2026-06-10T06:58:30.914Z	INFO	ForkJoinPool.commonPool-worker-3	com.zaxxer.hikari.HikariDataSource	DUCKDB_POOL - Start 
+completed.
+2026-06-10T06:58:30.915Z	INFO	ForkJoinPool.commonPool-worker-3	io.wren.base.client.duckdb.DuckdbClient	Initialize by 
+init SQL
+2026-06-10T06:58:50.749Z	INFO	ForkJoinPool.commonPool-worker-3	com.zaxxer.hikari.HikariDataSource	DUCKDB_POOL - 
+Shutdown initiated...
+2026-06-10T06:58:50.754Z	INFO	ForkJoinPool.commonPool-worker-3	com.zaxxer.hikari.HikariDataSource	DUCKDB_POOL - 
+Shutdown completed.
+2026-06-10T06:58:50.755Z	INFO	ForkJoinPool.commonPool-worker-3	io.wren.base.client.duckdb.DuckdbClient	Append session 
+SQL to connection init SQL
+2026-06-10T06:58:50.755Z	INFO	ForkJoinPool.commonPool-worker-3	com.zaxxer.hikari.HikariDataSource	DUCKDB_POOL - 
+Starting...
+2026-06-10T06:58:50.756Z	INFO	ForkJoinPool.commonPool-worker-3	com.zaxxer.hikari.pool.PoolBase	DUCKDB_POOL - Driver 
+does not support get/set network timeout for connections. (getNetworkTimeout)
+2026-06-10T06:58:50.758Z	INFO	ForkJoinPool.commonPool-worker-3	com.zaxxer.hikari.pool.HikariPool	DUCKDB_POOL - Added 
+connection org.duckdb.DuckDBConnection@43ab3beb
+2026-06-10T06:58:50.759Z	INFO	ForkJoinPool.commonPool-worker-3	com.zaxxer.hikari.HikariDataSource	DUCKDB_POOL - Start 
+completed.
+2026-06-10T06:58:51.023Z	INFO	ForkJoinPool.commonPool-worker-3	io.wren.base.config.ConfigManager	Archiving config 
+file: etc/archived
+2026-06-10T06:58:51.032Z	INFO	ForkJoinPool.commonPool-worker-3	io.wren.base.config.ConfigManager	Syncing config file: 
+etc/config.properties
+2026-06-10T07:04:54.480Z	WARN	pool-1-thread-3	io.wren.main.web.WrenExceptionMapper	Exception, type: class 
+java.util.concurrent.CompletionException, message: java.lang.NullPointerException: Cannot invoke "String.length()" 
+because "s" is null
+java.util.concurrent.CompletionException: java.lang.NullPointerException: Cannot invoke "String.length()" because "s" 
+is null
+	at java.base/java.util.concurrent.CompletableFuture.encodeThrowable(CompletableFuture.java:315)
+	at java.base/java.util.concurrent.CompletableFuture.completeThrowable(CompletableFuture.java:320)
+	at java.base/java.util.concurrent.CompletableFuture$AsyncSupply.run(CompletableFuture.java:1770)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+Caused by: java.lang.NullPointerException: Cannot invoke "String.length()" because "s" is null
+	at org.antlr.v4.runtime.CharStreams.fromString(CharStreams.java:222)
+	at org.antlr.v4.runtime.CharStreams.fromString(CharStreams.java:212)
+	at io.trino.sql.parser.SqlParser.invokeParser(SqlParser.java:111)
+	at io.trino.sql.parser.SqlParser.createStatement(SqlParser.java:85)
+	at io.wren.base.sqlrewrite.Utils.parseSql(Utils.java:63)
+	at io.wren.base.sqlrewrite.WrenPlanner.rewrite(WrenPlanner.java:48)
+	at io.wren.base.sqlrewrite.WrenPlanner.rewrite(WrenPlanner.java:43)
+	at io.wren.main.PreviewService.lambda$preview$0(PreviewService.java:85)
+	at java.base/java.util.concurrent.CompletableFuture$AsyncSupply.run(CompletableFuture.java:1768)
+	... 3 more
+
+
+2026-06-10T07:04:55.568Z	INFO	pool-1-thread-2	io.wren.main.connector.duckdb.DuckDBSqlConverter	[Input sql]: WITH
+  "olist_customers_dataset" AS (
+   SELECT
+     "olist_customers_dataset"."customer_id" "customer_id"
+   , "olist_customers_dataset"."customer_unique_id" "customer_unique_id"
+   , "olist_customers_dataset"."customer_zip_code_prefix" "customer_zip_code_prefix"
+   , "olist_customers_dataset"."customer_city" "customer_city"
+   , "olist_customers_dataset"."customer_state" "customer_state"
+   FROM
+     (
+      SELECT
+        "olist_customers_dataset"."customer_id" "customer_id"
+      , "olist_customers_dataset"."customer_unique_id" "customer_unique_id"
+      , "olist_customers_dataset"."customer_zip_code_prefix" "customer_zip_code_prefix"
+      , "olist_customers_dataset"."customer_city" "customer_city"
+      , "olist_customers_dataset"."customer_state" "customer_state"
+      FROM
+        (
+         SELECT
+           "customer_id" "customer_id"
+         , "customer_unique_id" "customer_unique_id"
+         , "customer_zip_code_prefix" "customer_zip_code_prefix"
+         , "customer_city" "customer_city"
+         , "customer_state" "customer_state"
+         FROM
+           "memory"."main"."olist_customers_dataset" "olist_customers_dataset"
+      )  "olist_customers_dataset"
+   )  "olist_customers_dataset"
+) 
+, "olist_orders_dataset" AS (
+   SELECT
+     "olist_orders_dataset"."order_id" "order_id"
+   , "olist_orders_dataset"."customer_id" "customer_id"
+   , "olist_orders_dataset"."order_status" "order_status"
+   , "olist_orders_dataset"."order_purchase_timestamp" "order_purchase_timestamp"
+   , "olist_orders_dataset"."order_approved_at" "order_approved_at"
+   , "olist_orders_dataset"."order_delivered_carrier_date" "order_delivered_carrier_date"
+   , "olist_orders_dataset"."order_delivered_customer_date" "order_delivered_customer_date"
+   , "olist_orders_dataset"."order_estimated_delivery_date" "order_estimated_delivery_date"
+   FROM
+     (
+      SELECT
+        "olist_orders_dataset"."order_id" "order_id"
+      , "olist_orders_dataset"."customer_id" "customer_id"
+      , "olist_orders_dataset"."order_status" "order_status"
+      , "olist_orders_dataset"."order_purchase_timestamp" "order_purchase_timestamp"
+      , "olist_orders_dataset"."order_approved_at" "order_approved_at"
+      , "olist_orders_dataset"."order_delivered_carrier_date" "order_delivered_carrier_date"
+      , "olist_orders_dataset"."order_delivered_customer_date" "order_delivered_customer_date"
+      , "olist_orders_dataset"."order_estimated_delivery_date" "order_estimated_delivery_date"
+      FROM
+        (
+         SELECT
+           "order_id" "order_id"
+         , "customer_id" "customer_id"
+         , "order_status" "order_status"
+         , "order_purchase_timestamp" "order_purchase_timestamp"
+         , "order_approved_at" "order_approved_at"
+         , "order_delivered_carrier_date" "order_delivered_carrier_date"
+         , "order_delivered_customer_date" "order_delivered_customer_date"
+         , "order_estimated_delivery_date" "order_estimated_delivery_date"
+         FROM
+           "memory"."main"."olist_orders_dataset" "olist_orders_dataset"
+      )  "olist_orders_dataset"
+   )  "olist_orders_dataset"
+) 
+, CityOrderCounts AS (
+   SELECT
+     c.customer_city city
+   , COUNT(o.order_id) order_count
+   , DENSE_RANK() OVER (ORDER BY COUNT(o.order_id) DESC NULLS LAST) rank
+   FROM
+     olist_orders_dataset o
+   INNER JOIN olist_customers_dataset c ON (o.customer_id = c.customer_id)
+   GROUP BY c.customer_city
+) 
+SELECT
+  city
+, order_count
+, rank
+FROM
+  CityOrderCounts
+WHERE (rank <= 3)
+
+2026-06-10T07:04:55.602Z	INFO	pool-1-thread-2	io.wren.main.connector.duckdb.DuckDBSqlConverter	[Dialect sql]: WITH
+  "olist_customers_dataset" AS (
+   SELECT
+     "olist_customers_dataset"."customer_id" "customer_id"
+   , "olist_customers_dataset"."customer_unique_id" "customer_unique_id"
+   , "olist_customers_dataset"."customer_zip_code_prefix" "customer_zip_code_prefix"
+   , "olist_customers_dataset"."customer_city" "customer_city"
+   , "olist_customers_dataset"."customer_state" "customer_state"
+   FROM
+     (
+      SELECT
+        "olist_customers_dataset"."customer_id" "customer_id"
+      , "olist_customers_dataset"."customer_unique_id" "customer_unique_id"
+      , "olist_customers_dataset"."customer_zip_code_prefix" "customer_zip_code_prefix"
+      , "olist_customers_dataset"."customer_city" "customer_city"
+      , "olist_customers_dataset"."customer_state" "customer_state"
+      FROM
+        (
+         SELECT
+           "customer_id" "customer_id"
+         , "customer_unique_id" "customer_unique_id"
+         , "customer_zip_code_prefix" "customer_zip_code_prefix"
+         , "customer_city" "customer_city"
+         , "customer_state" "customer_state"
+         FROM
+           "memory"."main"."olist_customers_dataset" "olist_customers_dataset"
+      )  "olist_customers_dataset"
+   )  "olist_customers_dataset"
+) 
+, "olist_orders_dataset" AS (
+   SELECT
+     "olist_orders_dataset"."order_id" "order_id"
+   , "olist_orders_dataset"."customer_id" "customer_id"
+   , "olist_orders_dataset"."order_status" "order_status"
+   , "olist_orders_dataset"."order_purchase_timestamp" "order_purchase_timestamp"
+   , "olist_orders_dataset"."order_approved_at" "order_approved_at"
+   , "olist_orders_dataset"."order_delivered_carrier_date" "order_delivered_carrier_date"
+   , "olist_orders_dataset"."order_delivered_customer_date" "order_delivered_customer_date"
+   , "olist_orders_dataset"."order_estimated_delivery_date" "order_estimated_delivery_date"
+   FROM
+     (
+      SELECT
+        "olist_orders_dataset"."order_id" "order_id"
+      , "olist_orders_dataset"."customer_id" "customer_id"
+      , "olist_orders_dataset"."order_status" "order_status"
+      , "olist_orders_dataset"."order_purchase_timestamp" "order_purchase_timestamp"
+      , "olist_orders_dataset"."order_approved_at" "order_approved_at"
+      , "olist_orders_dataset"."order_delivered_carrier_date" "order_delivered_carrier_date"
+      , "olist_orders_dataset"."order_delivered_customer_date" "order_delivered_customer_date"
+      , "olist_orders_dataset"."order_estimated_delivery_date" "order_estimated_delivery_date"
+      FROM
+        (
+         SELECT
+           "order_id" "order_id"
+         , "customer_id" "customer_id"
+         , "order_status" "order_status"
+         , "order_purchase_timestamp" "order_purchase_timestamp"
+         , "order_approved_at" "order_approved_at"
+         , "order_delivered_carrier_date" "order_delivered_carrier_date"
+         , "order_delivered_customer_date" "order_delivered_customer_date"
+         , "order_estimated_delivery_date" "order_estimated_delivery_date"
+         FROM
+           "memory"."main"."olist_orders_dataset" "olist_orders_dataset"
+      )  "olist_orders_dataset"
+   )  "olist_orders_dataset"
+) 
+, CityOrderCounts AS (
+   SELECT
+     c.customer_city city
+   , count(o.order_id) order_count
+   , dense_rank() OVER (ORDER BY COUNT(o.order_id) DESC NULLS LAST) rank
+   FROM
+     olist_orders_dataset o
+   INNER JOIN olist_customers_dataset c ON (o.customer_id = c.customer_id)
+   GROUP BY c.customer_city
+) 
+SELECT
+  city
+, order_count
+, rank
+FROM
+  CityOrderCounts
+WHERE (rank <= 3)
+
+2026-06-10T07:04:56.363Z	INFO	pool-1-thread-5	io.wren.main.connector.duckdb.DuckDBSqlConverter	[Input sql]: WITH
+  "olist_customers_dataset" AS (
+   SELECT
+     "olist_customers_dataset"."customer_id" "customer_id"
+   , "olist_customers_dataset"."customer_unique_id" "customer_unique_id"
+   , "olist_customers_dataset"."customer_zip_code_prefix" "customer_zip_code_prefix"
+   , "olist_customers_dataset"."customer_city" "customer_city"
+   , "olist_customers_dataset"."customer_state" "customer_state"
+   FROM
+     (
+      SELECT
+        "olist_customers_dataset"."customer_id" "customer_id"
+      , "olist_customers_dataset"."customer_unique_id" "customer_unique_id"
+      , "olist_customers_dataset"."customer_zip_code_prefix" "customer_zip_code_prefix"
+      , "olist_customers_dataset"."customer_city" "customer_city"
+      , "olist_customers_dataset"."customer_state" "customer_state"
+      FROM
+        (
+         SELECT
+           "customer_id" "customer_id"
+         , "customer_unique_id" "customer_unique_id"
+         , "customer_zip_code_prefix" "customer_zip_code_prefix"
+         , "customer_city" "customer_city"
+         , "customer_state" "customer_state"
+         FROM
+           "memory"."main"."olist_customers_dataset" "olist_customers_dataset"
+      )  "olist_customers_dataset"
+   )  "olist_customers_dataset"
+) 
+, "olist_order_reviews_dataset" AS (
+   SELECT
+     "olist_order_reviews_dataset"."review_id" "review_id"
+   , "olist_order_reviews_dataset"."order_id" "order_id"
+   , "olist_order_reviews_dataset"."review_score" "review_score"
+   , "olist_order_reviews_dataset"."review_comment_title" "review_comment_title"
+   , "olist_order_reviews_dataset"."review_comment_message" "review_comment_message"
+   , "olist_order_reviews_dataset"."review_creation_date" "review_creation_date"
+   , "olist_order_reviews_dataset"."review_answer_timestamp" "review_answer_timestamp"
+   FROM
+     (
+      SELECT
+        "olist_order_reviews_dataset"."review_id" "review_id"
+      , "olist_order_reviews_dataset"."order_id" "order_id"
+      , "olist_order_reviews_dataset"."review_score" "review_score"
+      , "olist_order_reviews_dataset"."review_comment_title" "review_comment_title"
+      , "olist_order_reviews_dataset"."review_comment_message" "review_comment_message"
+      , "olist_order_reviews_dataset"."review_creation_date" "review_creation_date"
+      , "olist_order_reviews_dataset"."review_answer_timestamp" "review_answer_timestamp"
+      FROM
+        (
+         SELECT
+           "review_id" "review_id"
+         , "order_id" "order_id"
+         , "review_score" "review_score"
+         , "review_comment_title" "review_comment_title"
+         , "review_comment_message" "review_comment_message"
+         , "review_creation_date" "review_creation_date"
+         , "review_answer_timestamp" "review_answer_timestamp"
+         FROM
+           "memory"."main"."olist_order_reviews_dataset" "olist_order_reviews_dataset"
+      )  "olist_order_reviews_dataset"
+   )  "olist_order_reviews_dataset"
+) 
+, "olist_orders_dataset" AS (
+   SELECT
+     "olist_orders_dataset"."order_id" "order_id"
+   , "olist_orders_dataset"."customer_id" "customer_id"
+   , "olist_orders_dataset"."order_status" "order_status"
+   , "olist_orders_dataset"."order_purchase_timestamp" "order_purchase_timestamp"
+   , "olist_orders_dataset"."order_approved_at" "order_approved_at"
+   , "olist_orders_dataset"."order_delivered_carrier_date" "order_delivered_carrier_date"
+   , "olist_orders_dataset"."order_delivered_customer_date" "order_delivered_customer_date"
+   , "olist_orders_dataset"."order_estimated_delivery_date" "order_estimated_delivery_date"
+   FROM
+     (
+      SELECT
+        "olist_orders_dataset"."order_id" "order_id"
+      , "olist_orders_dataset"."customer_id" "customer_id"
+      , "olist_orders_dataset"."order_status" "order_status"
+      , "olist_orders_dataset"."order_purchase_timestamp" "order_purchase_timestamp"
+      , "olist_orders_dataset"."order_approved_at" "order_approved_at"
+      , "olist_orders_dataset"."order_delivered_carrier_date" "order_delivered_carrier_date"
+      , "olist_orders_dataset"."order_delivered_customer_date" "order_delivered_customer_date"
+      , "olist_orders_dataset"."order_estimated_delivery_date" "order_estimated_delivery_date"
+      FROM
+        (
+         SELECT
+           "order_id" "order_id"
+         , "customer_id" "customer_id"
+         , "order_status" "order_status"
+         , "order_purchase_timestamp" "order_purchase_timestamp"
+         , "order_approved_at" "order_approved_at"
+         , "order_delivered_carrier_date" "order_delivered_carrier_date"
+         , "order_delivered_customer_date" "order_delivered_customer_date"
+         , "order_estimated_delivery_date" "order_estimated_delivery_date"
+         FROM
+           "memory"."main"."olist_orders_dataset" "olist_orders_dataset"
+      )  "olist_orders_dataset"
+   )  "olist_orders_dataset"
+) 
+SELECT
+  c.customer_id
+, c.customer_city
+, c.customer_state
+, AVG(r.review_score) average_review_score
+FROM
+  olist_customers_dataset c
+INNER JOIN olist_orders_dataset o ON (c.customer_id = o.customer_id)
+INNER JOIN olist_order_reviews_dataset r ON (o.order_id = r.order_id)
+GROUP BY c.customer_id, c.customer_city, c.customer_state
+HAVING (AVG(r.review_score) >= 4)
+ORDER BY average_review_score DESC NULLS LAST
+
+2026-06-10T07:04:56.377Z	INFO	pool-1-thread-5	io.wren.main.connector.duckdb.DuckDBSqlConverter	[Dialect sql]: WITH
+  "olist_customers_dataset" AS (
+   SELECT
+     "olist_customers_dataset"."customer_id" "customer_id"
+   , "olist_customers_dataset"."customer_unique_id" "customer_unique_id"
+   , "olist_customers_dataset"."customer_zip_code_prefix" "customer_zip_code_prefix"
+   , "olist_customers_dataset"."customer_city" "customer_city"
+   , "olist_customers_dataset"."customer_state" "customer_state"
+   FROM
+     (
+      SELECT
+        "olist_customers_dataset"."customer_id" "customer_id"
+      , "olist_customers_dataset"."customer_unique_id" "customer_unique_id"
+      , "olist_customers_dataset"."customer_zip_code_prefix" "customer_zip_code_prefix"
+      , "olist_customers_dataset"."customer_city" "customer_city"
+      , "olist_customers_dataset"."customer_state" "customer_state"
+      FROM
+        (
+         SELECT
+           "customer_id" "customer_id"
+         , "customer_unique_id" "customer_unique_id"
+         , "customer_zip_code_prefix" "customer_zip_code_prefix"
+         , "customer_city" "customer_city"
+         , "customer_state" "customer_state"
+         FROM
+           "memory"."main"."olist_customers_dataset" "olist_customers_dataset"
+      )  "olist_customers_dataset"
+   )  "olist_customers_dataset"
+) 
+, "olist_order_reviews_dataset" AS (
+   SELECT
+     "olist_order_reviews_dataset"."review_id" "review_id"
+   , "olist_order_reviews_dataset"."order_id" "order_id"
+   , "olist_order_reviews_dataset"."review_score" "review_score"
+   , "olist_order_reviews_dataset"."review_comment_title" "review_comment_title"
+   , "olist_order_reviews_dataset"."review_comment_message" "review_comment_message"
+   , "olist_order_reviews_dataset"."review_creation_date" "review_creation_date"
+   , "olist_order_reviews_dataset"."review_answer_timestamp" "review_answer_timestamp"
+   FROM
+     (
+      SELECT
+        "olist_order_reviews_dataset"."review_id" "review_id"
+      , "olist_order_reviews_dataset"."order_id" "order_id"
+      , "olist_order_reviews_dataset"."review_score" "review_score"
+      , "olist_order_reviews_dataset"."review_comment_title" "review_comment_title"
+      , "olist_order_reviews_dataset"."review_comment_message" "review_comment_message"
+      , "olist_order_reviews_dataset"."review_creation_date" "review_creation_date"
+      , "olist_order_reviews_dataset"."review_answer_timestamp" "review_answer_timestamp"
+      FROM
+        (
+         SELECT
+           "review_id" "review_id"
+         , "order_id" "order_id"
+         , "review_score" "review_score"
+         , "review_comment_title" "review_comment_title"
+         , "review_comment_message" "review_comment_message"
+         , "review_creation_date" "review_creation_date"
+         , "review_answer_timestamp" "review_answer_timestamp"
+         FROM
+           "memory"."main"."olist_order_reviews_dataset" "olist_order_reviews_dataset"
+      )  "olist_order_reviews_dataset"
+   )  "olist_order_reviews_dataset"
+) 
+, "olist_orders_dataset" AS (
+   SELECT
+     "olist_orders_dataset"."order_id" "order_id"
+   , "olist_orders_dataset"."customer_id" "customer_id"
+   , "olist_orders_dataset"."order_status" "order_status"
+   , "olist_orders_dataset"."order_purchase_timestamp" "order_purchase_timestamp"
+   , "olist_orders_dataset"."order_approved_at" "order_approved_at"
+   , "olist_orders_dataset"."order_delivered_carrier_date" "order_delivered_carrier_date"
+   , "olist_orders_dataset"."order_delivered_customer_date" "order_delivered_customer_date"
+   , "olist_orders_dataset"."order_estimated_delivery_date" "order_estimated_delivery_date"
+   FROM
+     (
+      SELECT
+        "olist_orders_dataset"."order_id" "order_id"
+      , "olist_orders_dataset"."customer_id" "customer_id"
+      , "olist_orders_dataset"."order_status" "order_status"
+      , "olist_orders_dataset"."order_purchase_timestamp" "order_purchase_timestamp"
+      , "olist_orders_dataset"."order_approved_at" "order_approved_at"
+      , "olist_orders_dataset"."order_delivered_carrier_date" "order_delivered_carrier_date"
+      , "olist_orders_dataset"."order_delivered_customer_date" "order_delivered_customer_date"
+      , "olist_orders_dataset"."order_estimated_delivery_date" "order_estimated_delivery_date"
+      FROM
+        (
+         SELECT
+           "order_id" "order_id"
+         , "customer_id" "customer_id"
+         , "order_status" "order_status"
+         , "order_purchase_timestamp" "order_purchase_timestamp"
+         , "order_approved_at" "order_approved_at"
+         , "order_delivered_carrier_date" "order_delivered_carrier_date"
+         , "order_delivered_customer_date" "order_delivered_customer_date"
+         , "order_estimated_delivery_date" "order_estimated_delivery_date"
+         FROM
+           "memory"."main"."olist_orders_dataset" "olist_orders_dataset"
+      )  "olist_orders_dataset"
+   )  "olist_orders_dataset"
+) 
+SELECT
+  c.customer_id
+, c.customer_city
+, c.customer_state
+, avg(r.review_score) average_review_score
+FROM
+  olist_customers_dataset c
+INNER JOIN olist_orders_dataset o ON (c.customer_id = o.customer_id)
+INNER JOIN olist_order_reviews_dataset r ON (o.order_id = r.order_id)
+GROUP BY c.customer_id, c.customer_city, c.customer_state
+HAVING (avg(r.review_score) >= 4)
+ORDER BY average_review_score DESC NULLS LAST
+
+2026-06-10T07:04:56.741Z	INFO	pool-1-thread-4	stdout	# WARNING: Unable to get Instrumentation. Dynamic Attach failed. 
+You may add this JAR as -javaagent manually, or supply -Djdk.attach.allowAttachSelf
+2026-06-10T07:04:58.371Z	INFO	pool-1-thread-4	stdout	# WARNING: Unable to attach Serviceability Agent. You can try 
+again with escalated privileges. Two options: a) use -Djol.tryWithSudo=true to try with sudo; b) echo 0 | sudo tee 
+/proc/sys/kernel/yama/ptrace_scope
+2026-06-10T07:04:58.855Z	WARN	pool-1-thread-4	io.wren.main.web.WrenExceptionMapper	Exception, type: class 
+java.util.concurrent.CompletionException, message: java.lang.IllegalArgumentException: No enum constant 
+io.trino.sql.tree.IntervalLiteral.IntervalField.MONTHS
+java.util.concurrent.CompletionException: java.lang.IllegalArgumentException: No enum constant 
+io.trino.sql.tree.IntervalLiteral.IntervalField.MONTHS
+	at java.base/java.util.concurrent.CompletableFuture.encodeThrowable(CompletableFuture.java:315)
+	at java.base/java.util.concurrent.CompletableFuture.completeThrowable(CompletableFuture.java:320)
+	at java.base/java.util.concurrent.CompletableFuture$AsyncSupply.run(CompletableFuture.java:1770)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+Caused by: java.lang.IllegalArgumentException: No enum constant io.trino.sql.tree.IntervalLiteral.IntervalField.MONTHS
+	at java.base/java.lang.Enum.valueOf(Enum.java:293)
+	at io.trino.sql.tree.IntervalLiteral$IntervalField.valueOf(IntervalLiteral.java:44)
+	at io.trino.sql.util.IntervalLiteralUtil.parse(IntervalLiteralUtil.java:40)
+	at io.trino.sql.parser.AstBuilder.visitTypeConstructor(AstBuilder.java:2781)
+	at io.trino.sql.parser.AstBuilder.visitTypeConstructor(AstBuilder.java:287)
+	at io.trino.sql.parser.SqlBaseParser$TypeConstructorContext.accept(SqlBaseParser.java:11552)
+	at org.antlr.v4.runtime.tree.AbstractParseTreeVisitor.visitChildren(AbstractParseTreeVisitor.java:46)
+	at io.trino.sql.parser.SqlBaseBaseVisitor.visitValueExpressionDefault(SqlBaseBaseVisitor.java:1085)
+	at io.trino.sql.parser.AstBuilder.visitValueExpressionDefault(AstBuilder.java:3013)
+	at io.trino.sql.parser.AstBuilder.visitValueExpressionDefault(AstBuilder.java:287)
+	at io.trino.sql.parser.SqlBaseParser$ValueExpressionDefaultContext.accept(SqlBaseParser.java:11171)
+	at org.antlr.v4.runtime.tree.AbstractParseTreeVisitor.visit(AbstractParseTreeVisitor.java:18)
+	at io.trino.sql.parser.AstBuilder.visitArithmeticBinary(AstBuilder.java:2067)
+	at io.trino.sql.parser.AstBuilder.visitArithmeticBinary(AstBuilder.java:287)
+	at io.trino.sql.parser.SqlBaseParser$ArithmeticBinaryContext.accept(SqlBaseParser.java:11230)
+	at org.antlr.v4.runtime.tree.AbstractParseTreeVisitor.visit(AbstractParseTreeVisitor.java:18)
+	at io.trino.sql.parser.AstBuilder.visitPredicated(AstBuilder.java:1881)
+	at io.trino.sql.parser.AstBuilder.visitPredicated(AstBuilder.java:287)
+	at io.trino.sql.parser.SqlBaseParser$PredicatedContext.accept(SqlBaseParser.java:10151)
+	at org.antlr.v4.runtime.tree.AbstractParseTreeVisitor.visitChildren(AbstractParseTreeVisitor.java:46)
+	at io.trino.sql.parser.SqlBaseBaseVisitor.visitExpression(SqlBaseBaseVisitor.java:980)
+	at io.trino.sql.parser.SqlBaseParser$ExpressionContext.accept(SqlBaseParser.java:10072)
+	at org.antlr.v4.runtime.tree.AbstractParseTreeVisitor.visit(AbstractParseTreeVisitor.java:18)
+	at io.trino.sql.parser.AstBuilder.visitCast(AstBuilder.java:2131)
+	at io.trino.sql.parser.AstBuilder.visitCast(AstBuilder.java:287)
+	at io.trino.sql.parser.SqlBaseParser$CastContext.accept(SqlBaseParser.java:11634)
+	at org.antlr.v4.runtime.tree.AbstractParseTreeVisitor.visitChildren(AbstractParseTreeVisitor.java:46)
+	at io.trino.sql.parser.SqlBaseBaseVisitor.visitValueExpressionDefault(SqlBaseBaseVisitor.java:1085)
+	at io.trino.sql.parser.AstBuilder.visitValueExpressionDefault(AstBuilder.java:3013)
+	at io.trino.sql.parser.AstBuilder.visitValueExpressionDefault(AstBuilder.java:287)
+	at io.trino.sql.parser.SqlBaseParser$ValueExpressionDefaultContext.accept(SqlBaseParser.java:11171)
+	at org.antlr.v4.runtime.tree.AbstractParseTreeVisitor.visit(AbstractParseTreeVisitor.java:18)
+	at io.trino.sql.parser.AstBuilder.visitComparison(AstBuilder.java:1893)
+	at io.trino.sql.parser.AstBuilder.visitComparison(AstBuilder.java:287)
+	at io.trino.sql.parser.SqlBaseParser$ComparisonContext.accept(SqlBaseParser.java:10556)
+	at org.antlr.v4.runtime.tree.AbstractParseTreeVisitor.visit(AbstractParseTreeVisitor.java:18)
+	at io.trino.sql.parser.AstBuilder.visitPredicated(AstBuilder.java:1878)
+	at io.trino.sql.parser.AstBuilder.visitPredicated(AstBuilder.java:287)
+	at io.trino.sql.parser.SqlBaseParser$PredicatedContext.accept(SqlBaseParser.java:10151)
+	at org.antlr.v4.runtime.tree.AbstractParseTreeVisitor.visit(AbstractParseTreeVisitor.java:18)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:197)
+	at java.base/java.util.ArrayList$ArrayListSpliterator.forEachRemaining(ArrayList.java:1708)
+	at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:509)
+	at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:499)
+	at java.base/java.util.stream.ReduceOps$ReduceOp.evaluateSequential(ReduceOps.java:921)
+	at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:234)
+	at java.base/java.util.stream.ReferencePipeline.collect(ReferencePipeline.java:682)
+	at io.trino.sql.parser.AstBuilder.visit(AstBuilder.java:3164)
+	at io.trino.sql.parser.AstBuilder.visitAnd(AstBuilder.java:1586)
+	at io.trino.sql.parser.AstBuilder.visitAnd(AstBuilder.java:287)
+	at io.trino.sql.parser.SqlBaseParser$AndContext.accept(SqlBaseParser.java:10199)
+	at org.antlr.v4.runtime.tree.AbstractParseTreeVisitor.visit(AbstractParseTreeVisitor.java:18)
+	at java.base/java.util.Optional.map(Optional.java:260)
+	at io.trino.sql.parser.AstBuilder.visitIfPresent(AstBuilder.java:3155)
+	at io.trino.sql.parser.AstBuilder.visitQuerySpecification(AstBuilder.java:1064)
+	at io.trino.sql.parser.AstBuilder.visitQuerySpecification(AstBuilder.java:287)
+	at io.trino.sql.parser.SqlBaseParser$QuerySpecificationContext.accept(SqlBaseParser.java:7045)
+	at org.antlr.v4.runtime.tree.AbstractParseTreeVisitor.visitChildren(AbstractParseTreeVisitor.java:46)
+	at io.trino.sql.parser.SqlBaseBaseVisitor.visitQueryPrimaryDefault(SqlBaseBaseVisitor.java:686)
+	at io.trino.sql.parser.SqlBaseParser$QueryPrimaryDefaultContext.accept(SqlBaseParser.java:6766)
+	at org.antlr.v4.runtime.tree.AbstractParseTreeVisitor.visitChildren(AbstractParseTreeVisitor.java:46)
+	at io.trino.sql.parser.SqlBaseBaseVisitor.visitQueryTermDefault(SqlBaseBaseVisitor.java:672)
+	at io.trino.sql.parser.SqlBaseParser$QueryTermDefaultContext.accept(SqlBaseParser.java:6570)
+	at org.antlr.v4.runtime.tree.AbstractParseTreeVisitor.visit(AbstractParseTreeVisitor.java:18)
+	at io.trino.sql.parser.AstBuilder.visitQueryNoWith(AstBuilder.java:946)
+	at io.trino.sql.parser.AstBuilder.visitQueryNoWith(AstBuilder.java:287)
+	at io.trino.sql.parser.SqlBaseParser$QueryNoWithContext.accept(SqlBaseParser.java:6111)
+	at org.antlr.v4.runtime.tree.AbstractParseTreeVisitor.visit(AbstractParseTreeVisitor.java:18)
+	at io.trino.sql.parser.AstBuilder.visitQuery(AstBuilder.java:911)
+	at io.trino.sql.parser.AstBuilder.visitQuery(AstBuilder.java:287)
+	at io.trino.sql.parser.SqlBaseParser$QueryContext.accept(SqlBaseParser.java:5274)
+	at org.antlr.v4.runtime.tree.AbstractParseTreeVisitor.visitChildren(AbstractParseTreeVisitor.java:46)
+	at io.trino.sql.parser.SqlBaseBaseVisitor.visitStatementDefault(SqlBaseBaseVisitor.java:56)
+	at io.trino.sql.parser.SqlBaseParser$StatementDefaultContext.accept(SqlBaseParser.java:2023)
+	at org.antlr.v4.runtime.tree.AbstractParseTreeVisitor.visit(AbstractParseTreeVisitor.java:18)
+	at io.trino.sql.parser.AstBuilder.visitSingleStatement(AstBuilder.java:310)
+	at io.trino.sql.parser.AstBuilder.visitSingleStatement(AstBuilder.java:287)
+	at io.trino.sql.parser.SqlBaseParser$SingleStatementContext.accept(SqlBaseParser.java:293)
+	at org.antlr.v4.runtime.tree.AbstractParseTreeVisitor.visit(AbstractParseTreeVisitor.java:18)
+	at io.trino.sql.parser.SqlParser.invokeParser(SqlParser.java:156)
+	at io.trino.sql.parser.SqlParser.createStatement(SqlParser.java:85)
+	at io.wren.base.sqlrewrite.Utils.parseSql(Utils.java:63)
+	at io.wren.base.sqlrewrite.WrenPlanner.rewrite(WrenPlanner.java:48)
+	at io.wren.base.sqlrewrite.WrenPlanner.rewrite(WrenPlanner.java:43)
+	at io.wren.main.PreviewService.lambda$preview$0(PreviewService.java:85)
+	at java.base/java.util.concurrent.CompletableFuture$AsyncSupply.run(CompletableFuture.java:1768)
+	... 3 more
+
+
+2026-06-10T07:04:59.094Z	INFO	pool-1-thread-6	io.wren.main.connector.duckdb.DuckDBSqlConverter	[Input sql]: WITH
+  "olist_order_reviews_dataset" AS (
+   SELECT
+     "olist_order_reviews_dataset"."review_id" "review_id"
+   , "olist_order_reviews_dataset"."order_id" "order_id"
+   , "olist_order_reviews_dataset"."review_score" "review_score"
+   , "olist_order_reviews_dataset"."review_comment_title" "review_comment_title"
+   , "olist_order_reviews_dataset"."review_comment_message" "review_comment_message"
+   , "olist_order_reviews_dataset"."review_creation_date" "review_creation_date"
+   , "olist_order_reviews_dataset"."review_answer_timestamp" "review_answer_timestamp"
+   FROM
+     (
+      SELECT
+        "olist_order_reviews_dataset"."review_id" "review_id"
+      , "olist_order_reviews_dataset"."order_id" "order_id"
+      , "olist_order_reviews_dataset"."review_score" "review_score"
+      , "olist_order_reviews_dataset"."review_comment_title" "review_comment_title"
+      , "olist_order_reviews_dataset"."review_comment_message" "review_comment_message"
+      , "olist_order_reviews_dataset"."review_creation_date" "review_creation_date"
+      , "olist_order_reviews_dataset"."review_answer_timestamp" "review_answer_timestamp"
+      FROM
+        (
+         SELECT
+           "review_id" "review_id"
+         , "order_id" "order_id"
+         , "review_score" "review_score"
+         , "review_comment_title" "review_comment_title"
+         , "review_comment_message" "review_comment_message"
+         , "review_creation_date" "review_creation_date"
+         , "review_answer_timestamp" "review_answer_timestamp"
+         FROM
+           "memory"."main"."olist_order_reviews_dataset" "olist_order_reviews_dataset"
+      )  "olist_order_reviews_dataset"
+   )  "olist_order_reviews_dataset"
+) 
+, "olist_orders_dataset" AS (
+   SELECT
+     "olist_orders_dataset"."order_id" "order_id"
+   , "olist_orders_dataset"."customer_id" "customer_id"
+   , "olist_orders_dataset"."order_status" "order_status"
+   , "olist_orders_dataset"."order_purchase_timestamp" "order_purchase_timestamp"
+   , "olist_orders_dataset"."order_approved_at" "order_approved_at"
+   , "olist_orders_dataset"."order_delivered_carrier_date" "order_delivered_carrier_date"
+   , "olist_orders_dataset"."order_delivered_customer_date" "order_delivered_customer_date"
+   , "olist_orders_dataset"."order_estimated_delivery_date" "order_estimated_delivery_date"
+   FROM
+     (
+      SELECT
+        "olist_orders_dataset"."order_id" "order_id"
+      , "olist_orders_dataset"."customer_id" "customer_id"
+      , "olist_orders_dataset"."order_status" "order_status"
+      , "olist_orders_dataset"."order_purchase_timestamp" "order_purchase_timestamp"
+      , "olist_orders_dataset"."order_approved_at" "order_approved_at"
+      , "olist_orders_dataset"."order_delivered_carrier_date" "order_delivered_carrier_date"
+      , "olist_orders_dataset"."order_delivered_customer_date" "order_delivered_customer_date"
+      , "olist_orders_dataset"."order_estimated_delivery_date" "order_estimated_delivery_date"
+      FROM
+        (
+         SELECT
+           "order_id" "order_id"
+         , "customer_id" "customer_id"
+         , "order_status" "order_status"
+         , "order_purchase_timestamp" "order_purchase_timestamp"
+         , "order_approved_at" "order_approved_at"
+         , "order_delivered_carrier_date" "order_delivered_carrier_date"
+         , "order_delivered_customer_date" "order_delivered_customer_date"
+         , "order_estimated_delivery_date" "order_estimated_delivery_date"
+         FROM
+           "memory"."main"."olist_orders_dataset" "olist_orders_dataset"
+      )  "olist_orders_dataset"
+   )  "olist_orders_dataset"
+) 
+, "olist_sellers_dataset" AS (
+   SELECT
+     "olist_sellers_dataset"."seller_id" "seller_id"
+   , "olist_sellers_dataset"."seller_zip_code_prefix" "seller_zip_code_prefix"
+   , "olist_sellers_dataset"."seller_city" "seller_city"
+   , "olist_sellers_dataset"."seller_state" "seller_state"
+   FROM
+     (
+      SELECT
+        "olist_sellers_dataset"."seller_id" "seller_id"
+      , "olist_sellers_dataset"."seller_zip_code_prefix" "seller_zip_code_prefix"
+      , "olist_sellers_dataset"."seller_city" "seller_city"
+      , "olist_sellers_dataset"."seller_state" "seller_state"
+      FROM
+        (
+         SELECT
+           "seller_id" "seller_id"
+         , "seller_zip_code_prefix" "seller_zip_code_prefix"
+         , "seller_city" "seller_city"
+         , "seller_state" "seller_state"
+         FROM
+           "memory"."main"."olist_sellers_dataset" "olist_sellers_dataset"
+      )  "olist_sellers_dataset"
+   )  "olist_sellers_dataset"
+) 
+, "olist_order_items_dataset" AS (
+   SELECT
+     "olist_order_items_dataset"."order_id" "order_id"
+   , "olist_order_items_dataset"."order_item_id" "order_item_id"
+   , "olist_order_items_dataset"."product_id" "product_id"
+   , "olist_order_items_dataset"."seller_id" "seller_id"
+   , "olist_order_items_dataset"."shipping_limit_date" "shipping_limit_date"
+   , "olist_order_items_dataset"."price" "price"
+   , "olist_order_items_dataset"."freight_value" "freight_value"
+   FROM
+     (
+      SELECT
+        "olist_order_items_dataset"."order_id" "order_id"
+      , "olist_order_items_dataset"."order_item_id" "order_item_id"
+      , "olist_order_items_dataset"."product_id" "product_id"
+      , "olist_order_items_dataset"."seller_id" "seller_id"
+      , "olist_order_items_dataset"."shipping_limit_date" "shipping_limit_date"
+      , "olist_order_items_dataset"."price" "price"
+      , "olist_order_items_dataset"."freight_value" "freight_value"
+      FROM
+        (
+         SELECT
+           "order_id" "order_id"
+         , "order_item_id" "order_item_id"
+         , "product_id" "product_id"
+         , "seller_id" "seller_id"
+         , "shipping_limit_date" "shipping_limit_date"
+         , "price" "price"
+         , "freight_value" "freight_value"
+         FROM
+           "memory"."main"."olist_order_items_dataset" "olist_order_items_dataset"
+      )  "olist_order_items_dataset"
+   )  "olist_order_items_dataset"
+) 
+, recent_reviews AS (
+   SELECT
+     r."review_score"
+   , o."order_id"
+   , o."order_delivered_customer_date"
+   , s."seller_state"
+   FROM
+     "olist_order_reviews_dataset" r
+   INNER JOIN "olist_orders_dataset" o ON (r."order_id" = o."order_id")
+   INNER JOIN "olist_order_items_dataset" oi ON (o."order_id" = oi."order_id")
+   INNER JOIN "olist_sellers_dataset" s ON (oi."seller_id" = s."seller_id")
+   WHERE (o."order_delivered_customer_date" >= CAST(DATE_TRUNC('year', current_date) AS timestamp with time zone))
+) 
+SELECT
+  "seller_state"
+, AVG("review_score") "average_review_score"
+FROM
+  recent_reviews
+GROUP BY "seller_state"
+
+2026-06-10T07:04:59.106Z	INFO	pool-1-thread-6	io.wren.main.connector.duckdb.DuckDBSqlConverter	[Dialect sql]: WITH
+  "olist_order_reviews_dataset" AS (
+   SELECT
+     "olist_order_reviews_dataset"."review_id" "review_id"
+   , "olist_order_reviews_dataset"."order_id" "order_id"
+   , "olist_order_reviews_dataset"."review_score" "review_score"
+   , "olist_order_reviews_dataset"."review_comment_title" "review_comment_title"
+   , "olist_order_reviews_dataset"."review_comment_message" "review_comment_message"
+   , "olist_order_reviews_dataset"."review_creation_date" "review_creation_date"
+   , "olist_order_reviews_dataset"."review_answer_timestamp" "review_answer_timestamp"
+   FROM
+     (
+      SELECT
+        "olist_order_reviews_dataset"."review_id" "review_id"
+      , "olist_order_reviews_dataset"."order_id" "order_id"
+      , "olist_order_reviews_dataset"."review_score" "review_score"
+      , "olist_order_reviews_dataset"."review_comment_title" "review_comment_title"
+      , "olist_order_reviews_dataset"."review_comment_message" "review_comment_message"
+      , "olist_order_reviews_dataset"."review_creation_date" "review_creation_date"
+      , "olist_order_reviews_dataset"."review_answer_timestamp" "review_answer_timestamp"
+      FROM
+        (
+         SELECT
+           "review_id" "review_id"
+         , "order_id" "order_id"
+         , "review_score" "review_score"
+         , "review_comment_title" "review_comment_title"
+         , "review_comment_message" "review_comment_message"
+         , "review_creation_date" "review_creation_date"
+         , "review_answer_timestamp" "review_answer_timestamp"
+         FROM
+           "memory"."main"."olist_order_reviews_dataset" "olist_order_reviews_dataset"
+      )  "olist_order_reviews_dataset"
+   )  "olist_order_reviews_dataset"
+) 
+, "olist_orders_dataset" AS (
+   SELECT
+     "olist_orders_dataset"."order_id" "order_id"
+   , "olist_orders_dataset"."customer_id" "customer_id"
+   , "olist_orders_dataset"."order_status" "order_status"
+   , "olist_orders_dataset"."order_purchase_timestamp" "order_purchase_timestamp"
+   , "olist_orders_dataset"."order_approved_at" "order_approved_at"
+   , "olist_orders_dataset"."order_delivered_carrier_date" "order_delivered_carrier_date"
+   , "olist_orders_dataset"."order_delivered_customer_date" "order_delivered_customer_date"
+   , "olist_orders_dataset"."order_estimated_delivery_date" "order_estimated_delivery_date"
+   FROM
+     (
+      SELECT
+        "olist_orders_dataset"."order_id" "order_id"
+      , "olist_orders_dataset"."customer_id" "customer_id"
+      , "olist_orders_dataset"."order_status" "order_status"
+      , "olist_orders_dataset"."order_purchase_timestamp" "order_purchase_timestamp"
+      , "olist_orders_dataset"."order_approved_at" "order_approved_at"
+      , "olist_orders_dataset"."order_delivered_carrier_date" "order_delivered_carrier_date"
+      , "olist_orders_dataset"."order_delivered_customer_date" "order_delivered_customer_date"
+      , "olist_orders_dataset"."order_estimated_delivery_date" "order_estimated_delivery_date"
+      FROM
+        (
+         SELECT
+           "order_id" "order_id"
+         , "customer_id" "customer_id"
+         , "order_status" "order_status"
+         , "order_purchase_timestamp" "order_purchase_timestamp"
+         , "order_approved_at" "order_approved_at"
+         , "order_delivered_carrier_date" "order_delivered_carrier_date"
+         , "order_delivered_customer_date" "order_delivered_customer_date"
+         , "order_estimated_delivery_date" "order_estimated_delivery_date"
+         FROM
+           "memory"."main"."olist_orders_dataset" "olist_orders_dataset"
+      )  "olist_orders_dataset"
+   )  "olist_orders_dataset"
+) 
+, "olist_sellers_dataset" AS (
+   SELECT
+     "olist_sellers_dataset"."seller_id" "seller_id"
+   , "olist_sellers_dataset"."seller_zip_code_prefix" "seller_zip_code_prefix"
+   , "olist_sellers_dataset"."seller_city" "seller_city"
+   , "olist_sellers_dataset"."seller_state" "seller_state"
+   FROM
+     (
+      SELECT
+        "olist_sellers_dataset"."seller_id" "seller_id"
+      , "olist_sellers_dataset"."seller_zip_code_prefix" "seller_zip_code_prefix"
+      , "olist_sellers_dataset"."seller_city" "seller_city"
+      , "olist_sellers_dataset"."seller_state" "seller_state"
+      FROM
+        (
+         SELECT
+           "seller_id" "seller_id"
+         , "seller_zip_code_prefix" "seller_zip_code_prefix"
+         , "seller_city" "seller_city"
+         , "seller_state" "seller_state"
+         FROM
+           "memory"."main"."olist_sellers_dataset" "olist_sellers_dataset"
+      )  "olist_sellers_dataset"
+   )  "olist_sellers_dataset"
+) 
+, "olist_order_items_dataset" AS (
+   SELECT
+     "olist_order_items_dataset"."order_id" "order_id"
+   , "olist_order_items_dataset"."order_item_id" "order_item_id"
+   , "olist_order_items_dataset"."product_id" "product_id"
+   , "olist_order_items_dataset"."seller_id" "seller_id"
+   , "olist_order_items_dataset"."shipping_limit_date" "shipping_limit_date"
+   , "olist_order_items_dataset"."price" "price"
+   , "olist_order_items_dataset"."freight_value" "freight_value"
+   FROM
+     (
+      SELECT
+        "olist_order_items_dataset"."order_id" "order_id"
+      , "olist_order_items_dataset"."order_item_id" "order_item_id"
+      , "olist_order_items_dataset"."product_id" "product_id"
+      , "olist_order_items_dataset"."seller_id" "seller_id"
+      , "olist_order_items_dataset"."shipping_limit_date" "shipping_limit_date"
+      , "olist_order_items_dataset"."price" "price"
+      , "olist_order_items_dataset"."freight_value" "freight_value"
+      FROM
+        (
+         SELECT
+           "order_id" "order_id"
+         , "order_item_id" "order_item_id"
+         , "product_id" "product_id"
+         , "seller_id" "seller_id"
+         , "shipping_limit_date" "shipping_limit_date"
+         , "price" "price"
+         , "freight_value" "freight_value"
+         FROM
+           "memory"."main"."olist_order_items_dataset" "olist_order_items_dataset"
+      )  "olist_order_items_dataset"
+   )  "olist_order_items_dataset"
+) 
+, recent_reviews AS (
+   SELECT
+     r."review_score"
+   , o."order_id"
+   , o."order_delivered_customer_date"
+   , s."seller_state"
+   FROM
+     "olist_order_reviews_dataset" r
+   INNER JOIN "olist_orders_dataset" o ON (r."order_id" = o."order_id")
+   INNER JOIN "olist_order_items_dataset" oi ON (o."order_id" = oi."order_id")
+   INNER JOIN "olist_sellers_dataset" s ON (oi."seller_id" = s."seller_id")
+   WHERE (o."order_delivered_customer_date" >= CAST(date_trunc('year', current_date) AS timestamp with time zone))
+) 
+SELECT
+  "seller_state"
+, avg("review_score") "average_review_score"
+FROM
+  recent_reviews
+GROUP BY "seller_state"
+
+2026-06-10T07:05:18.139Z	WARN	pool-1-thread-7	io.wren.main.web.WrenExceptionMapper	Exception, type: class 
+java.util.concurrent.CompletionException, message: java.lang.NullPointerException: Cannot invoke "String.length()" 
+because "s" is null
+java.util.concurrent.CompletionException: java.lang.NullPointerException: Cannot invoke "String.length()" because "s" 
+is null
+	at java.base/java.util.concurrent.CompletableFuture.encodeThrowable(CompletableFuture.java:315)
+	at java.base/java.util.concurrent.CompletableFuture.completeThrowable(CompletableFuture.java:320)
+	at java.base/java.util.concurrent.CompletableFuture$AsyncSupply.run(CompletableFuture.java:1770)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+Caused by: java.lang.NullPointerException: Cannot invoke "String.length()" because "s" is null
+	at org.antlr.v4.runtime.CharStreams.fromString(CharStreams.java:222)
+	at org.antlr.v4.runtime.CharStreams.fromString(CharStreams.java:212)
+	at io.trino.sql.parser.SqlParser.invokeParser(SqlParser.java:111)
+	at io.trino.sql.parser.SqlParser.createStatement(SqlParser.java:85)
+	at io.wren.base.sqlrewrite.Utils.parseSql(Utils.java:63)
+	at io.wren.base.sqlrewrite.WrenPlanner.rewrite(WrenPlanner.java:48)
+	at io.wren.base.sqlrewrite.WrenPlanner.rewrite(WrenPlanner.java:43)
+	at io.wren.main.PreviewService.lambda$preview$0(PreviewService.java:85)
+	at java.base/java.util.concurrent.CompletableFuture$AsyncSupply.run(CompletableFuture.java:1768)
+	... 3 more
+
+
+2026-06-10T07:05:19.145Z	INFO	pool-1-thread-8	io.wren.main.connector.duckdb.DuckDBSqlConverter	[Input sql]: WITH
+  "olist_order_reviews_dataset" AS (
+   SELECT
+     "olist_order_reviews_dataset"."review_id" "review_id"
+   , "olist_order_reviews_dataset"."order_id" "order_id"
+   , "olist_order_reviews_dataset"."review_score" "review_score"
+   , "olist_order_reviews_dataset"."review_comment_title" "review_comment_title"
+   , "olist_order_reviews_dataset"."review_comment_message" "review_comment_message"
+   , "olist_order_reviews_dataset"."review_creation_date" "review_creation_date"
+   , "olist_order_reviews_dataset"."review_answer_timestamp" "review_answer_timestamp"
+   FROM
+     (
+      SELECT
+        "olist_order_reviews_dataset"."review_id" "review_id"
+      , "olist_order_reviews_dataset"."order_id" "order_id"
+      , "olist_order_reviews_dataset"."review_score" "review_score"
+      , "olist_order_reviews_dataset"."review_comment_title" "review_comment_title"
+      , "olist_order_reviews_dataset"."review_comment_message" "review_comment_message"
+      , "olist_order_reviews_dataset"."review_creation_date" "review_creation_date"
+      , "olist_order_reviews_dataset"."review_answer_timestamp" "review_answer_timestamp"
+      FROM
+        (
+         SELECT
+           "review_id" "review_id"
+         , "order_id" "order_id"
+         , "review_score" "review_score"
+         , "review_comment_title" "review_comment_title"
+         , "review_comment_message" "review_comment_message"
+         , "review_creation_date" "review_creation_date"
+         , "review_answer_timestamp" "review_answer_timestamp"
+         FROM
+           "memory"."main"."olist_order_reviews_dataset" "olist_order_reviews_dataset"
+      )  "olist_order_reviews_dataset"
+   )  "olist_order_reviews_dataset"
+) 
+, "olist_customers_dataset" AS (
+   SELECT
+     "olist_customers_dataset"."customer_id" "customer_id"
+   , "olist_customers_dataset"."customer_unique_id" "customer_unique_id"
+   , "olist_customers_dataset"."customer_zip_code_prefix" "customer_zip_code_prefix"
+   , "olist_customers_dataset"."customer_city" "customer_city"
+   , "olist_customers_dataset"."customer_state" "customer_state"
+   FROM
+     (
+      SELECT
+        "olist_customers_dataset"."customer_id" "customer_id"
+      , "olist_customers_dataset"."customer_unique_id" "customer_unique_id"
+      , "olist_customers_dataset"."customer_zip_code_prefix" "customer_zip_code_prefix"
+      , "olist_customers_dataset"."customer_city" "customer_city"
+      , "olist_customers_dataset"."customer_state" "customer_state"
+      FROM
+        (
+         SELECT
+           "customer_id" "customer_id"
+         , "customer_unique_id" "customer_unique_id"
+         , "customer_zip_code_prefix" "customer_zip_code_prefix"
+         , "customer_city" "customer_city"
+         , "customer_state" "customer_state"
+         FROM
+           "memory"."main"."olist_customers_dataset" "olist_customers_dataset"
+      )  "olist_customers_dataset"
+   )  "olist_customers_dataset"
+) 
+, "olist_orders_dataset" AS (
+   SELECT
+     "olist_orders_dataset"."order_id" "order_id"
+   , "olist_orders_dataset"."customer_id" "customer_id"
+   , "olist_orders_dataset"."order_status" "order_status"
+   , "olist_orders_dataset"."order_purchase_timestamp" "order_purchase_timestamp"
+   , "olist_orders_dataset"."order_approved_at" "order_approved_at"
+   , "olist_orders_dataset"."order_delivered_carrier_date" "order_delivered_carrier_date"
+   , "olist_orders_dataset"."order_delivered_customer_date" "order_delivered_customer_date"
+   , "olist_orders_dataset"."order_estimated_delivery_date" "order_estimated_delivery_date"
+   FROM
+     (
+      SELECT
+        "olist_orders_dataset"."order_id" "order_id"
+      , "olist_orders_dataset"."customer_id" "customer_id"
+      , "olist_orders_dataset"."order_status" "order_status"
+      , "olist_orders_dataset"."order_purchase_timestamp" "order_purchase_timestamp"
+      , "olist_orders_dataset"."order_approved_at" "order_approved_at"
+      , "olist_orders_dataset"."order_delivered_carrier_date" "order_delivered_carrier_date"
+      , "olist_orders_dataset"."order_delivered_customer_date" "order_delivered_customer_date"
+      , "olist_orders_dataset"."order_estimated_delivery_date" "order_estimated_delivery_date"
+      FROM
+        (
+         SELECT
+           "order_id" "order_id"
+         , "customer_id" "customer_id"
+         , "order_status" "order_status"
+         , "order_purchase_timestamp" "order_purchase_timestamp"
+         , "order_approved_at" "order_approved_at"
+         , "order_delivered_carrier_date" "order_delivered_carrier_date"
+         , "order_delivered_customer_date" "order_delivered_customer_date"
+         , "order_estimated_delivery_date" "order_estimated_delivery_date"
+         FROM
+           "memory"."main"."olist_orders_dataset" "olist_orders_dataset"
+      )  "olist_orders_dataset"
+   )  "olist_orders_dataset"
+) 
+SELECT
+  "customers"."customer_city" "city"
+, AVG("reviews"."review_score") "average_review_score"
+FROM
+  "olist_order_reviews_dataset" "reviews"
+INNER JOIN "olist_orders_dataset" "orders" ON ("reviews"."order_id" = "orders"."order_id")
+INNER JOIN "olist_customers_dataset" "customers" ON ("orders"."customer_id" = "customers"."customer_id")
+WHERE ("reviews"."review_score" IS NOT NULL)
+GROUP BY "customers"."customer_city"
+
+2026-06-10T07:05:19.155Z	INFO	pool-1-thread-8	io.wren.main.connector.duckdb.DuckDBSqlConverter	[Dialect sql]: WITH
+  "olist_order_reviews_dataset" AS (
+   SELECT
+     "olist_order_reviews_dataset"."review_id" "review_id"
+   , "olist_order_reviews_dataset"."order_id" "order_id"
+   , "olist_order_reviews_dataset"."review_score" "review_score"
+   , "olist_order_reviews_dataset"."review_comment_title" "review_comment_title"
+   , "olist_order_reviews_dataset"."review_comment_message" "review_comment_message"
+   , "olist_order_reviews_dataset"."review_creation_date" "review_creation_date"
+   , "olist_order_reviews_dataset"."review_answer_timestamp" "review_answer_timestamp"
+   FROM
+     (
+      SELECT
+        "olist_order_reviews_dataset"."review_id" "review_id"
+      , "olist_order_reviews_dataset"."order_id" "order_id"
+      , "olist_order_reviews_dataset"."review_score" "review_score"
+      , "olist_order_reviews_dataset"."review_comment_title" "review_comment_title"
+      , "olist_order_reviews_dataset"."review_comment_message" "review_comment_message"
+      , "olist_order_reviews_dataset"."review_creation_date" "review_creation_date"
+      , "olist_order_reviews_dataset"."review_answer_timestamp" "review_answer_timestamp"
+      FROM
+        (
+         SELECT
+           "review_id" "review_id"
+         , "order_id" "order_id"
+         , "review_score" "review_score"
+         , "review_comment_title" "review_comment_title"
+         , "review_comment_message" "review_comment_message"
+         , "review_creation_date" "review_creation_date"
+         , "review_answer_timestamp" "review_answer_timestamp"
+         FROM
+           "memory"."main"."olist_order_reviews_dataset" "olist_order_reviews_dataset"
+      )  "olist_order_reviews_dataset"
+   )  "olist_order_reviews_dataset"
+) 
+, "olist_customers_dataset" AS (
+   SELECT
+     "olist_customers_dataset"."customer_id" "customer_id"
+   , "olist_customers_dataset"."customer_unique_id" "customer_unique_id"
+   , "olist_customers_dataset"."customer_zip_code_prefix" "customer_zip_code_prefix"
+   , "olist_customers_dataset"."customer_city" "customer_city"
+   , "olist_customers_dataset"."customer_state" "customer_state"
+   FROM
+     (
+      SELECT
+        "olist_customers_dataset"."customer_id" "customer_id"
+      , "olist_customers_dataset"."customer_unique_id" "customer_unique_id"
+      , "olist_customers_dataset"."customer_zip_code_prefix" "customer_zip_code_prefix"
+      , "olist_customers_dataset"."customer_city" "customer_city"
+      , "olist_customers_dataset"."customer_state" "customer_state"
+      FROM
+        (
+         SELECT
+           "customer_id" "customer_id"
+         , "customer_unique_id" "customer_unique_id"
+         , "customer_zip_code_prefix" "customer_zip_code_prefix"
+         , "customer_city" "customer_city"
+         , "customer_state" "customer_state"
+         FROM
+           "memory"."main"."olist_customers_dataset" "olist_customers_dataset"
+      )  "olist_customers_dataset"
+   )  "olist_customers_dataset"
+) 
+, "olist_orders_dataset" AS (
+   SELECT
+     "olist_orders_dataset"."order_id" "order_id"
+   , "olist_orders_dataset"."customer_id" "customer_id"
+   , "olist_orders_dataset"."order_status" "order_status"
+   , "olist_orders_dataset"."order_purchase_timestamp" "order_purchase_timestamp"
+   , "olist_orders_dataset"."order_approved_at" "order_approved_at"
+   , "olist_orders_dataset"."order_delivered_carrier_date" "order_delivered_carrier_date"
+   , "olist_orders_dataset"."order_delivered_customer_date" "order_delivered_customer_date"
+   , "olist_orders_dataset"."order_estimated_delivery_date" "order_estimated_delivery_date"
+   FROM
+     (
+      SELECT
+        "olist_orders_dataset"."order_id" "order_id"
+      , "olist_orders_dataset"."customer_id" "customer_id"
+      , "olist_orders_dataset"."order_status" "order_status"
+      , "olist_orders_dataset"."order_purchase_timestamp" "order_purchase_timestamp"
+      , "olist_orders_dataset"."order_approved_at" "order_approved_at"
+      , "olist_orders_dataset"."order_delivered_carrier_date" "order_delivered_carrier_date"
+      , "olist_orders_dataset"."order_delivered_customer_date" "order_delivered_customer_date"
+      , "olist_orders_dataset"."order_estimated_delivery_date" "order_estimated_delivery_date"
+      FROM
+        (
+         SELECT
+           "order_id" "order_id"
+         , "customer_id" "customer_id"
+         , "order_status" "order_status"
+         , "order_purchase_timestamp" "order_purchase_timestamp"
+         , "order_approved_at" "order_approved_at"
+         , "order_delivered_carrier_date" "order_delivered_carrier_date"
+         , "order_delivered_customer_date" "order_delivered_customer_date"
+         , "order_estimated_delivery_date" "order_estimated_delivery_date"
+         FROM
+           "memory"."main"."olist_orders_dataset" "olist_orders_dataset"
+      )  "olist_orders_dataset"
+   )  "olist_orders_dataset"
+) 
+SELECT
+  "customers"."customer_city" "city"
+, avg("reviews"."review_score") "average_review_score"
+FROM
+  "olist_order_reviews_dataset" "reviews"
+INNER JOIN "olist_orders_dataset" "orders" ON ("reviews"."order_id" = "orders"."order_id")
+INNER JOIN "olist_customers_dataset" "customers" ON ("orders"."customer_id" = "customers"."customer_id")
+WHERE ("reviews"."review_score" IS NOT NULL)
+GROUP BY "customers"."customer_city"
+
+2026-06-10T07:05:23.228Z	INFO	pool-1-thread-9	io.wren.main.connector.duckdb.DuckDBSqlConverter	[Input sql]: WITH
+  "olist_customers_dataset" AS (
+   SELECT
+     "olist_customers_dataset"."customer_id" "customer_id"
+   , "olist_customers_dataset"."customer_unique_id" "customer_unique_id"
+   , "olist_customers_dataset"."customer_zip_code_prefix" "customer_zip_code_prefix"
+   , "olist_customers_dataset"."customer_city" "customer_city"
+   , "olist_customers_dataset"."customer_state" "customer_state"
+   FROM
+     (
+      SELECT
+        "olist_customers_dataset"."customer_id" "customer_id"
+      , "olist_customers_dataset"."customer_unique_id" "customer_unique_id"
+      , "olist_customers_dataset"."customer_zip_code_prefix" "customer_zip_code_prefix"
+      , "olist_customers_dataset"."customer_city" "customer_city"
+      , "olist_customers_dataset"."customer_state" "customer_state"
+      FROM
+        (
+         SELECT
+           "customer_id" "customer_id"
+         , "customer_unique_id" "customer_unique_id"
+         , "customer_zip_code_prefix" "customer_zip_code_prefix"
+         , "customer_city" "customer_city"
+         , "customer_state" "customer_state"
+         FROM
+           "memory"."main"."olist_customers_dataset" "olist_customers_dataset"
+      )  "olist_customers_dataset"
+   )  "olist_customers_dataset"
+) 
+, "olist_order_reviews_dataset" AS (
+   SELECT
+     "olist_order_reviews_dataset"."review_id" "review_id"
+   , "olist_order_reviews_dataset"."order_id" "order_id"
+   , "olist_order_reviews_dataset"."review_score" "review_score"
+   , "olist_order_reviews_dataset"."review_comment_title" "review_comment_title"
+   , "olist_order_reviews_dataset"."review_comment_message" "review_comment_message"
+   , "olist_order_reviews_dataset"."review_creation_date" "review_creation_date"
+   , "olist_order_reviews_dataset"."review_answer_timestamp" "review_answer_timestamp"
+   FROM
+     (
+      SELECT
+        "olist_order_reviews_dataset"."review_id" "review_id"
+      , "olist_order_reviews_dataset"."order_id" "order_id"
+      , "olist_order_reviews_dataset"."review_score" "review_score"
+      , "olist_order_reviews_dataset"."review_comment_title" "review_comment_title"
+      , "olist_order_reviews_dataset"."review_comment_message" "review_comment_message"
+      , "olist_order_reviews_dataset"."review_creation_date" "review_creation_date"
+      , "olist_order_reviews_dataset"."review_answer_timestamp" "review_answer_timestamp"
+      FROM
+        (
+         SELECT
+           "review_id" "review_id"
+         , "order_id" "order_id"
+         , "review_score" "review_score"
+         , "review_comment_title" "review_comment_title"
+         , "review_comment_message" "review_comment_message"
+         , "review_creation_date" "review_creation_date"
+         , "review_answer_timestamp" "review_answer_timestamp"
+         FROM
+           "memory"."main"."olist_order_reviews_dataset" "olist_order_reviews_dataset"
+      )  "olist_order_reviews_dataset"
+   )  "olist_order_reviews_dataset"
+) 
+, "olist_orders_dataset" AS (
+   SELECT
+     "olist_orders_dataset"."order_id" "order_id"
+   , "olist_orders_dataset"."customer_id" "customer_id"
+   , "olist_orders_dataset"."order_status" "order_status"
+   , "olist_orders_dataset"."order_purchase_timestamp" "order_purchase_timestamp"
+   , "olist_orders_dataset"."order_approved_at" "order_approved_at"
+   , "olist_orders_dataset"."order_delivered_carrier_date" "order_delivered_carrier_date"
+   , "olist_orders_dataset"."order_delivered_customer_date" "order_delivered_customer_date"
+   , "olist_orders_dataset"."order_estimated_delivery_date" "order_estimated_delivery_date"
+   FROM
+     (
+      SELECT
+        "olist_orders_dataset"."order_id" "order_id"
+      , "olist_orders_dataset"."customer_id" "customer_id"
+      , "olist_orders_dataset"."order_status" "order_status"
+      , "olist_orders_dataset"."order_purchase_timestamp" "order_purchase_timestamp"
+      , "olist_orders_dataset"."order_approved_at" "order_approved_at"
+      , "olist_orders_dataset"."order_delivered_carrier_date" "order_delivered_carrier_date"
+      , "olist_orders_dataset"."order_delivered_customer_date" "order_delivered_customer_date"
+      , "olist_orders_dataset"."order_estimated_delivery_date" "order_estimated_delivery_date"
+      FROM
+        (
+         SELECT
+           "order_id" "order_id"
+         , "customer_id" "customer_id"
+         , "order_status" "order_status"
+         , "order_purchase_timestamp" "order_purchase_timestamp"
+         , "order_approved_at" "order_approved_at"
+         , "order_delivered_carrier_date" "order_delivered_carrier_date"
+         , "order_delivered_customer_date" "order_delivered_customer_date"
+         , "order_estimated_delivery_date" "order_estimated_delivery_date"
+         FROM
+           "memory"."main"."olist_orders_dataset" "olist_orders_dataset"
+      )  "olist_orders_dataset"
+   )  "olist_orders_dataset"
+) 
+SELECT
+  c.customer_city city
+, c.customer_state state
+, AVG(r.review_score) average_review_score
+FROM
+  olist_customers_dataset c
+INNER JOIN olist_orders_dataset o ON (c.customer_id = o.customer_id)
+INNER JOIN olist_order_reviews_dataset r ON (o.order_id = r.order_id)
+GROUP BY c.customer_city, c.customer_state
+ORDER BY average_review_score DESC NULLS LAST
+
+2026-06-10T07:05:23.230Z	INFO	pool-1-thread-9	io.wren.main.connector.duckdb.DuckDBSqlConverter	[Dialect sql]: WITH
+  "olist_customers_dataset" AS (
+   SELECT
+     "olist_customers_dataset"."customer_id" "customer_id"
+   , "olist_customers_dataset"."customer_unique_id" "customer_unique_id"
+   , "olist_customers_dataset"."customer_zip_code_prefix" "customer_zip_code_prefix"
+   , "olist_customers_dataset"."customer_city" "customer_city"
+   , "olist_customers_dataset"."customer_state" "customer_state"
+   FROM
+     (
+      SELECT
+        "olist_customers_dataset"."customer_id" "customer_id"
+      , "olist_customers_dataset"."customer_unique_id" "customer_unique_id"
+      , "olist_customers_dataset"."customer_zip_code_prefix" "customer_zip_code_prefix"
+      , "olist_customers_dataset"."customer_city" "customer_city"
+      , "olist_customers_dataset"."customer_state" "customer_state"
+      FROM
+        (
+         SELECT
+           "customer_id" "customer_id"
+         , "customer_unique_id" "customer_unique_id"
+         , "customer_zip_code_prefix" "customer_zip_code_prefix"
+         , "customer_city" "customer_city"
+         , "customer_state" "customer_state"
+         FROM
+           "memory"."main"."olist_customers_dataset" "olist_customers_dataset"
+      )  "olist_customers_dataset"
+   )  "olist_customers_dataset"
+) 
+, "olist_order_reviews_dataset" AS (
+   SELECT
+     "olist_order_reviews_dataset"."review_id" "review_id"
+   , "olist_order_reviews_dataset"."order_id" "order_id"
+   , "olist_order_reviews_dataset"."review_score" "review_score"
+   , "olist_order_reviews_dataset"."review_comment_title" "review_comment_title"
+   , "olist_order_reviews_dataset"."review_comment_message" "review_comment_message"
+   , "olist_order_reviews_dataset"."review_creation_date" "review_creation_date"
+   , "olist_order_reviews_dataset"."review_answer_timestamp" "review_answer_timestamp"
+   FROM
+     (
+      SELECT
+        "olist_order_reviews_dataset"."review_id" "review_id"
+      , "olist_order_reviews_dataset"."order_id" "order_id"
+      , "olist_order_reviews_dataset"."review_score" "review_score"
+      , "olist_order_reviews_dataset"."review_comment_title" "review_comment_title"
+      , "olist_order_reviews_dataset"."review_comment_message" "review_comment_message"
+      , "olist_order_reviews_dataset"."review_creation_date" "review_creation_date"
+      , "olist_order_reviews_dataset"."review_answer_timestamp" "review_answer_timestamp"
+      FROM
+        (
+         SELECT
+           "review_id" "review_id"
+         , "order_id" "order_id"
+         , "review_score" "review_score"
+         , "review_comment_title" "review_comment_title"
+         , "review_comment_message" "review_comment_message"
+         , "review_creation_date" "review_creation_date"
+         , "review_answer_timestamp" "review_answer_timestamp"
+         FROM
+           "memory"."main"."olist_order_reviews_dataset" "olist_order_reviews_dataset"
+      )  "olist_order_reviews_dataset"
+   )  "olist_order_reviews_dataset"
+) 
+, "olist_orders_dataset" AS (
+   SELECT
+     "olist_orders_dataset"."order_id" "order_id"
+   , "olist_orders_dataset"."customer_id" "customer_id"
+   , "olist_orders_dataset"."order_status" "order_status"
+   , "olist_orders_dataset"."order_purchase_timestamp" "order_purchase_timestamp"
+   , "olist_orders_dataset"."order_approved_at" "order_approved_at"
+   , "olist_orders_dataset"."order_delivered_carrier_date" "order_delivered_carrier_date"
+   , "olist_orders_dataset"."order_delivered_customer_date" "order_delivered_customer_date"
+   , "olist_orders_dataset"."order_estimated_delivery_date" "order_estimated_delivery_date"
+   FROM
+     (
+      SELECT
+        "olist_orders_dataset"."order_id" "order_id"
+      , "olist_orders_dataset"."customer_id" "customer_id"
+      , "olist_orders_dataset"."order_status" "order_status"
+      , "olist_orders_dataset"."order_purchase_timestamp" "order_purchase_timestamp"
+      , "olist_orders_dataset"."order_approved_at" "order_approved_at"
+      , "olist_orders_dataset"."order_delivered_carrier_date" "order_delivered_carrier_date"
+      , "olist_orders_dataset"."order_delivered_customer_date" "order_delivered_customer_date"
+      , "olist_orders_dataset"."order_estimated_delivery_date" "order_estimated_delivery_date"
+      FROM
+        (
+         SELECT
+           "order_id" "order_id"
+         , "customer_id" "customer_id"
+         , "order_status" "order_status"
+         , "order_purchase_timestamp" "order_purchase_timestamp"
+         , "order_approved_at" "order_approved_at"
+         , "order_delivered_carrier_date" "order_delivered_carrier_date"
+         , "order_delivered_customer_date" "order_delivered_customer_date"
+         , "order_estimated_delivery_date" "order_estimated_delivery_date"
+         FROM
+           "memory"."main"."olist_orders_dataset" "olist_orders_dataset"
+      )  "olist_orders_dataset"
+   )  "olist_orders_dataset"
+) 
+SELECT
+  c.customer_city city
+, c.customer_state state
+, avg(r.review_score) average_review_score
+FROM
+  olist_customers_dataset c
+INNER JOIN olist_orders_dataset o ON (c.customer_id = o.customer_id)
+INNER JOIN olist_order_reviews_dataset r ON (o.order_id = r.order_id)
+GROUP BY c.customer_city, c.customer_state
+ORDER BY average_review_score DESC NULLS LAST
+
+2026-06-10T07:05:24.346Z	WARN	pool-1-thread-10	io.wren.main.web.WrenExceptionMapper	Exception, type: class 
+java.util.concurrent.CompletionException, message: java.lang.IllegalArgumentException: No enum constant 
+io.trino.sql.tree.IntervalLiteral.IntervalField.MONTHS
+java.util.concurrent.CompletionException: java.lang.IllegalArgumentException: No enum constant 
+io.trino.sql.tree.IntervalLiteral.IntervalField.MONTHS
+	at java.base/java.util.concurrent.CompletableFuture.encodeThrowable(CompletableFuture.java:315)
+	at java.base/java.util.concurrent.CompletableFuture.completeThrowable(CompletableFuture.java:320)
+	at java.base/java.util.concurrent.CompletableFuture$AsyncSupply.run(CompletableFuture.java:1770)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+Caused by: java.lang.IllegalArgumentException: No enum constant io.trino.sql.tree.IntervalLiteral.IntervalField.MONTHS
+	at java.base/java.lang.Enum.valueOf(Enum.java:293)
+	at io.trino.sql.tree.IntervalLiteral$IntervalField.valueOf(IntervalLiteral.java:44)
+	at io.trino.sql.util.IntervalLiteralUtil.parse(IntervalLiteralUtil.java:40)
+	at io.trino.sql.parser.AstBuilder.visitTypeConstructor(AstBuilder.java:2781)
+	at io.trino.sql.parser.AstBuilder.visitTypeConstructor(AstBuilder.java:287)
+	at io.trino.sql.parser.SqlBaseParser$TypeConstructorContext.accept(SqlBaseParser.java:11552)
+	at org.antlr.v4.runtime.tree.AbstractParseTreeVisitor.visitChildren(AbstractParseTreeVisitor.java:46)
+	at io.trino.sql.parser.SqlBaseBaseVisitor.visitValueExpressionDefault(SqlBaseBaseVisitor.java:1085)
+	at io.trino.sql.parser.AstBuilder.visitValueExpressionDefault(AstBuilder.java:3013)
+	at io.trino.sql.parser.AstBuilder.visitValueExpressionDefault(AstBuilder.java:287)
+	at io.trino.sql.parser.SqlBaseParser$ValueExpressionDefaultContext.accept(SqlBaseParser.java:11171)
+	at org.antlr.v4.runtime.tree.AbstractParseTreeVisitor.visit(AbstractParseTreeVisitor.java:18)
+	at io.trino.sql.parser.AstBuilder.visitArithmeticBinary(AstBuilder.java:2067)
+	at io.trino.sql.parser.AstBuilder.visitArithmeticBinary(AstBuilder.java:287)
+	at io.trino.sql.parser.SqlBaseParser$ArithmeticBinaryContext.accept(SqlBaseParser.java:11230)
+	at org.antlr.v4.runtime.tree.AbstractParseTreeVisitor.visit(AbstractParseTreeVisitor.java:18)
+	at io.trino.sql.parser.AstBuilder.visitPredicated(AstBuilder.java:1881)
+	at io.trino.sql.parser.AstBuilder.visitPredicated(AstBuilder.java:287)
+	at io.trino.sql.parser.SqlBaseParser$PredicatedContext.accept(SqlBaseParser.java:10151)
+	at org.antlr.v4.runtime.tree.AbstractParseTreeVisitor.visitChildren(AbstractParseTreeVisitor.java:46)
+	at io.trino.sql.parser.SqlBaseBaseVisitor.visitExpression(SqlBaseBaseVisitor.java:980)
+	at io.trino.sql.parser.SqlBaseParser$ExpressionContext.accept(SqlBaseParser.java:10072)
+	at org.antlr.v4.runtime.tree.AbstractParseTreeVisitor.visit(AbstractParseTreeVisitor.java:18)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:197)
+	at java.base/java.util.ArrayList$ArrayListSpliterator.forEachRemaining(ArrayList.java:1708)
+	at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:509)
+	at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:499)
+	at java.base/java.util.stream.ReduceOps$ReduceOp.evaluateSequential(ReduceOps.java:921)
+	at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:234)
+	at java.base/java.util.stream.ReferencePipeline.collect(ReferencePipeline.java:682)
+	at io.trino.sql.parser.AstBuilder.visit(AstBuilder.java:3164)
+	at io.trino.sql.parser.AstBuilder.visitFunctionCall(AstBuilder.java:2444)
+	at io.trino.sql.parser.AstBuilder.visitFunctionCall(AstBuilder.java:287)
+	at io.trino.sql.parser.SqlBaseParser$FunctionCallContext.accept(SqlBaseParser.java:12125)
+	at org.antlr.v4.runtime.tree.AbstractParseTreeVisitor.visitChildren(AbstractParseTreeVisitor.java:46)
+	at io.trino.sql.parser.SqlBaseBaseVisitor.visitValueExpressionDefault(SqlBaseBaseVisitor.java:1085)
+	at io.trino.sql.parser.AstBuilder.visitValueExpressionDefault(AstBuilder.java:3013)
+	at io.trino.sql.parser.AstBuilder.visitValueExpressionDefault(AstBuilder.java:287)
+	at io.trino.sql.parser.SqlBaseParser$ValueExpressionDefaultContext.accept(SqlBaseParser.java:11171)
+	at org.antlr.v4.runtime.tree.AbstractParseTreeVisitor.visit(AbstractParseTreeVisitor.java:18)
+	at io.trino.sql.parser.AstBuilder.visitPredicated(AstBuilder.java:1881)
+	at io.trino.sql.parser.AstBuilder.visitPredicated(AstBuilder.java:287)
+	at io.trino.sql.parser.SqlBaseParser$PredicatedContext.accept(SqlBaseParser.java:10151)
+	at org.antlr.v4.runtime.tree.AbstractParseTreeVisitor.visitChildren(AbstractParseTreeVisitor.java:46)
+	at io.trino.sql.parser.SqlBaseBaseVisitor.visitExpression(SqlBaseBaseVisitor.java:980)
+	at io.trino.sql.parser.SqlBaseParser$ExpressionContext.accept(SqlBaseParser.java:10072)
+	at org.antlr.v4.runtime.tree.AbstractParseTreeVisitor.visit(AbstractParseTreeVisitor.java:18)
+	at io.trino.sql.parser.AstBuilder.visitCast(AstBuilder.java:2131)
+	at io.trino.sql.parser.AstBuilder.visitCast(AstBuilder.java:287)
+	at io.trino.sql.parser.SqlBaseParser$CastContext.accept(SqlBaseParser.java:11634)
+	at org.antlr.v4.runtime.tree.AbstractParseTreeVisitor.visitChildren(AbstractParseTreeVisitor.java:46)
+	at io.trino.sql.parser.SqlBaseBaseVisitor.visitValueExpressionDefault(SqlBaseBaseVisitor.java:1085)
+	at io.trino.sql.parser.AstBuilder.visitValueExpressionDefault(AstBuilder.java:3013)
+	at io.trino.sql.parser.AstBuilder.visitValueExpressionDefault(AstBuilder.java:287)
+	at io.trino.sql.parser.SqlBaseParser$ValueExpressionDefaultContext.accept(SqlBaseParser.java:11171)
+	at org.antlr.v4.runtime.tree.AbstractParseTreeVisitor.visit(AbstractParseTreeVisitor.java:18)
+	at io.trino.sql.parser.AstBuilder.visitComparison(AstBuilder.java:1893)
+	at io.trino.sql.parser.AstBuilder.visitComparison(AstBuilder.java:287)
+	at io.trino.sql.parser.SqlBaseParser$ComparisonContext.accept(SqlBaseParser.java:10556)
+	at org.antlr.v4.runtime.tree.AbstractParseTreeVisitor.visit(AbstractParseTreeVisitor.java:18)
+	at io.trino.sql.parser.AstBuilder.visitPredicated(AstBuilder.java:1878)
+	at io.trino.sql.parser.AstBuilder.visitPredicated(AstBuilder.java:287)
+	at io.trino.sql.parser.SqlBaseParser$PredicatedContext.accept(SqlBaseParser.java:10151)
+	at org.antlr.v4.runtime.tree.AbstractParseTreeVisitor.visit(AbstractParseTreeVisitor.java:18)
+	at java.base/java.util.Optional.map(Optional.java:260)
+	at io.trino.sql.parser.AstBuilder.visitIfPresent(AstBuilder.java:3155)
+	at io.trino.sql.parser.AstBuilder.visitQuerySpecification(AstBuilder.java:1064)
+	at io.trino.sql.parser.AstBuilder.visitQuerySpecification(AstBuilder.java:287)
+	at io.trino.sql.parser.SqlBaseParser$QuerySpecificationContext.accept(SqlBaseParser.java:7045)
+	at org.antlr.v4.runtime.tree.AbstractParseTreeVisitor.visitChildren(AbstractParseTreeVisitor.java:46)
+	at io.trino.sql.parser.SqlBaseBaseVisitor.visitQueryPrimaryDefault(SqlBaseBaseVisitor.java:686)
+	at io.trino.sql.parser.SqlBaseParser$QueryPrimaryDefaultContext.accept(SqlBaseParser.java:6766)
+	at org.antlr.v4.runtime.tree.AbstractParseTreeVisitor.visitChildren(AbstractParseTreeVisitor.java:46)
+	at io.trino.sql.parser.SqlBaseBaseVisitor.visitQueryTermDefault(SqlBaseBaseVisitor.java:672)
+	at io.trino.sql.parser.SqlBaseParser$QueryTermDefaultContext.accept(SqlBaseParser.java:6570)
+	at org.antlr.v4.runtime.tree.AbstractParseTreeVisitor.visit(AbstractParseTreeVisitor.java:18)
+	at io.trino.sql.parser.AstBuilder.visitQueryNoWith(AstBuilder.java:946)
+	at io.trino.sql.parser.AstBuilder.visitQueryNoWith(AstBuilder.java:287)
+	at io.trino.sql.parser.SqlBaseParser$QueryNoWithContext.accept(SqlBaseParser.java:6111)
+	at org.antlr.v4.runtime.tree.AbstractParseTreeVisitor.visit(AbstractParseTreeVisitor.java:18)
+	at io.trino.sql.parser.AstBuilder.visitQuery(AstBuilder.java:911)
+	at io.trino.sql.parser.AstBuilder.visitQuery(AstBuilder.java:287)
+	at io.trino.sql.parser.SqlBaseParser$QueryContext.accept(SqlBaseParser.java:5274)
+	at org.antlr.v4.runtime.tree.AbstractParseTreeVisitor.visit(AbstractParseTreeVisitor.java:18)
+	at io.trino.sql.parser.AstBuilder.visitNamedQuery(AstBuilder.java:939)
+	at io.trino.sql.parser.AstBuilder.visitNamedQuery(AstBuilder.java:287)
+	at io.trino.sql.parser.SqlBaseParser$NamedQueryContext.accept(SqlBaseParser.java:7848)
+	at org.antlr.v4.runtime.tree.AbstractParseTreeVisitor.visit(AbstractParseTreeVisitor.java:18)
+	at java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:197)
+	at java.base/java.util.ArrayList$ArrayListSpliterator.forEachRemaining(ArrayList.java:1708)
+	at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:509)
+	at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:499)
+	at java.base/java.util.stream.ReduceOps$ReduceOp.evaluateSequential(ReduceOps.java:921)
+	at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:234)
+	at java.base/java.util.stream.ReferencePipeline.collect(ReferencePipeline.java:682)
+	at io.trino.sql.parser.AstBuilder.visit(AstBuilder.java:3164)
+	at io.trino.sql.parser.AstBuilder.visitWith(AstBuilder.java:925)
+	at io.trino.sql.parser.AstBuilder.visitWith(AstBuilder.java:287)
+	at io.trino.sql.parser.SqlBaseParser$WithContext.accept(SqlBaseParser.java:5335)
+	at org.antlr.v4.runtime.tree.AbstractParseTreeVisitor.visit(AbstractParseTreeVisitor.java:18)
+	at java.base/java.util.Optional.map(Optional.java:260)
+	at io.trino.sql.parser.AstBuilder.visitIfPresent(AstBuilder.java:3155)
+	at io.trino.sql.parser.AstBuilder.visitQuery(AstBuilder.java:915)
+	at io.trino.sql.parser.AstBuilder.visitQuery(AstBuilder.java:287)
+	at io.trino.sql.parser.SqlBaseParser$QueryContext.accept(SqlBaseParser.java:5274)
+	at org.antlr.v4.runtime.tree.AbstractParseTreeVisitor.visitChildren(AbstractParseTreeVisitor.java:46)
+	at io.trino.sql.parser.SqlBaseBaseVisitor.visitStatementDefault(SqlBaseBaseVisitor.java:56)
+	at io.trino.sql.parser.SqlBaseParser$StatementDefaultContext.accept(SqlBaseParser.java:2023)
+	at org.antlr.v4.runtime.tree.AbstractParseTreeVisitor.visit(AbstractParseTreeVisitor.java:18)
+	at io.trino.sql.parser.AstBuilder.visitSingleStatement(AstBuilder.java:310)
+	at io.trino.sql.parser.AstBuilder.visitSingleStatement(AstBuilder.java:287)
+	at io.trino.sql.parser.SqlBaseParser$SingleStatementContext.accept(SqlBaseParser.java:293)
+	at org.antlr.v4.runtime.tree.AbstractParseTreeVisitor.visit(AbstractParseTreeVisitor.java:18)
+	at io.trino.sql.parser.SqlParser.invokeParser(SqlParser.java:156)
+	at io.trino.sql.parser.SqlParser.createStatement(SqlParser.java:85)
+	at io.wren.base.sqlrewrite.Utils.parseSql(Utils.java:63)
+	at io.wren.base.sqlrewrite.WrenPlanner.rewrite(WrenPlanner.java:48)
+	at io.wren.base.sqlrewrite.WrenPlanner.rewrite(WrenPlanner.java:43)
+	at io.wren.main.PreviewService.lambda$preview$0(PreviewService.java:85)
+	at java.base/java.util.concurrent.CompletableFuture$AsyncSupply.run(CompletableFuture.java:1768)
+	... 3 more
+
+
+2026-06-10T07:05:25.372Z	INFO	pool-1-thread-1	io.wren.main.connector.duckdb.DuckDBSqlConverter	[Input sql]: WITH
+  "olist_order_reviews_dataset" AS (
+   SELECT
+     "olist_order_reviews_dataset"."review_id" "review_id"
+   , "olist_order_reviews_dataset"."order_id" "order_id"
+   , "olist_order_reviews_dataset"."review_score" "review_score"
+   , "olist_order_reviews_dataset"."review_comment_title" "review_comment_title"
+   , "olist_order_reviews_dataset"."review_comment_message" "review_comment_message"
+   , "olist_order_reviews_dataset"."review_creation_date" "review_creation_date"
+   , "olist_order_reviews_dataset"."review_answer_timestamp" "review_answer_timestamp"
+   FROM
+     (
+      SELECT
+        "olist_order_reviews_dataset"."review_id" "review_id"
+      , "olist_order_reviews_dataset"."order_id" "order_id"
+      , "olist_order_reviews_dataset"."review_score" "review_score"
+      , "olist_order_reviews_dataset"."review_comment_title" "review_comment_title"
+      , "olist_order_reviews_dataset"."review_comment_message" "review_comment_message"
+      , "olist_order_reviews_dataset"."review_creation_date" "review_creation_date"
+      , "olist_order_reviews_dataset"."review_answer_timestamp" "review_answer_timestamp"
+      FROM
+        (
+         SELECT
+           "review_id" "review_id"
+         , "order_id" "order_id"
+         , "review_score" "review_score"
+         , "review_comment_title" "review_comment_title"
+         , "review_comment_message" "review_comment_message"
+         , "review_creation_date" "review_creation_date"
+         , "review_answer_timestamp" "review_answer_timestamp"
+         FROM
+           "memory"."main"."olist_order_reviews_dataset" "olist_order_reviews_dataset"
+      )  "olist_order_reviews_dataset"
+   )  "olist_order_reviews_dataset"
+) 
+, "olist_customers_dataset" AS (
+   SELECT
+     "olist_customers_dataset"."customer_id" "customer_id"
+   , "olist_customers_dataset"."customer_unique_id" "customer_unique_id"
+   , "olist_customers_dataset"."customer_zip_code_prefix" "customer_zip_code_prefix"
+   , "olist_customers_dataset"."customer_city" "customer_city"
+   , "olist_customers_dataset"."customer_state" "customer_state"
+   FROM
+     (
+      SELECT
+        "olist_customers_dataset"."customer_id" "customer_id"
+      , "olist_customers_dataset"."customer_unique_id" "customer_unique_id"
+      , "olist_customers_dataset"."customer_zip_code_prefix" "customer_zip_code_prefix"
+      , "olist_customers_dataset"."customer_city" "customer_city"
+      , "olist_customers_dataset"."customer_state" "customer_state"
+      FROM
+        (
+         SELECT
+           "customer_id" "customer_id"
+         , "customer_unique_id" "customer_unique_id"
+         , "customer_zip_code_prefix" "customer_zip_code_prefix"
+         , "customer_city" "customer_city"
+         , "customer_state" "customer_state"
+         FROM
+           "memory"."main"."olist_customers_dataset" "olist_customers_dataset"
+      )  "olist_customers_dataset"
+   )  "olist_customers_dataset"
+) 
+, "olist_orders_dataset" AS (
+   SELECT
+     "olist_orders_dataset"."order_id" "order_id"
+   , "olist_orders_dataset"."customer_id" "customer_id"
+   , "olist_orders_dataset"."order_status" "order_status"
+   , "olist_orders_dataset"."order_purchase_timestamp" "order_purchase_timestamp"
+   , "olist_orders_dataset"."order_approved_at" "order_approved_at"
+   , "olist_orders_dataset"."order_delivered_carrier_date" "order_delivered_carrier_date"
+   , "olist_orders_dataset"."order_delivered_customer_date" "order_delivered_customer_date"
+   , "olist_orders_dataset"."order_estimated_delivery_date" "order_estimated_delivery_date"
+   FROM
+     (
+      SELECT
+        "olist_orders_dataset"."order_id" "order_id"
+      , "olist_orders_dataset"."customer_id" "customer_id"
+      , "olist_orders_dataset"."order_status" "order_status"
+      , "olist_orders_dataset"."order_purchase_timestamp" "order_purchase_timestamp"
+      , "olist_orders_dataset"."order_approved_at" "order_approved_at"
+      , "olist_orders_dataset"."order_delivered_carrier_date" "order_delivered_carrier_date"
+      , "olist_orders_dataset"."order_delivered_customer_date" "order_delivered_customer_date"
+      , "olist_orders_dataset"."order_estimated_delivery_date" "order_estimated_delivery_date"
+      FROM
+        (
+         SELECT
+           "order_id" "order_id"
+         , "customer_id" "customer_id"
+         , "order_status" "order_status"
+         , "order_purchase_timestamp" "order_purchase_timestamp"
+         , "order_approved_at" "order_approved_at"
+         , "order_delivered_carrier_date" "order_delivered_carrier_date"
+         , "order_delivered_customer_date" "order_delivered_customer_date"
+         , "order_estimated_delivery_date" "order_estimated_delivery_date"
+         FROM
+           "memory"."main"."olist_orders_dataset" "olist_orders_dataset"
+      )  "olist_orders_dataset"
+   )  "olist_orders_dataset"
+) 
+SELECT
+  lower(c.customer_state) state
+, AVG(r.review_score) average_review_score
+FROM
+  olist_order_reviews_dataset r
+INNER JOIN olist_orders_dataset o ON (o.order_id = r.order_id)
+INNER JOIN olist_customers_dataset c ON (c.customer_id = o.customer_id)
+WHERE ((o.order_delivered_customer_date >= CAST('2023-11-09 00:00:00' AS timestamp with time zone)) AND 
+(o.order_delivered_customer_date < CAST('2024-11-09 00:00:00' AS timestamp with time zone)))
+GROUP BY lower(c.customer_state)
+
+2026-06-10T07:05:25.373Z	INFO	pool-1-thread-1	io.wren.main.connector.duckdb.DuckDBSqlConverter	[Dialect sql]: WITH
+  "olist_order_reviews_dataset" AS (
+   SELECT
+     "olist_order_reviews_dataset"."review_id" "review_id"
+   , "olist_order_reviews_dataset"."order_id" "order_id"
+   , "olist_order_reviews_dataset"."review_score" "review_score"
+   , "olist_order_reviews_dataset"."review_comment_title" "review_comment_title"
+   , "olist_order_reviews_dataset"."review_comment_message" "review_comment_message"
+   , "olist_order_reviews_dataset"."review_creation_date" "review_creation_date"
+   , "olist_order_reviews_dataset"."review_answer_timestamp" "review_answer_timestamp"
+   FROM
+     (
+      SELECT
+        "olist_order_reviews_dataset"."review_id" "review_id"
+      , "olist_order_reviews_dataset"."order_id" "order_id"
+      , "olist_order_reviews_dataset"."review_score" "review_score"
+      , "olist_order_reviews_dataset"."review_comment_title" "review_comment_title"
+      , "olist_order_reviews_dataset"."review_comment_message" "review_comment_message"
+      , "olist_order_reviews_dataset"."review_creation_date" "review_creation_date"
+      , "olist_order_reviews_dataset"."review_answer_timestamp" "review_answer_timestamp"
+      FROM
+        (
+         SELECT
+           "review_id" "review_id"
+         , "order_id" "order_id"
+         , "review_score" "review_score"
+         , "review_comment_title" "review_comment_title"
+         , "review_comment_message" "review_comment_message"
+         , "review_creation_date" "review_creation_date"
+         , "review_answer_timestamp" "review_answer_timestamp"
+         FROM
+           "memory"."main"."olist_order_reviews_dataset" "olist_order_reviews_dataset"
+      )  "olist_order_reviews_dataset"
+   )  "olist_order_reviews_dataset"
+) 
+, "olist_customers_dataset" AS (
+   SELECT
+     "olist_customers_dataset"."customer_id" "customer_id"
+   , "olist_customers_dataset"."customer_unique_id" "customer_unique_id"
+   , "olist_customers_dataset"."customer_zip_code_prefix" "customer_zip_code_prefix"
+   , "olist_customers_dataset"."customer_city" "customer_city"
+   , "olist_customers_dataset"."customer_state" "customer_state"
+   FROM
+     (
+      SELECT
+        "olist_customers_dataset"."customer_id" "customer_id"
+      , "olist_customers_dataset"."customer_unique_id" "customer_unique_id"
+      , "olist_customers_dataset"."customer_zip_code_prefix" "customer_zip_code_prefix"
+      , "olist_customers_dataset"."customer_city" "customer_city"
+      , "olist_customers_dataset"."customer_state" "customer_state"
+      FROM
+        (
+         SELECT
+           "customer_id" "customer_id"
+         , "customer_unique_id" "customer_unique_id"
+         , "customer_zip_code_prefix" "customer_zip_code_prefix"
+         , "customer_city" "customer_city"
+         , "customer_state" "customer_state"
+         FROM
+           "memory"."main"."olist_customers_dataset" "olist_customers_dataset"
+      )  "olist_customers_dataset"
+   )  "olist_customers_dataset"
+) 
+, "olist_orders_dataset" AS (
+   SELECT
+     "olist_orders_dataset"."order_id" "order_id"
+   , "olist_orders_dataset"."customer_id" "customer_id"
+   , "olist_orders_dataset"."order_status" "order_status"
+   , "olist_orders_dataset"."order_purchase_timestamp" "order_purchase_timestamp"
+   , "olist_orders_dataset"."order_approved_at" "order_approved_at"
+   , "olist_orders_dataset"."order_delivered_carrier_date" "order_delivered_carrier_date"
+   , "olist_orders_dataset"."order_delivered_customer_date" "order_delivered_customer_date"
+   , "olist_orders_dataset"."order_estimated_delivery_date" "order_estimated_delivery_date"
+   FROM
+     (
+      SELECT
+        "olist_orders_dataset"."order_id" "order_id"
+      , "olist_orders_dataset"."customer_id" "customer_id"
+      , "olist_orders_dataset"."order_status" "order_status"
+      , "olist_orders_dataset"."order_purchase_timestamp" "order_purchase_timestamp"
+      , "olist_orders_dataset"."order_approved_at" "order_approved_at"
+      , "olist_orders_dataset"."order_delivered_carrier_date" "order_delivered_carrier_date"
+      , "olist_orders_dataset"."order_delivered_customer_date" "order_delivered_customer_date"
+      , "olist_orders_dataset"."order_estimated_delivery_date" "order_estimated_delivery_date"
+      FROM
+        (
+         SELECT
+           "order_id" "order_id"
+         , "customer_id" "customer_id"
+         , "order_status" "order_status"
+         , "order_purchase_timestamp" "order_purchase_timestamp"
+         , "order_approved_at" "order_approved_at"
+         , "order_delivered_carrier_date" "order_delivered_carrier_date"
+         , "order_delivered_customer_date" "order_delivered_customer_date"
+         , "order_estimated_delivery_date" "order_estimated_delivery_date"
+         FROM
+           "memory"."main"."olist_orders_dataset" "olist_orders_dataset"
+      )  "olist_orders_dataset"
+   )  "olist_orders_dataset"
+) 
+SELECT
+  lower(c.customer_state) state
+, avg(r.review_score) average_review_score
+FROM
+  olist_order_reviews_dataset r
+INNER JOIN olist_orders_dataset o ON (o.order_id = r.order_id)
+INNER JOIN olist_customers_dataset c ON (c.customer_id = o.customer_id)
+WHERE ((o.order_delivered_customer_date >= CAST('2023-11-09 00:00:00' AS timestamp with time zone)) AND 
+(o.order_delivered_customer_date < CAST('2024-11-09 00:00:00' AS timestamp with time zone)))
+GROUP BY lower(c.customer_state)
+
