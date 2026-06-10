@@ -12,9 +12,19 @@ export const bootstrapKnex = (options: KnexOptions) => {
     /* eslint-disable @typescript-eslint/no-var-requires */
     return require('knex')({
       client: 'pg',
-      connection: pgUrl,
+      connection: {
+        connectionString: pgUrl,
+        ssl:
+          process.env.PG_SSL_REJECT_UNAUTHORIZED === 'false'
+            ? { rejectUnauthorized: false }
+            : undefined,
+      },
       debug,
-      pool: { min: 2, max: 10 },
+      pool: {
+        min: 0,
+        max: 5,
+        idleTimeoutMillis: 10000,
+      },
     });
   } else {
     console.log('using sqlite');
