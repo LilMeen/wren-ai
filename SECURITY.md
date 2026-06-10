@@ -1,4 +1,4 @@
-# Security Policy
+# **Security Policy**
 ## Reporting a Vulnerability
 
 If you believe you have found a security vulnerability in any Canner-owned repository, please report it to us through coordinated disclosure.
