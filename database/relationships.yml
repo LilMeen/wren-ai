@@ -1,0 +1,137 @@
+relationships:
+  # Device / asset profile
+  - name: stg_dmp_devices_stg_dmp_device_profiles
+    models:
+      - stg_dmp_devices
+      - stg_dmp_device_profiles
+    join_type: MANY_TO_ONE
+    condition: stg_dmp_devices.device_profile_id = stg_dmp_device_profiles.device_profile_id
+
+  - name: stg_dmp_assets_stg_dmp_asset_profiles
+    models:
+      - stg_dmp_assets
+      - stg_dmp_asset_profiles
+    join_type: MANY_TO_ONE
+    condition: stg_dmp_assets.asset_profile_id = stg_dmp_asset_profiles.asset_profile_id
+
+  - name: dim_device_dim_device_profile
+    models:
+      - dim_device
+      - dim_device_profile
+    join_type: MANY_TO_ONE
+    condition: dim_device.device_profile_id = dim_device_profile.device_profile_id
+
+  - name: dim_asset_dim_asset_profile
+    models:
+      - dim_asset
+      - dim_asset_profile
+    join_type: MANY_TO_ONE
+    condition: dim_asset.asset_profile_id = dim_asset_profile.asset_profile_id
+
+  # Device-asset bridge / fact
+  - name: dim_device_asset_dim_device
+    models:
+      - dim_device_asset
+      - dim_device
+    join_type: MANY_TO_ONE
+    condition: dim_device_asset.device_id = dim_device.device_id
+
+  - name: dim_device_asset_dim_asset
+    models:
+      - dim_device_asset
+      - dim_asset
+    join_type: MANY_TO_ONE
+    condition: dim_device_asset.asset_id = dim_asset.asset_id
+
+  - name: fct_device_asset_assignment_dim_device
+    models:
+      - fct_device_asset_assignment
+      - dim_device
+    join_type: MANY_TO_ONE
+    condition: fct_device_asset_assignment.device_id = dim_device.device_id
+
+  - name: fct_device_asset_assignment_dim_asset
+    models:
+      - fct_device_asset_assignment
+      - dim_asset
+    join_type: MANY_TO_ONE
+    condition: fct_device_asset_assignment.asset_id = dim_asset.asset_id
+
+  # Parking facts
+  - name: fct_vehicle_events_dim_parking_lot
+    models:
+      - fct_vehicle_events
+      - dim_parking_lot
+    join_type: MANY_TO_ONE
+    condition: fct_vehicle_events.parking_lot_id = dim_parking_lot.pk_lot_id
+
+  - name: fct_vehicle_events_dim_date_check_in
+    models:
+      - fct_vehicle_events
+      - dim_date
+    join_type: MANY_TO_ONE
+    condition: fct_vehicle_events.check_in_date_key = dim_date.date_key
+
+  - name: fct_vehicle_events_dim_date_check_out
+    models:
+      - fct_vehicle_events
+      - dim_date
+    join_type: MANY_TO_ONE
+    condition: fct_vehicle_events.check_out_date_key = dim_date.date_key
+
+  - name: fct_vehicle_events_dim_time_check_in
+    models:
+      - fct_vehicle_events
+      - dim_time
+    join_type: MANY_TO_ONE
+    condition: fct_vehicle_events.check_in_time_key = dim_time.time_key
+
+  - name: fct_vehicle_events_dim_time_check_out
+    models:
+      - fct_vehicle_events
+      - dim_time
+    join_type: MANY_TO_ONE
+    condition: fct_vehicle_events.check_out_time_key = dim_time.time_key
+
+  # Telemetry / status
+  - name: stg_dmp_device_status_events_dim_device
+    models:
+      - stg_dmp_device_status_events
+      - dim_device
+    join_type: MANY_TO_ONE
+    condition: stg_dmp_device_status_events.device_id = dim_device.device_id
+
+  - name: stg_dmp_evt_connectivity_dim_device
+    models:
+      - stg_dmp_evt_connectivity
+      - dim_device
+    join_type: MANY_TO_ONE
+    condition: stg_dmp_evt_connectivity.deviceid = dim_device.device_id
+
+  - name: stg_mv_dmp_tlm_camera_dim_device
+    models:
+      - stg_mv_dmp_tlm_camera
+      - dim_device
+    join_type: MANY_TO_ONE
+    condition: stg_mv_dmp_tlm_camera.deviceId = dim_device.device_id
+
+  - name: stg_mv_dmp_tlm_chiller_dim_device
+    models:
+      - stg_mv_dmp_tlm_chiller
+      - dim_device
+    join_type: MANY_TO_ONE
+    condition: stg_mv_dmp_tlm_chiller.deviceId = dim_device.device_id
+
+  - name: stg_mv_dmp_tlm_energy_meter_dim_device
+    models:
+      - stg_mv_dmp_tlm_energy_meter
+      - dim_device
+    join_type: MANY_TO_ONE
+    condition: stg_mv_dmp_tlm_energy_meter.deviceId = dim_device.device_id
+
+  - name: stg_mv_dmp_tlm_nvr_dim_device
+    models:
+      - stg_mv_dmp_tlm_nvr
+      - dim_device
+    join_type: MANY_TO_ONE
+    condition: stg_mv_dmp_tlm_nvr.deviceId = dim_device.device_id
