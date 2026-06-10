@@ -2,6 +2,7 @@ version: "3"
 
 volumes:
   data:
+  ollama-data:
 
 networks:
   wren:
@@ -68,6 +69,16 @@ services:
       - wren
     depends_on:
       - qdrant
+
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    networks:
+      - wren
 
   qdrant:
     image: qdrant/qdrant:v1.15.0

@@ -29,6 +29,9 @@ wren-ai-service/tools/dev/etc/**
 .deepeval-cache.json
 .deepeval_telemtry.txt
 docker/config.yaml
+docker/.env
+database/.env
+database/.env.docker
 docker/docker-compose-local.yaml
 docker/data
 
