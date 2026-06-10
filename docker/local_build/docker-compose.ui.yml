@@ -1,0 +1,10 @@
+version: "3.9"
+
+services:
+  wren-ui:
+    image: custom/wren-ui:local
+    build:
+      context: ../../wren-ui
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"

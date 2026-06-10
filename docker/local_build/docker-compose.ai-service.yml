@@ -1,0 +1,10 @@
+version: "3.9"
+
+services:
+  wren-ai-service:
+    image: custom/wren-ai-service:local
+    build:
+      context: ../../wren-ai-service
+      dockerfile: docker/Dockerfile
+    ports:
+      - "5556:5556"
