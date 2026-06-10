@@ -115,8 +115,8 @@ jobs:
           push: true
           build-args: ${{ matrix.service.build_args }}
           tags: |
-            ${{ env.DOCKERHUB_DEV_USERNAME }}/${{ matrix.service.image }}:latest
-            ${{ env.DOCKERHUB_DEV_USERNAME }}/${{ matrix.service.image }}:${{ github.sha }}
+            ${{ env.DOCKERHUB_USERNAME }}/${{ matrix.service.image }}:latest
+            ${{ env.DOCKERHUB_USERNAME }}/${{ matrix.service.image }}:${{ github.sha }}
           cache-from: type=gha,scope=${{ matrix.service.name }}
           cache-to: type=gha,mode=max,scope=${{ matrix.service.name }}
 
@@ -133,8 +133,8 @@ jobs:
             wren-core-base=./wren-engine/wren-core-base
             mcp-server=./wren-engine/mcp-server
           tags: |
-            ${{ env.DOCKERHUB_DEV_USERNAME }}/wren-engine-ibis:latest
-            ${{ env.DOCKERHUB_DEV_USERNAME }}/wren-engine-ibis:${{ github.sha }}
+            ${{ env.DOCKERHUB_USERNAME }}/wren-engine-ibis:latest
+            ${{ env.DOCKERHUB_USERNAME }}/wren-engine-ibis:${{ github.sha }}
           cache-from: type=gha,scope=wren-engine-ibis
           cache-to: type=gha,mode=max,scope=wren-engine-ibis
 
