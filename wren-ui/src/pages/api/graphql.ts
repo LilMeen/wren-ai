@@ -1,6 +1,7 @@
 import microCors from 'micro-cors';
 import { NextApiRequest, NextApiResponse, PageConfig } from 'next';
 import { ApolloServer } from 'apollo-server-micro';
+import { ApolloServerPluginLandingPageLocalDefault } from 'apollo-server-core';
 import { typeDefs } from '@server';
 import resolvers from '@server/resolvers';
 import { IContext } from '@server/types';
@@ -124,7 +125,12 @@ const bootstrapServer = async () => {
       }
       return defaultApolloErrorHandler(error);
     },
-    introspection: process.env.NODE_ENV !== 'production',
+    introspection: true, //process.env.NODE_ENV !== 'production',
+    plugins: [
+      ApolloServerPluginLandingPageLocalDefault({
+        embed: true,
+      }),
+    ],
     context: (): IContext => ({
       config: serverConfig,
       telemetry,
