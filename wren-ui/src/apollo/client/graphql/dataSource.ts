@@ -43,6 +43,7 @@ export const AUTO_GENERATED_RELATIONS = gql`
 export const SAVE_DATA_SOURCE = gql`
   mutation SaveDataSource($data: DataSourceInput!) {
     saveDataSource(data: $data) {
+      projectId
       type
       properties
     }

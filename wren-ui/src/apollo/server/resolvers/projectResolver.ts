@@ -50,6 +50,7 @@ export enum OnboardingStatusEnum {
 export class ProjectResolver {
   constructor() {
     this.getSettings = this.getSettings.bind(this);
+    this.listProjects = this.listProjects.bind(this);
     this.updateCurrentProject = this.updateCurrentProject.bind(this);
     this.resetCurrentProject = this.resetCurrentProject.bind(this);
     this.saveDataSource = this.saveDataSource.bind(this);
@@ -65,6 +66,20 @@ export class ProjectResolver {
     this.getSchemaChange = this.getSchemaChange.bind(this);
     this.getProjectRecommendationQuestions =
       this.getProjectRecommendationQuestions.bind(this);
+  }
+
+  public async listProjects(_root: any, _arg: any, ctx: IContext) {
+    const projects = await ctx.projectService.listProjects();
+    return Promise.all(
+      projects.map(async (project) => ({
+        id: project.id,
+        displayName: project.displayName,
+        description: project.description,
+        owner: project.ownerId
+          ? await ctx.userRepository.findOneBy({ id: project.ownerId })
+          : null,
+      })),
+    );
   }
 
   public async getSettings(_root: any, _arg: any, ctx: IContext) {
@@ -263,9 +278,6 @@ export class ProjectResolver {
     ctx: IContext,
   ) {
     const { type, properties } = args.data;
-    // Currently only can create one project
-    await this.resetCurrentProject(_root, args, ctx);
-
     const { displayName, ...connectionInfo } = properties;
     const project = await ctx.projectService.createProject({
       displayName,
@@ -322,6 +334,7 @@ export class ProjectResolver {
     }
 
     return {
+      projectId: project.id,
       type: project.type,
       properties: {
         displayName: project.displayName,

@@ -15,6 +15,8 @@ import {
 } from '@/apollo/server/utils/error';
 import { TelemetryEvent } from '@/apollo/server/telemetry/telemetry';
 import { components } from '@/common';
+import { getSessionToken } from '@/apollo/server/utils/auth';
+import { runWithRequestContext } from '@/apollo/server/utils/requestContext';
 
 const serverConfig = getConfig();
 const logger = getLogger('APOLLO');
@@ -48,6 +50,8 @@ const bootstrapServer = async () => {
     instructionRepository,
     apiHistoryRepository,
     dashboardItemRefreshJobRepository,
+    userRepository,
+    userSessionRepository,
     // adaptors
     wrenEngineAdaptor,
     ibisAdaptor,
@@ -63,6 +67,7 @@ const bootstrapServer = async () => {
     sqlPairService,
 
     instructionService,
+    authService,
     // background trackers
     projectRecommendQuestionBackgroundTracker,
     threadRecommendQuestionBackgroundTracker,
@@ -131,7 +136,12 @@ const bootstrapServer = async () => {
         embed: true,
       }),
     ],
-    context: (): IContext => ({
+    context: async ({ req, res }): Promise<IContext> => ({
+      req,
+      res,
+      currentUser: await components.authService.authenticate(
+        getSessionToken(req as NextApiRequest),
+      ),
       config: serverConfig,
       telemetry,
       // adaptor
@@ -148,6 +158,7 @@ const bootstrapServer = async () => {
       dashboardService,
       sqlPairService,
       instructionService,
+      authService,
       // repository
       projectRepository,
       modelRepository,
@@ -164,6 +175,8 @@ const bootstrapServer = async () => {
       instructionRepository,
       apiHistoryRepository,
       dashboardItemRefreshJobRepository,
+      userRepository,
+      userSessionRepository,
       // background trackers
       projectRecommendQuestionBackgroundTracker,
       threadRecommendQuestionBackgroundTracker,
@@ -178,9 +191,18 @@ const startServer = bootstrapServer();
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const apolloServer = await startServer;
-  await apolloServer.createHandler({
-    path: '/api/graphql',
-  })(req, res);
+  const selectedProjectId = Number(req.headers['x-project-id']);
+  await runWithRequestContext(
+    {
+      selectedProjectId: Number.isFinite(selectedProjectId)
+        ? selectedProjectId
+        : undefined,
+    },
+    () =>
+      apolloServer.createHandler({
+        path: '/api/graphql',
+      })(req, res),
+  );
 };
 
 export default cors((req: NextApiRequest, res: NextApiResponse) =>

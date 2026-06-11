@@ -4,6 +4,40 @@ export const typeDefs = gql`
   scalar JSON
   scalar DialectSQL
 
+  enum UserRole {
+    dev
+    user
+    admin
+  }
+
+  type User {
+    id: Int!
+    email: String!
+    role: UserRole!
+  }
+
+  type AuthPayload {
+    user: User!
+  }
+
+  type ProjectSummary {
+    id: Int!
+    displayName: String!
+    description: String
+    owner: User
+  }
+
+  input SignUpInput {
+    email: String!
+    password: String!
+    role: UserRole!
+  }
+
+  input SignInInput {
+    email: String!
+    password: String!
+  }
+
   enum ApiType {
     GENERATE_SQL
     RUN_SQL
@@ -142,6 +176,7 @@ export const typeDefs = gql`
   }
 
   type DataSource {
+    projectId: Int
     type: DataSourceName!
     properties: JSON!
     # Show the name if the data source setup comes from a sample
@@ -1112,6 +1147,8 @@ export const typeDefs = gql`
 
   # Query and Mutation
   type Query {
+    currentUser: User
+    projects: [ProjectSummary!]!
     # On Boarding Steps
     listDataSourceTables: [CompactTable!]!
     autoGenerateRelation: [RecommendRelations!]!
@@ -1170,6 +1207,10 @@ export const typeDefs = gql`
   }
 
   type Mutation {
+    signUp(data: SignUpInput!): AuthPayload!
+    signIn(data: SignInInput!): AuthPayload!
+    refreshSession: AuthPayload!
+    logout: Boolean!
     # On Boarding Steps
     saveDataSource(data: DataSourceInput!): DataSource!
     startSampleDataset(data: SampleDatasetInput!): JSON!

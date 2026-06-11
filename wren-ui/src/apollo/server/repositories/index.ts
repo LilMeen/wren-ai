@@ -19,3 +19,5 @@ export * from './askingTaskRepository';
 export * from './instructionRepository';
 export * from './apiHistoryRepository';
 export * from './dashboardItemRefreshJobRepository';
+export * from './userRepository';
+export * from './userSessionRepository';

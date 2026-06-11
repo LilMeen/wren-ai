@@ -169,6 +169,8 @@ export interface Project {
   type: DataSourceName; // Project datasource type. ex: bigquery, mysql, postgresql, mongodb, etc
   version: string; // Project datasource version
   displayName: string; // Project display name
+  ownerId?: number; // Reference to user.id
+  description?: string;
   catalog: string; // Catalog name
   schema: string; // Schema name
   sampleDataset: string; // Sample dataset name
@@ -183,7 +185,8 @@ export interface Project {
 }
 
 export interface IProjectRepository extends IBasicRepository<Project> {
-  getCurrentProject: () => Promise<Project>;
+  getCurrentProject: (projectId?: number) => Promise<Project>;
+  listAllProjects: () => Promise<Project[]>;
 }
 
 export class ProjectRepository
@@ -196,7 +199,14 @@ export class ProjectRepository
     super({ knexPg, tableName: 'project' });
   }
 
-  public async getCurrentProject() {
+  public async getCurrentProject(projectId?: number) {
+    if (projectId) {
+      const project = await this.findOneBy({ id: projectId });
+      if (!project) {
+        throw new Error('Selected project not found');
+      }
+      return project;
+    }
     const projects = await this.findAll({
       order: 'id',
       limit: 1,
@@ -205,6 +215,10 @@ export class ProjectRepository
       throw new Error('No project found');
     }
     return projects[0];
+  }
+
+  public async listAllProjects() {
+    return this.findAll({ order: 'id' });
   }
 
   public override transformFromDBData: (data: any) => Project = (data: any) => {

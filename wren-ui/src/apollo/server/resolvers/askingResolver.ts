@@ -28,6 +28,7 @@ import {
 } from '../data';
 import { TelemetryEvent, WrenService } from '../telemetry/telemetry';
 import { TrackedAskingResult } from '../services';
+import { requireUser } from '../utils/auth';
 
 const logger = getLogger('AskingResolver');
 logger.level = 'debug';
@@ -277,7 +278,11 @@ export class AskingResolver {
 
     const eventName = TelemetryEvent.HOME_CREATE_THREAD;
     try {
-      const thread = await askingService.createThread(threadInput);
+      const currentUser = requireUser(ctx);
+      const thread = await askingService.createThread(
+        threadInput,
+        currentUser.id,
+      );
       ctx.telemetry.sendEvent(eventName, {});
       return thread;
     } catch (err: any) {
@@ -299,8 +304,12 @@ export class AskingResolver {
   ): Promise<DetailedThread> {
     const { threadId } = args;
 
+    const currentUser = requireUser(ctx);
     const askingService = ctx.askingService;
-    const responses = await askingService.getResponsesWithThread(threadId);
+    const responses = await askingService.getResponsesWithThread(
+      threadId,
+      currentUser.id,
+    );
     // reduce responses to group by thread id
     const thread = reduce(
       responses,
@@ -343,6 +352,8 @@ export class AskingResolver {
     const eventName = TelemetryEvent.HOME_UPDATE_THREAD_SUMMARY;
     const newSummary = data.summary;
     try {
+      const currentUser = requireUser(ctx);
+      await askingService.getResponsesWithThread(where.id, currentUser.id);
       const thread = await askingService.updateThread(where.id, data);
       // telemetry
       ctx.telemetry.sendEvent(eventName, {
@@ -369,8 +380,9 @@ export class AskingResolver {
   ): Promise<boolean> {
     const { where } = args;
 
+    const currentUser = requireUser(ctx);
     const askingService = ctx.askingService;
-    await askingService.deleteThread(where.id);
+    await askingService.deleteThread(where.id, currentUser.id);
     return true;
   }
 
@@ -379,7 +391,8 @@ export class AskingResolver {
     _args: any,
     ctx: IContext,
   ): Promise<Thread[]> {
-    const threads = await ctx.askingService.listThreads();
+    const currentUser = requireUser(ctx);
+    const threads = await ctx.askingService.listThreads(currentUser.id);
     return threads;
   }
 
@@ -420,6 +433,8 @@ export class AskingResolver {
     }
 
     try {
+      const currentUser = requireUser(ctx);
+      await askingService.getResponsesWithThread(threadId, currentUser.id);
       const response = await askingService.createThreadResponse(
         threadResponseInput,
         threadId,
@@ -622,7 +637,11 @@ export class AskingResolver {
   ): Promise<ThreadResponse> {
     const { responseId } = args;
     const askingService = ctx.askingService;
-    const response = await askingService.getResponse(responseId);
+    const currentUser = requireUser(ctx);
+    const response = await askingService.getResponse(
+      responseId,
+      currentUser.id,
+    );
 
     return response;
   }

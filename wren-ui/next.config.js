@@ -11,7 +11,7 @@ const resolveAlias = {
 
 /** @type {import('next').NextConfig} */
 const nextConfig = withLess({
-  output: 'standalone',
+  output: process.env.NEXT_STANDALONE === 'true' ? 'standalone' : undefined,
   staticPageGenerationTimeout: 1000,
   compiler: {
     // Enables the styled-components SWC transform

@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1.7
 FROM node:18-bookworm-slim AS base
 
 # Install required packages
@@ -7,7 +8,11 @@ RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 # Learn more here: https://nextjs.org/telemetry
 # Uncomment the following line in case you want to disable telemetry during the build.
 ENV NEXT_TELEMETRY_DISABLED 1
+ENV NEXT_STANDALONE true
+ENV NEXT_DISABLE_PRERENDER true
 ENV NODE_ENV production
+ENV YARN_ENABLE_GLOBAL_CACHE true
+ENV YARN_GLOBAL_FOLDER /root/.yarn
 
 WORKDIR /app
 
@@ -21,13 +26,12 @@ FROM base AS deps
 WORKDIR /app
 
 # Install dependencies based on the preferred package manager
-RUN yarn install --immutable
-RUN yarn add sharp
+RUN --mount=type=cache,id=wren-ui-yarn-cache,target=/root/.yarn \
+    yarn config get cacheFolder && yarn install --immutable
 
 # Rebuild the source code only when needed
-FROM base AS builder
+FROM deps AS builder
 WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
 COPY public ./public
 COPY src ./src
 COPY .eslintrc.json ./

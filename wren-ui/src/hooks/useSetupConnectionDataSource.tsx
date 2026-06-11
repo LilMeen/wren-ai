@@ -17,7 +17,16 @@ export default function useSetupConnectionDataSource() {
   const [saveDataSourceMutation, { loading, error }] =
     useSaveDataSourceMutation({
       onError: (error) => console.error(error),
-      onCompleted: () => completedDataSourceSave(),
+      onCompleted: (data) => {
+        const projectId = data?.saveDataSource?.projectId;
+        if (projectId) {
+          window.localStorage.setItem(
+            'wren:selectedProjectId',
+            String(projectId),
+          );
+        }
+        completedDataSourceSave();
+      },
     });
 
   const selectDataSourceNext = useCallback(

@@ -139,13 +139,13 @@ export interface IAskingService {
   /**
    * Asking detail task.
    */
-  createThread(input: AskingDetailTaskInput): Promise<Thread>;
+  createThread(input: AskingDetailTaskInput, userId?: number): Promise<Thread>;
   updateThread(
     threadId: number,
     input: Partial<AskingDetailTaskUpdateInput>,
   ): Promise<Thread>;
-  deleteThread(threadId: number): Promise<void>;
-  listThreads(): Promise<Thread[]>;
+  deleteThread(threadId: number, userId?: number): Promise<void>;
+  listThreads(userId?: number): Promise<Thread[]>;
   createThreadResponse(
     input: AskingDetailTaskInput,
     threadId: number,
@@ -154,8 +154,11 @@ export interface IAskingService {
     responseId: number,
     data: { sql: string },
   ): Promise<ThreadResponse>;
-  getResponsesWithThread(threadId: number): Promise<ThreadResponse[]>;
-  getResponse(responseId: number): Promise<ThreadResponse>;
+  getResponsesWithThread(
+    threadId: number,
+    userId?: number,
+  ): Promise<ThreadResponse[]>;
+  getResponse(responseId: number, userId?: number): Promise<ThreadResponse>;
   generateThreadResponseBreakdown(
     threadResponseId: number,
     configurations: { language: string },
@@ -677,11 +680,15 @@ export class AskingService implements IAskingService {
    * 2. create a task on AI service to generate the detail
    * 3. update the thread response with the task id
    */
-  public async createThread(input: AskingDetailTaskInput): Promise<Thread> {
+  public async createThread(
+    input: AskingDetailTaskInput,
+    userId?: number,
+  ): Promise<Thread> {
     // 1. create a thread and the first thread response
     const { id } = await this.projectService.getCurrentProject();
     const thread = await this.threadRepository.createOne({
       projectId: id,
+      userId,
       summary: input.question,
     });
 
@@ -706,8 +713,11 @@ export class AskingService implements IAskingService {
     return thread;
   }
 
-  public async listThreads(): Promise<Thread[]> {
+  public async listThreads(userId?: number): Promise<Thread[]> {
     const { id } = await this.projectService.getCurrentProject();
+    if (userId) {
+      return await this.threadRepository.listAllTimeDescOrderByUser(id, userId);
+    }
     return await this.threadRepository.listAllTimeDescOrder(id);
   }
 
@@ -725,7 +735,8 @@ export class AskingService implements IAskingService {
     });
   }
 
-  public async deleteThread(threadId: number): Promise<void> {
+  public async deleteThread(threadId: number, userId?: number): Promise<void> {
+    await this.assertThreadAccessible(threadId, userId);
     await this.threadRepository.deleteOne(threadId);
   }
 
@@ -733,13 +744,7 @@ export class AskingService implements IAskingService {
     input: AskingDetailTaskInput,
     threadId: number,
   ): Promise<ThreadResponse> {
-    const thread = await this.threadRepository.findOneBy({
-      id: threadId,
-    });
-
-    if (!thread) {
-      throw new Error(`Thread ${threadId} not found`);
-    }
+    const thread = await this.assertThreadAccessible(threadId);
 
     const threadResponse = await this.threadResponseRepository.createOne({
       threadId: thread.id,
@@ -918,12 +923,19 @@ export class AskingService implements IAskingService {
     return updatedThreadResponse;
   }
 
-  public async getResponsesWithThread(threadId: number) {
+  public async getResponsesWithThread(threadId: number, userId?: number) {
+    await this.assertThreadAccessible(threadId, userId);
     return this.threadResponseRepository.getResponsesWithThread(threadId);
   }
 
-  public async getResponse(responseId: number) {
-    return this.threadResponseRepository.findOneBy({ id: responseId });
+  public async getResponse(responseId: number, userId?: number) {
+    const response = await this.threadResponseRepository.findOneBy({
+      id: responseId,
+    });
+    if (response) {
+      await this.assertThreadAccessible(response.threadId, userId);
+    }
+    return response;
   }
 
   public async previewData(responseId: number, limit?: number) {
@@ -1051,6 +1063,17 @@ export class AskingService implements IAskingService {
     );
 
     return updatedResponse;
+  }
+
+  private async assertThreadAccessible(threadId: number, userId?: number) {
+    const thread = await this.threadRepository.findOneBy({ id: threadId });
+    if (!thread) {
+      throw new Error(`Thread ${threadId} not found`);
+    }
+    if (userId && thread.userId && thread.userId !== userId) {
+      throw new Error('Thread access denied');
+    }
+    return thread;
   }
 
   private async getDeployId() {

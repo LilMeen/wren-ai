@@ -23,6 +23,7 @@ import { IMDLService } from './mdlService';
 import { ProjectRecommendQuestionBackgroundTracker } from '../backgrounds';
 import { ITelemetry } from '../telemetry/telemetry';
 import { getConfig } from '../config';
+import { getRequestContext } from '../utils/requestContext';
 
 const config = getConfig();
 
@@ -42,6 +43,8 @@ export interface ProjectData {
   displayName: string;
   type: DataSourceName;
   connectionInfo: WREN_AI_CONNECTION_INFO;
+  ownerId?: number;
+  description?: string;
 }
 
 export interface ProjectRecommendationQuestionsResult {
@@ -70,6 +73,7 @@ export interface IProjectService {
   ) => Promise<RecommendConstraint[]>;
 
   getCurrentProject: () => Promise<Project>;
+  listProjects: () => Promise<Project[]>;
   getProjectById: (projectId: number) => Promise<Project>;
   writeCredentialFile: (
     credentials: JSON,
@@ -162,7 +166,7 @@ export class ProjectService implements IProjectService {
   }
 
   public async getProjectRecommendationQuestions() {
-    const project = await this.projectRepository.getCurrentProject();
+    const project = await this.getCurrentProject();
     if (!project) {
       throw new Error(`Project not found`);
     }
@@ -182,7 +186,13 @@ export class ProjectService implements IProjectService {
   }
 
   public async getCurrentProject() {
-    return await this.projectRepository.getCurrentProject();
+    return await this.projectRepository.getCurrentProject(
+      getRequestContext()?.selectedProjectId,
+    );
+  }
+
+  public async listProjects() {
+    return this.projectRepository.listAllProjects();
   }
 
   public async getProjectById(projectId: number) {
@@ -216,6 +226,7 @@ export class ProjectService implements IProjectService {
   public async createProject(projectData: ProjectData) {
     const projectValue = {
       displayName: projectData.displayName,
+      description: projectData.description,
       type: projectData.type,
       catalog: 'wrenai',
       schema: 'public',
@@ -223,6 +234,7 @@ export class ProjectService implements IProjectService {
         projectData.type,
         projectData.connectionInfo,
       ),
+      ownerId: projectData.ownerId,
     };
     logger.debug('Creating project...');
     const project = await this.projectRepository.createOne(projectValue);

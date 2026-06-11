@@ -1,1 +1,24 @@
+# Normalize text files for Linux containers across Windows/macOS/Linux
+* text=auto eol=lf
+
+# Docker / shell entrypoints must stay LF
+*.sh text eol=lf
+Dockerfile text eol=lf
+*.Dockerfile text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.env text eol=lf
+
+# Binary assets
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.gz binary
+*.sqlite3 binary
+
+# Git LFS
 database/data/raw_dmp_tlm_raw.csv filter=lfs diff=lfs merge=lfs -text

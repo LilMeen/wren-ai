@@ -1,9 +1,11 @@
+import { useMutation, useQuery } from '@apollo/client';
 import { useRouter } from 'next/router';
 import { Button, Layout, Space } from 'antd';
 import styled from 'styled-components';
 import LogoBar from '@/components/LogoBar';
 import { Path } from '@/utils/enum';
 import Deploy from '@/components/deploy/Deploy';
+import { CURRENT_USER, LOGOUT } from '@/apollo/client/graphql/auth';
 
 const { Header } = Layout;
 
@@ -34,8 +36,23 @@ const StyledHeader = styled(Header)`
 export default function HeaderBar() {
   const router = useRouter();
   const { pathname } = router;
+  const isServer = typeof window === 'undefined';
+  const { data } = useQuery(CURRENT_USER, {
+    fetchPolicy: 'cache-first',
+    skip: isServer,
+  });
+  const [logout, { loading: loggingOut }] = useMutation(LOGOUT, {
+    onCompleted: () => {
+      window.localStorage.removeItem('wren:selectedProjectId');
+      router.replace(Path.SignIn);
+    },
+  });
   const showNav = !pathname.startsWith(Path.Onboarding);
   const isModeling = pathname.startsWith(Path.Modeling);
+  const switchProject = () => {
+    window.localStorage.removeItem('wren:selectedProjectId');
+    router.push(Path.Projects);
+  };
 
   return (
     <StyledHeader>
@@ -82,11 +99,30 @@ export default function HeaderBar() {
             </Space>
           )}
         </Space>
-        {isModeling && (
-          <Space size={[16, 0]}>
-            <Deploy />
-          </Space>
-        )}
+        <Space size={[16, 0]}>
+          {isModeling && <Deploy />}
+          {data?.currentUser && !pathname.startsWith(Path.Projects) && (
+            <StyledButton
+              shape="round"
+              size="small"
+              $isHighlight={false}
+              onClick={switchProject}
+            >
+              Switch project
+            </StyledButton>
+          )}
+          {data?.currentUser && (
+            <StyledButton
+              shape="round"
+              size="small"
+              $isHighlight={false}
+              loading={loggingOut}
+              onClick={() => logout()}
+            >
+              Sign out
+            </StyledButton>
+          )}
+        </Space>
       </div>
     </StyledHeader>
   );

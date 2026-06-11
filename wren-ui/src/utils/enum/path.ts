@@ -1,4 +1,7 @@
 export enum Path {
+  SignIn = '/signin',
+  SignUp = '/signup',
+  Projects = '/projects',
   Home = '/home',
   HomeDashboard = '/home/dashboard',
   Thread = '/home/[id]',

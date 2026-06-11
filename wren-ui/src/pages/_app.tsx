@@ -1,4 +1,4 @@
-import { AppProps } from 'next/app';
+import NextApp, { AppContext, AppInitialProps, AppProps } from 'next/app';
 import Head from 'next/head';
 import { Spin } from 'antd';
 import posthog from 'posthog-js';
@@ -7,6 +7,7 @@ import { GlobalConfigProvider } from '@/hooks/useGlobalConfig';
 import { PostHogProvider } from 'posthog-js/react';
 import { ApolloProvider } from '@apollo/client';
 import { defaultIndicator } from '@/components/PageLoading';
+import AuthGate from '@/components/auth/AuthGate';
 
 require('../styles/index.less');
 
@@ -22,9 +23,11 @@ function App({ Component, pageProps }: AppProps) {
       <GlobalConfigProvider>
         <ApolloProvider client={apolloClient}>
           <PostHogProvider client={posthog}>
-            <main className="app">
-              <Component {...pageProps} />
-            </main>
+            <AuthGate>
+              <main className="app">
+                <Component {...pageProps} />
+              </main>
+            </AuthGate>
           </PostHogProvider>
         </ApolloProvider>
       </GlobalConfigProvider>
@@ -32,4 +35,14 @@ function App({ Component, pageProps }: AppProps) {
   );
 }
 
-export default App;
+const AppWithInitialProps = App as typeof App & {
+  getInitialProps?: (context: AppContext) => Promise<AppInitialProps>;
+};
+
+if (process.env.NEXT_DISABLE_PRERENDER === 'true') {
+  AppWithInitialProps.getInitialProps = async (context: AppContext) => {
+    return NextApp.getInitialProps(context);
+  };
+}
+
+export default AppWithInitialProps;

@@ -1,3 +1,4 @@
+import { NextApiRequest, NextApiResponse } from 'next';
 import { IConfig } from '@server/config';
 import {
   IIbisAdaptor,
@@ -20,6 +21,9 @@ import {
   IInstructionRepository,
   IApiHistoryRepository,
   IDashboardItemRefreshJobRepository,
+  IUserRepository,
+  IUserSessionRepository,
+  UserRole,
 } from '@server/repositories';
 import {
   IQueryService,
@@ -30,6 +34,8 @@ import {
   IProjectService,
   IDashboardService,
   IInstructionService,
+  IAuthService,
+  PublicUser,
 } from '@server/services';
 import { ITelemetry } from '@server/telemetry/telemetry';
 import {
@@ -39,8 +45,15 @@ import {
 } from '@server/backgrounds';
 import { ISqlPairService } from '../services/sqlPairService';
 
+export interface AuthenticatedUser extends PublicUser {
+  role: UserRole;
+}
+
 export interface IContext {
   config: IConfig;
+  currentUser?: AuthenticatedUser | null;
+  req?: NextApiRequest;
+  res?: NextApiResponse;
   // telemetry
   telemetry: ITelemetry;
 
@@ -59,6 +72,7 @@ export interface IContext {
   dashboardService: IDashboardService;
   sqlPairService: ISqlPairService;
   instructionService: IInstructionService;
+  authService: IAuthService;
 
   // repository
   projectRepository: IProjectRepository;
@@ -76,6 +90,8 @@ export interface IContext {
   instructionRepository: IInstructionRepository;
   apiHistoryRepository: IApiHistoryRepository;
   dashboardItemRefreshJobRepository: IDashboardItemRefreshJobRepository;
+  userRepository: IUserRepository;
+  userSessionRepository: IUserSessionRepository;
 
   // background trackers
   projectRecommendQuestionBackgroundTracker: ProjectRecommendQuestionBackgroundTracker;

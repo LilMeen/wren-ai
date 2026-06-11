@@ -8,7 +8,9 @@ import { DashboardResolver } from './resolvers/dashboardResolver';
 import { SqlPairResolver } from './resolvers/sqlPairResolver';
 import { InstructionResolver } from './resolvers/instructionResolver';
 import { ApiHistoryResolver } from './resolvers/apiHistoryResolver';
+import { AuthResolver } from './resolvers/authResolver';
 import { convertColumnType } from '@server/utils';
+import { requireDev } from './utils/auth';
 import { DialectSQLScalar } from './scalars';
 
 const projectResolver = new ProjectResolver();
@@ -20,10 +22,19 @@ const dashboardResolver = new DashboardResolver();
 const sqlPairResolver = new SqlPairResolver();
 const instructionResolver = new InstructionResolver();
 const apiHistoryResolver = new ApiHistoryResolver();
+const authResolver = new AuthResolver();
+const devOnly =
+  (resolver: any) => async (root: any, args: any, ctx: any, info: any) => {
+    requireDev(ctx);
+    return resolver(root, args, ctx, info);
+  };
+
 const resolvers = {
   JSON: GraphQLJSON,
   DialectSQL: DialectSQLScalar,
   Query: {
+    currentUser: authResolver.currentUser,
+    projects: projectResolver.listProjects,
     listDataSourceTables: projectResolver.listDataSourceTables,
     autoGenerateRelation: projectResolver.autoGenerateRelation,
     listModels: modelResolver.listModels,
@@ -77,29 +88,35 @@ const resolvers = {
     apiHistory: apiHistoryResolver.getApiHistory,
   },
   Mutation: {
-    deploy: modelResolver.deploy,
-    saveDataSource: projectResolver.saveDataSource,
-    startSampleDataset: projectResolver.startSampleDataset,
-    saveTables: projectResolver.saveTables,
-    saveRelations: projectResolver.saveRelations,
-    createModel: modelResolver.createModel,
-    updateModel: modelResolver.updateModel,
-    deleteModel: modelResolver.deleteModel,
+    signUp: authResolver.signUp,
+    signIn: authResolver.signIn,
+    refreshSession: authResolver.refreshSession,
+    logout: authResolver.logout,
+    deploy: devOnly(modelResolver.deploy),
+    saveDataSource: devOnly(projectResolver.saveDataSource),
+    startSampleDataset: devOnly(projectResolver.startSampleDataset),
+    saveTables: devOnly(projectResolver.saveTables),
+    saveRelations: devOnly(projectResolver.saveRelations),
+    createModel: devOnly(modelResolver.createModel),
+    updateModel: devOnly(modelResolver.updateModel),
+    deleteModel: devOnly(modelResolver.deleteModel),
     previewModelData: modelResolver.previewModelData,
-    updateModelMetadata: modelResolver.updateModelMetadata,
-    triggerDataSourceDetection: projectResolver.triggerDataSourceDetection,
-    resolveSchemaChange: projectResolver.resolveSchemaChange,
+    updateModelMetadata: devOnly(modelResolver.updateModelMetadata),
+    triggerDataSourceDetection: devOnly(
+      projectResolver.triggerDataSourceDetection,
+    ),
+    resolveSchemaChange: devOnly(projectResolver.resolveSchemaChange),
 
     // calculated field
-    createCalculatedField: modelResolver.createCalculatedField,
-    validateCalculatedField: modelResolver.validateCalculatedField,
-    updateCalculatedField: modelResolver.updateCalculatedField,
-    deleteCalculatedField: modelResolver.deleteCalculatedField,
+    createCalculatedField: devOnly(modelResolver.createCalculatedField),
+    validateCalculatedField: devOnly(modelResolver.validateCalculatedField),
+    updateCalculatedField: devOnly(modelResolver.updateCalculatedField),
+    deleteCalculatedField: devOnly(modelResolver.deleteCalculatedField),
 
     // relation
-    createRelation: modelResolver.createRelation,
-    updateRelation: modelResolver.updateRelation,
-    deleteRelation: modelResolver.deleteRelation,
+    createRelation: devOnly(modelResolver.createRelation),
+    updateRelation: devOnly(modelResolver.updateRelation),
+    deleteRelation: devOnly(modelResolver.deleteRelation),
 
     // Ask
     createAskingTask: askingResolver.createAskingTask,
@@ -136,16 +153,16 @@ const resolvers = {
     adjustThreadResponseChart: askingResolver.adjustThreadResponseChart,
 
     // Views
-    createView: modelResolver.createView,
-    deleteView: modelResolver.deleteView,
+    createView: devOnly(modelResolver.createView),
+    deleteView: devOnly(modelResolver.deleteView),
     previewViewData: modelResolver.previewViewData,
-    validateView: modelResolver.validateView,
-    updateViewMetadata: modelResolver.updateViewMetadata,
+    validateView: devOnly(modelResolver.validateView),
+    updateViewMetadata: devOnly(modelResolver.updateViewMetadata),
 
     // Settings
-    resetCurrentProject: projectResolver.resetCurrentProject,
-    updateCurrentProject: projectResolver.updateCurrentProject,
-    updateDataSource: projectResolver.updateDataSource,
+    resetCurrentProject: devOnly(projectResolver.resetCurrentProject),
+    updateCurrentProject: devOnly(projectResolver.updateCurrentProject),
+    updateDataSource: devOnly(projectResolver.updateDataSource),
 
     // preview
     previewSql: modelResolver.previewSql,
@@ -156,27 +173,30 @@ const resolvers = {
     // Recommendation questions
     generateThreadRecommendationQuestions:
       askingResolver.generateThreadRecommendationQuestions,
-    generateProjectRecommendationQuestions:
+    generateProjectRecommendationQuestions: devOnly(
       askingResolver.generateProjectRecommendationQuestions,
+    ),
 
     // Dashboard
-    updateDashboardItemLayouts: dashboardResolver.updateDashboardItemLayouts,
-    createDashboardItem: dashboardResolver.createDashboardItem,
-    updateDashboardItem: dashboardResolver.updateDashboardItem,
-    deleteDashboardItem: dashboardResolver.deleteDashboardItem,
+    updateDashboardItemLayouts: devOnly(
+      dashboardResolver.updateDashboardItemLayouts,
+    ),
+    createDashboardItem: devOnly(dashboardResolver.createDashboardItem),
+    updateDashboardItem: devOnly(dashboardResolver.updateDashboardItem),
+    deleteDashboardItem: devOnly(dashboardResolver.deleteDashboardItem),
     previewItemSQL: dashboardResolver.previewItemSQL,
-    setDashboardSchedule: dashboardResolver.setDashboardSchedule,
+    setDashboardSchedule: devOnly(dashboardResolver.setDashboardSchedule),
 
     // SQL Pairs
-    createSqlPair: sqlPairResolver.createSqlPair,
-    updateSqlPair: sqlPairResolver.updateSqlPair,
-    deleteSqlPair: sqlPairResolver.deleteSqlPair,
+    createSqlPair: devOnly(sqlPairResolver.createSqlPair),
+    updateSqlPair: devOnly(sqlPairResolver.updateSqlPair),
+    deleteSqlPair: devOnly(sqlPairResolver.deleteSqlPair),
     generateQuestion: sqlPairResolver.generateQuestion,
     modelSubstitute: sqlPairResolver.modelSubstitute,
     // Instructions
-    createInstruction: instructionResolver.createInstruction,
-    updateInstruction: instructionResolver.updateInstruction,
-    deleteInstruction: instructionResolver.deleteInstruction,
+    createInstruction: devOnly(instructionResolver.createInstruction),
+    updateInstruction: devOnly(instructionResolver.updateInstruction),
+    deleteInstruction: devOnly(instructionResolver.deleteInstruction),
   },
   ThreadResponse: askingResolver.getThreadResponseNestedResolver(),
   DetailStep: askingResolver.getDetailStepNestedResolver(),
