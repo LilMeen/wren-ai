@@ -8,7 +8,10 @@ import { IContext } from '../types';
  * accounts can chat and read but never alter project setup.
  */
 // These create a brand-new project — no existing project to be the owner of.
-const PROJECT_CREATION_MUTATIONS = new Set(['saveDataSource', 'startSampleDataset']);
+const PROJECT_CREATION_MUTATIONS = new Set([
+  'saveDataSource',
+  'startSampleDataset',
+]);
 
 const DEV_ONLY_MUTATIONS = new Set([
   // project / data source
@@ -87,7 +90,10 @@ const guardResolver = (
       }
 
       // a dev can only manage projects they own (admin bypasses this check)
-      if (user.role === UserRole.DEV && !PROJECT_CREATION_MUTATIONS.has(fieldName)) {
+      if (
+        user.role === UserRole.DEV &&
+        !PROJECT_CREATION_MUTATIONS.has(fieldName)
+      ) {
         let project = null;
         try {
           project = await ctx.projectService.getCurrentProject();

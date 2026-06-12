@@ -120,8 +120,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   // hold rendering of protected pages until the session state is known,
   // so protected content never flashes for signed-out visitors
-  const blockRender =
-    authEnabled && (loading || (!user && !isPublicPath));
+  const blockRender = authEnabled && (loading || (!user && !isPublicPath));
 
   return (
     <AuthContext.Provider value={value}>
