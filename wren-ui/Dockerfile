@@ -3,18 +3,16 @@ RUN apt-get update && apt-get install -y curl python3 make g++ && rm -rf /var/li
 RUN corepack enable && corepack prepare yarn@4.5.3 --activate
 ENV NEXT_TELEMETRY_DISABLED=1 NODE_ENV=production
 WORKDIR /app
-
-FROM base AS deps
 COPY .yarnrc.yml package.json yarn.lock ./
 COPY .yarn/releases/yarn-4.5.3.cjs .yarn/releases/yarn-4.5.3.cjs
+
+FROM base AS deps
 RUN --mount=type=cache,target=/root/.yarn/cache \
     yarn install --immutable
 
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
-COPY .yarnrc.yml yarn.lock ./
-COPY .yarn/releases/yarn-4.5.3.cjs .yarn/releases/yarn-4.5.3.cjs
-COPY package.json tsconfig.json next.config.js .eslintrc.json .eslintignore .prettierrc ./
+COPY tsconfig.json next.config.js .eslintrc.json .eslintignore .prettierrc ./
 COPY public ./public
 COPY src ./src
 RUN yarn build
