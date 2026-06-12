@@ -12,6 +12,8 @@ RUN --mount=type=cache,target=/root/.yarn/cache \
 
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
+COPY .yarnrc.yml yarn.lock ./
+COPY .yarn/releases/yarn-4.5.3.cjs .yarn/releases/yarn-4.5.3.cjs
 COPY package.json tsconfig.json next.config.js .eslintrc.json .eslintignore .prettierrc ./
 COPY public ./public
 COPY src ./src
