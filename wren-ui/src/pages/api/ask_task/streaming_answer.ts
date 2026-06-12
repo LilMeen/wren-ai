@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { components } from '@/common';
 import { ThreadResponseAnswerStatus } from '@/apollo/server/services/askingService';
 import { TelemetryEvent } from '@/apollo/server/telemetry/telemetry';
+import { requireSession } from '@server/utils/apiAuth';
 
 const { wrenAIAdaptor, askingService, telemetry } = components;
 
@@ -37,6 +38,9 @@ export default async function handler(
     res.status(405).json({ error: 'Method Not Allowed' });
     return;
   }
+
+  const sessionUser = await requireSession(req, res);
+  if (sessionUser === null) return;
 
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache, no-transform');

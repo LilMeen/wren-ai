@@ -12,4 +12,7 @@ export enum Path {
   KnowledgeInstructions = '/knowledge/instructions',
   APIManagement = '/api-management',
   APIManagementHistory = '/api-management/history',
+  SignIn = '/auth/signin',
+  SignUp = '/auth/signup',
+  SelectProject = '/projects',
 }

@@ -1,9 +1,13 @@
 import { useRouter } from 'next/router';
-import { Button, Layout, Space } from 'antd';
+import { Button, Dropdown, Layout, Menu, Space, Tag } from 'antd';
+import UserOutlined from '@ant-design/icons/UserOutlined';
+import LogoutOutlined from '@ant-design/icons/LogoutOutlined';
+import SwapOutlined from '@ant-design/icons/SwapOutlined';
 import styled from 'styled-components';
 import LogoBar from '@/components/LogoBar';
 import { Path } from '@/utils/enum';
 import Deploy from '@/components/deploy/Deploy';
+import useAuth from '@/hooks/useAuth';
 
 const { Header } = Layout;
 
@@ -34,8 +38,40 @@ const StyledHeader = styled(Header)`
 export default function HeaderBar() {
   const router = useRouter();
   const { pathname } = router;
+  const { user, authEnabled, isDev, signOut } = useAuth();
   const showNav = !pathname.startsWith(Path.Onboarding);
   const isModeling = pathname.startsWith(Path.Modeling);
+  // normal users only chat; dev/admin manage modeling, knowledge and APIs
+  const showManagementNav = !authEnabled || isDev;
+
+  const userMenu = (
+    <Menu
+      items={[
+        {
+          key: 'email',
+          disabled: true,
+          label: (
+            <div>
+              {user?.email} <Tag color="geekblue">{user?.role}</Tag>
+            </div>
+          ),
+        },
+        { type: 'divider' },
+        {
+          key: 'switch-project',
+          icon: <SwapOutlined />,
+          label: 'Switch project',
+          onClick: () => router.push(Path.SelectProject),
+        },
+        {
+          key: 'sign-out',
+          icon: <LogoutOutlined />,
+          label: 'Sign out',
+          onClick: () => signOut(),
+        },
+      ]}
+    />
+  );
 
   return (
     <StyledHeader>
@@ -55,38 +91,52 @@ export default function HeaderBar() {
               >
                 Home
               </StyledButton>
-              <StyledButton
-                shape="round"
-                size="small"
-                $isHighlight={pathname.startsWith(Path.Modeling)}
-                onClick={() => router.push(Path.Modeling)}
-              >
-                Modeling
-              </StyledButton>
-              <StyledButton
-                shape="round"
-                size="small"
-                $isHighlight={pathname.startsWith(Path.Knowledge)}
-                onClick={() => router.push(Path.KnowledgeQuestionSQLPairs)}
-              >
-                Knowledge
-              </StyledButton>
-              <StyledButton
-                shape="round"
-                size="small"
-                $isHighlight={pathname.startsWith(Path.APIManagement)}
-                onClick={() => router.push(Path.APIManagementHistory)}
-              >
-                API
-              </StyledButton>
+              {showManagementNav && (
+                <>
+                  <StyledButton
+                    shape="round"
+                    size="small"
+                    $isHighlight={pathname.startsWith(Path.Modeling)}
+                    onClick={() => router.push(Path.Modeling)}
+                  >
+                    Modeling
+                  </StyledButton>
+                  <StyledButton
+                    shape="round"
+                    size="small"
+                    $isHighlight={pathname.startsWith(Path.Knowledge)}
+                    onClick={() => router.push(Path.KnowledgeQuestionSQLPairs)}
+                  >
+                    Knowledge
+                  </StyledButton>
+                  <StyledButton
+                    shape="round"
+                    size="small"
+                    $isHighlight={pathname.startsWith(Path.APIManagement)}
+                    onClick={() => router.push(Path.APIManagementHistory)}
+                  >
+                    API
+                  </StyledButton>
+                </>
+              )}
             </Space>
           )}
         </Space>
-        {isModeling && (
-          <Space size={[16, 0]}>
-            <Deploy />
-          </Space>
-        )}
+        <Space size={[16, 0]}>
+          {isModeling && <Deploy />}
+          {authEnabled && user && (
+            <Dropdown overlay={userMenu} placement="bottomRight">
+              <StyledButton
+                shape="round"
+                size="small"
+                $isHighlight={false}
+                icon={<UserOutlined />}
+              >
+                {user.email}
+              </StyledButton>
+            </Dropdown>
+          )}
+        </Space>
       </div>
     </StyledHeader>
   );

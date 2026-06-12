@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import * as fs from 'fs';
 import path from 'path';
 import { getLogger } from '@server/utils';
+import { getAuthUser } from '@server/utils/authStorage';
 import { IProjectRepository, WREN_AI_CONNECTION_INFO } from '../repositories';
 import { Project } from '../repositories';
 import {
@@ -219,6 +220,8 @@ export class ProjectService implements IProjectService {
       type: projectData.type,
       catalog: 'wrenai',
       schema: 'public',
+      // the dev creating the project becomes its owner
+      ownerId: getAuthUser()?.id,
       connectionInfo: encryptConnectionInfo(
         projectData.type,
         projectData.connectionInfo,

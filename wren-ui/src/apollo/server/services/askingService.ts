@@ -19,6 +19,7 @@ import {
   ThreadResponseAdjustmentType,
 } from '../repositories/threadResponseRepository';
 import { getLogger } from '@server/utils';
+import { getAuthUser } from '@server/utils/authStorage';
 import { isEmpty, isNil } from 'lodash';
 import { safeFormatSQL } from '@server/utils/sqlFormat';
 import {
@@ -682,6 +683,7 @@ export class AskingService implements IAskingService {
     const { id } = await this.projectService.getCurrentProject();
     const thread = await this.threadRepository.createOne({
       projectId: id,
+      userId: getAuthUser()?.id,
       summary: input.question,
     });
 
@@ -708,7 +710,12 @@ export class AskingService implements IAskingService {
 
   public async listThreads(): Promise<Thread[]> {
     const { id } = await this.projectService.getCurrentProject();
-    return await this.threadRepository.listAllTimeDescOrder(id);
+    // scope the list to the current user so each user only sees
+    // their own threads inside the selected project
+    return await this.threadRepository.listAllTimeDescOrder(
+      id,
+      getAuthUser()?.id,
+    );
   }
 
   public async updateThread(
@@ -720,12 +727,14 @@ export class AskingService implements IAskingService {
       throw new Error('Update thread input is empty');
     }
 
+    await this.assertThreadAccess(threadId);
     return this.threadRepository.updateOne(threadId, {
       summary: input.summary,
     });
   }
 
   public async deleteThread(threadId: number): Promise<void> {
+    await this.assertThreadAccess(threadId);
     await this.threadRepository.deleteOne(threadId);
   }
 
@@ -740,6 +749,7 @@ export class AskingService implements IAskingService {
     if (!thread) {
       throw new Error(`Thread ${threadId} not found`);
     }
+    this.assertThreadOwnership(thread);
 
     const threadResponse = await this.threadResponseRepository.createOne({
       threadId: thread.id,
@@ -919,7 +929,31 @@ export class AskingService implements IAskingService {
   }
 
   public async getResponsesWithThread(threadId: number) {
+    await this.assertThreadAccess(threadId);
     return this.threadResponseRepository.getResponsesWithThread(threadId);
+  }
+
+  /**
+   * Ensures the current user (when present) owns the given thread and that
+   * the thread belongs to the currently selected project. Requests without
+   * an auth context (background jobs, auth disabled) are not restricted.
+   */
+  private async assertThreadAccess(threadId: number): Promise<void> {
+    const user = getAuthUser();
+    if (!user) return;
+    const thread = await this.threadRepository.findOneBy({ id: threadId });
+    if (!thread) {
+      throw new Error(`Thread ${threadId} not found`);
+    }
+    this.assertThreadOwnership(thread);
+  }
+
+  private assertThreadOwnership(thread: Thread): void {
+    const user = getAuthUser();
+    if (!user) return;
+    if (thread.userId && thread.userId !== user.id) {
+      throw new Error('Access denied: this thread belongs to another user');
+    }
   }
 
   public async getResponse(responseId: number) {

@@ -46,6 +46,10 @@ export interface IConfig {
   projectRecommendationQuestionsMaxQuestions?: number;
   threadRecommendationQuestionMaxCategories?: number;
   threadRecommendationQuestionsMaxQuestions?: number;
+
+  // authentication
+  authEnabled: boolean;
+  authCookieSecure: boolean;
 }
 
 const defaultConfig = {
@@ -77,6 +81,12 @@ const defaultConfig = {
   // encryption
   encryptionPassword: 'sementic',
   encryptionSalt: 'layer',
+
+  // authentication
+  // evaluated here (not in the env-pickBy block below) because pickBy drops
+  // falsy values, which would make it impossible to turn the flags off/on
+  authEnabled: process.env.WREN_AUTH_ENABLED !== 'false',
+  authCookieSecure: process.env.WREN_AUTH_COOKIE_SECURE === 'true',
 };
 
 const config = {

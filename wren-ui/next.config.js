@@ -11,7 +11,7 @@ const resolveAlias = {
 
 /** @type {import('next').NextConfig} */
 const nextConfig = withLess({
-  output: 'standalone',
+  outputFileTracing: false,
   staticPageGenerationTimeout: 1000,
   compiler: {
     // Enables the styled-components SWC transform
