@@ -20,7 +20,10 @@ const SESSION_TTL_MS = 24 * 60 * 60 * 1000;
 // In-memory cache for validated sessions so every request doesn't block on a
 // DB round-trip. Entries expire after 60 seconds or are evicted on sign-out.
 const SESSION_CACHE_TTL_MS = 60 * 1000;
-interface CacheEntry { user: User; expiresAt: number }
+interface CacheEntry {
+  user: User;
+  expiresAt: number;
+}
 const sessionCache = new Map<string, CacheEntry>();
 const REFRESH_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const BCRYPT_ROUNDS = 10;
@@ -140,7 +143,8 @@ export class AuthService implements IAuthService {
     if (!sessionToken) return;
     const tokenHash = this.hashToken(sessionToken);
     sessionCache.delete(tokenHash);
-    const session = await this.userSessionRepository.findBySessionTokenHash(tokenHash);
+    const session =
+      await this.userSessionRepository.findBySessionTokenHash(tokenHash);
     if (session && !session.revokedAt) {
       await this.userSessionRepository.updateOne(session.id, {
         revokedAt: new Date(),
@@ -176,7 +180,9 @@ export class AuthService implements IAuthService {
     return { user, ...tokens };
   }
 
-  public async validateSessionToken(sessionToken: string): Promise<User | null> {
+  public async validateSessionToken(
+    sessionToken: string,
+  ): Promise<User | null> {
     if (!sessionToken) return null;
     const tokenHash = this.hashToken(sessionToken);
 
@@ -185,14 +191,18 @@ export class AuthService implements IAuthService {
       return cached.user;
     }
 
-    const session = await this.userSessionRepository.findBySessionTokenHash(tokenHash);
+    const session =
+      await this.userSessionRepository.findBySessionTokenHash(tokenHash);
     if (!session || session.revokedAt || !this.isInFuture(session.expiresAt)) {
       sessionCache.delete(tokenHash);
       return null;
     }
     const user = await this.userRepository.findOneBy({ id: session.userId });
     if (user) {
-      sessionCache.set(tokenHash, { user, expiresAt: Date.now() + SESSION_CACHE_TTL_MS });
+      sessionCache.set(tokenHash, {
+        user,
+        expiresAt: Date.now() + SESSION_CACHE_TTL_MS,
+      });
     }
     return user;
   }

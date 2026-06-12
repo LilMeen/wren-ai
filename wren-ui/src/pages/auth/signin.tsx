@@ -46,7 +46,12 @@ export default function SignIn() {
       {error && (
         <Alert className="mb-4" type="error" showIcon message={error} />
       )}
-      <Form form={form} layout="vertical" onFinish={onFinish} requiredMark={false}>
+      <Form
+        form={form}
+        layout="vertical"
+        onFinish={onFinish}
+        requiredMark={false}
+      >
         <Form.Item
           label="Email"
           name="email"
@@ -85,8 +90,7 @@ export default function SignIn() {
         </Button>
       </Form>
       <div className="text-center mt-4 gray-7">
-        Don&apos;t have an account?{' '}
-        <Link href={Path.SignUp}>Create one</Link>
+        Don&apos;t have an account? <Link href={Path.SignUp}>Create one</Link>
       </div>
     </AuthLayout>
   );

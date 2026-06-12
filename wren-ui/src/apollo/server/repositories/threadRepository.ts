@@ -46,8 +46,7 @@ export class ThreadRepository
     userId?: number,
   ): Promise<Thread[]> {
     // scope by user when provided so each user only sees their own threads
-    const filter =
-      userId !== undefined ? { projectId, userId } : { projectId };
+    const filter = userId !== undefined ? { projectId, userId } : { projectId };
     const threads = await this.knex(this.tableName)
       .where(this.transformToDBData(filter))
       .orderBy('created_at', 'desc');

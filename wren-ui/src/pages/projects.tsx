@@ -130,11 +130,17 @@ export default function Projects() {
           className="d-flex align-center justify-space-between"
           style={{ marginBottom: 16 }}
         >
-          <Text style={{ color: 'var(--gray-1)', fontSize: 18, fontWeight: 700 }}>
+          <Text
+            style={{ color: 'var(--gray-1)', fontSize: 18, fontWeight: 700 }}
+          >
             Select a project
           </Text>
           {isDev && !loading && (
-            <Button type="primary" icon={<PlusOutlined />} onClick={onCreateProject}>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={onCreateProject}
+            >
               New project
             </Button>
           )}

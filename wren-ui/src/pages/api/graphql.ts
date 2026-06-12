@@ -196,9 +196,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     const sessionToken = getSessionTokenFromRequest(req);
     if (sessionToken) {
       try {
-        currentUser = await components.authService.validateSessionToken(
-          sessionToken,
-        );
+        currentUser =
+          await components.authService.validateSessionToken(sessionToken);
       } catch (err) {
         // DB connection drop — log and fall through as unauthenticated so the
         // request gets a proper 401 rather than a 500
