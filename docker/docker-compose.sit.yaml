@@ -34,7 +34,7 @@ services:
       - bootstrap
 
   ibis-server:
-    image: ${DOCKERHUB_USERNAME:-pax2303}/wren-engine-ibis:latest
+    image: lilmeen1012/wren-engine-ibis:sit
     restart: on-failure
     platform: ${PLATFORM}
     expose:
@@ -47,7 +47,7 @@ services:
       - wren
 
   wren-ai-service:
-    image: ${DOCKERHUB_USERNAME:-pax2303}/wren-ai-service:latest
+    image: lilmeen1012/wren-ai-service:sit
     restart: on-failure
     platform: ${PLATFORM}
     expose:
@@ -81,7 +81,7 @@ services:
       - wren
 
   wren-ui:
-    image: ${DOCKERHUB_DEV_USERNAME:-pax2303}/wren-ui:latest
+    image: lilmeen1012/wren-ui:sit
     restart: on-failure
     platform: ${PLATFORM}
     environment:
