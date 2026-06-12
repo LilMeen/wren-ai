@@ -5,6 +5,13 @@ import { ApolloServerPluginLandingPageLocalDefault } from 'apollo-server-core';
 import { typeDefs } from '@server';
 import resolvers from '@server/resolvers';
 import { IContext } from '@server/types';
+import { applyAuthGuard } from '@server/utils/authGuard';
+import { runWithAuthContext } from '@server/utils/authStorage';
+import {
+  getSessionTokenFromRequest,
+  getSelectedProjectIdFromRequest,
+} from '@server/utils/authCookies';
+import { User } from '@server/repositories';
 import { GraphQLError } from 'graphql';
 import { getLogger } from '@server/utils';
 import { getConfig } from '@server/config';
@@ -89,7 +96,7 @@ const bootstrapServer = async () => {
 
   const apolloServer: ApolloServer = new ApolloServer({
     typeDefs,
-    resolvers,
+    resolvers: applyAuthGuard(resolvers),
     formatError: (error: GraphQLError) => {
       // stop print error stacktrace of dry run error
       if (error.extensions?.code === GeneralErrorCodes.DRY_RUN_ERROR) {
@@ -131,9 +138,10 @@ const bootstrapServer = async () => {
         embed: true,
       }),
     ],
-    context: (): IContext => ({
+    context: ({ req }): IContext => ({
       config: serverConfig,
       telemetry,
+      currentUser: (req as any)?.currentUser || null,
       // adaptor
       wrenEngineAdaptor,
       ibisServerAdaptor: ibisAdaptor,
@@ -178,9 +186,36 @@ const startServer = bootstrapServer();
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const apolloServer = await startServer;
-  await apolloServer.createHandler({
-    path: '/api/graphql',
-  })(req, res);
+
+  // resolve the authenticated user and the selected project from cookies,
+  // then run the request inside the auth context so services/repositories
+  // can access them without changing their signatures
+  let currentUser: User | null = null;
+  let selectedProjectId: number | undefined;
+  if (serverConfig.authEnabled) {
+    const sessionToken = getSessionTokenFromRequest(req);
+    if (sessionToken) {
+      try {
+        currentUser = await components.authService.validateSessionToken(
+          sessionToken,
+        );
+      } catch (err) {
+        // DB connection drop — log and fall through as unauthenticated so the
+        // request gets a proper 401 rather than a 500
+        logger.error('Session validation failed (DB error):', err);
+      }
+    }
+    selectedProjectId = getSelectedProjectIdFromRequest(req);
+  }
+  (req as any).currentUser = currentUser;
+
+  await runWithAuthContext(
+    { user: currentUser || undefined, selectedProjectId },
+    async () =>
+      apolloServer.createHandler({
+        path: '/api/graphql',
+      })(req, res),
+  );
 };
 
 export default cors((req: NextApiRequest, res: NextApiResponse) =>

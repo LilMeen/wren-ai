@@ -20,6 +20,7 @@ import {
   IInstructionRepository,
   IApiHistoryRepository,
   IDashboardItemRefreshJobRepository,
+  User,
 } from '@server/repositories';
 import {
   IQueryService,
@@ -43,6 +44,9 @@ export interface IContext {
   config: IConfig;
   // telemetry
   telemetry: ITelemetry;
+
+  // authenticated user of the current request (null when not signed in)
+  currentUser?: User | null;
 
   // adaptor
   wrenEngineAdaptor: IWrenEngineAdaptor;

@@ -17,6 +17,7 @@ export interface ThreadRecommendationQuestionResult {
 export interface Thread {
   id: number; // ID
   projectId: number; // Reference to project.id
+  userId?: number; // Reference to user.id; the user who owns the thread
   summary: string; // Thread summary
 
   // recommend question
@@ -27,7 +28,7 @@ export interface Thread {
 }
 
 export interface IThreadRepository extends IBasicRepository<Thread> {
-  listAllTimeDescOrder(projectId: number): Promise<Thread[]>;
+  listAllTimeDescOrder(projectId: number, userId?: number): Promise<Thread[]>;
 }
 
 export class ThreadRepository
@@ -40,9 +41,15 @@ export class ThreadRepository
     super({ knexPg, tableName: 'thread' });
   }
 
-  public async listAllTimeDescOrder(projectId: number): Promise<Thread[]> {
+  public async listAllTimeDescOrder(
+    projectId: number,
+    userId?: number,
+  ): Promise<Thread[]> {
+    // scope by user when provided so each user only sees their own threads
+    const filter =
+      userId !== undefined ? { projectId, userId } : { projectId };
     const threads = await this.knex(this.tableName)
-      .where(this.transformToDBData({ projectId }))
+      .where(this.transformToDBData(filter))
       .orderBy('created_at', 'desc');
     return threads.map((thread) => this.transformFromDBData(thread));
   }

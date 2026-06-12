@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { components } from '@/common';
+import { requireSession } from '@server/utils/apiAuth';
 
 const { wrenAIAdaptor } = components;
 
@@ -7,6 +8,9 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse,
 ) {
+  const sessionUser = await requireSession(req, res);
+  if (sessionUser === null) return;
+
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache, no-transform');
   res.setHeader('Connection', 'keep-alive');
