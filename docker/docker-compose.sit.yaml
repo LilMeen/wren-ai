@@ -6,6 +6,13 @@ volumes:
 networks:
   wren:
     driver: bridge
+    # Fixed subnet + static IPs: glibc getaddrinfo can hang forever on this
+    # host (WSL2/Docker Desktop netlink kernel bug leaves a D-state thread in
+    # the node workers), so all service-to-service endpoints are configured
+    # by IP instead of container name to avoid DNS entirely.
+    ipam:
+      config:
+        - subnet: 172.29.10.0/24
 
 services:
   bootstrap:
@@ -29,7 +36,8 @@ services:
       - data:/usr/src/app/etc
       - ${PROJECT_DIR}/data:/usr/src/app/data
     networks:
-      - wren
+      wren:
+        ipv4_address: 172.29.10.2
     depends_on:
       - bootstrap
 
@@ -40,11 +48,15 @@ services:
     expose:
       - ${IBIS_SERVER_PORT}
     environment:
-      WREN_ENGINE_ENDPOINT: http://wren-engine:${WREN_ENGINE_PORT}
+      WREN_ENGINE_ENDPOINT: http://172.29.10.2:${WREN_ENGINE_PORT}
+      # more workers so a burst of parallel dry-runs from the AI service
+      # cannot starve all of them into gunicorn WORKER TIMEOUT → SIGKILL
+      WREN_NUM_WORKERS: ${IBIS_NUM_WORKERS:-4}
     volumes:
       - ${LOCAL_STORAGE:-.}:/usr/src/app/data
     networks:
-      - wren
+      wren:
+        ipv4_address: 172.29.10.3
 
   wren-ai-service:
     image: lilmeen1012/wren-ai-service:sit
@@ -59,13 +71,19 @@ services:
       # using PYTHONUNBUFFERED: 1 can fix this
       PYTHONUNBUFFERED: 1
       CONFIG_PATH: /app/config.yaml
+      # by-IP endpoints (see networks comment) — these override the env_file
+      WREN_UI_ENDPOINT: http://172.29.10.6:3000
+      QDRANT_HOST: 172.29.10.5
+      # shared secret so dry-run/deploy calls to wren-ui pass authentication
+      WREN_INTERNAL_API_SECRET: ${WREN_INTERNAL_API_SECRET}
     env_file:
       - ${PROJECT_DIR}/.env
     volumes:
       - ${PROJECT_DIR}/config.yaml:/app/config.yaml:ro
       - ${PROJECT_DIR}/data:/app/data:ro
     networks:
-      - wren
+      wren:
+        ipv4_address: 172.29.10.4
     depends_on:
       - qdrant
 
@@ -78,7 +96,8 @@ services:
     volumes:
       - data:/qdrant/storage
     networks:
-      - wren
+      wren:
+        ipv4_address: 172.29.10.5
 
   wren-ui:
     image: lilmeen1012/wren-ui:sit
@@ -88,9 +107,12 @@ services:
       DB_TYPE: sqlite
       # /app is the working directory in the container
       SQLITE_FILE: /app/data/db.sqlite3
-      WREN_ENGINE_ENDPOINT: http://wren-engine:${WREN_ENGINE_PORT}
-      WREN_AI_ENDPOINT: http://wren-ai-service:${WREN_AI_SERVICE_PORT}
-      IBIS_SERVER_ENDPOINT: http://ibis-server:${IBIS_SERVER_PORT}
+      # by-IP endpoints (see networks comment)
+      WREN_ENGINE_ENDPOINT: http://172.29.10.2:${WREN_ENGINE_PORT}
+      WREN_AI_ENDPOINT: http://172.29.10.4:${WREN_AI_SERVICE_PORT}
+      IBIS_SERVER_ENDPOINT: http://172.29.10.3:${IBIS_SERVER_PORT}
+      # shared secret accepted from trusted backend services (wren-ai-service)
+      WREN_INTERNAL_API_SECRET: ${WREN_INTERNAL_API_SECRET}
       # this is for telemetry to know the model, i think ai-service might be able to provide a endpoint to get the information
       GENERATION_MODEL: ${GENERATION_MODEL}
       # telemetry
@@ -116,7 +138,8 @@ services:
     volumes:
       - data:/app/data
     networks:
-      - wren
+      wren:
+        ipv4_address: 172.29.10.6
     depends_on:
       - wren-ai-service
       - wren-engine

@@ -6,6 +6,7 @@ import { typeDefs } from '@server';
 import resolvers from '@server/resolvers';
 import { IContext } from '@server/types';
 import { applyAuthGuard } from '@server/utils/authGuard';
+import { isInternalServiceRequest } from '@server/utils/apiAuth';
 import { runWithAuthContext } from '@server/utils/authStorage';
 import {
   getSessionTokenFromRequest,
@@ -142,6 +143,7 @@ const bootstrapServer = async () => {
       config: serverConfig,
       telemetry,
       currentUser: (req as any)?.currentUser || null,
+      isInternalRequest: (req as any)?.isInternalRequest || false,
       // adaptor
       wrenEngineAdaptor,
       ibisServerAdaptor: ibisAdaptor,
@@ -192,7 +194,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   // can access them without changing their signatures
   let currentUser: User | null = null;
   let selectedProjectId: number | undefined;
+  let internalRequest = false;
   if (serverConfig.authEnabled) {
+    internalRequest = isInternalServiceRequest(req);
     const sessionToken = getSessionTokenFromRequest(req);
     if (sessionToken) {
       try {
@@ -207,6 +211,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     selectedProjectId = getSelectedProjectIdFromRequest(req);
   }
   (req as any).currentUser = currentUser;
+  (req as any).isInternalRequest = internalRequest;
 
   await runWithAuthContext(
     { user: currentUser || undefined, selectedProjectId },

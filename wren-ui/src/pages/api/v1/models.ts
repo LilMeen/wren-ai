@@ -1,3 +1,4 @@
+import { withApiAuth } from '@server/utils/apiAuth';
 import { NextApiRequest, NextApiResponse } from 'next';
 import { components } from '@/common';
 import { ApiType } from '@server/repositories/apiHistoryRepository';
@@ -14,10 +15,7 @@ logger.level = 'debug';
 
 const { projectService, deployService } = components;
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse,
-) {
+async function handler(req: NextApiRequest, res: NextApiResponse) {
   const startTime = Date.now();
   let project;
 
@@ -74,3 +72,5 @@ export default async function handler(
     });
   }
 }
+
+export default withApiAuth(handler);

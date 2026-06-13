@@ -50,6 +50,10 @@ export interface IConfig {
   // authentication
   authEnabled: boolean;
   authCookieSecure: boolean;
+  // shared secret for trusted service-to-service calls (e.g. wren-ai-service
+  // dry-running SQL through /api/graphql). Auth is bypassed when a request
+  // carries this secret in the x-wren-internal-secret header.
+  internalApiSecret?: string;
 }
 
 const defaultConfig = {
@@ -126,6 +130,9 @@ const config = {
   // encryption
   encryptionPassword: process.env.ENCRYPTION_PASSWORD,
   encryptionSalt: process.env.ENCRYPTION_SALT,
+
+  // authentication
+  internalApiSecret: process.env.WREN_INTERNAL_API_SECRET,
 
   // telemetry
   telemetryEnabled:

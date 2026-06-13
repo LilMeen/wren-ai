@@ -16,9 +16,17 @@ if Path(".env.dev").exists():
 
 @backoff.on_exception(backoff.expo, aiohttp.ClientError, max_time=60, max_tries=3)
 async def force_deploy():
+    # wren-ui requires authentication on /api/graphql; service-to-service
+    # calls authenticate with a shared secret instead of a user session
+    headers = (
+        {"x-wren-internal-secret": secret}
+        if (secret := os.getenv("WREN_INTERNAL_API_SECRET", ""))
+        else {}
+    )
     async with aiohttp.ClientSession() as session:
         async with session.post(
             f"{os.getenv("WREN_UI_ENDPOINT", "http://wren-ui:3000")}/api/graphql",
+            headers=headers,
             json={
                 "query": "mutation Deploy($force: Boolean) { deploy(force: $force) }",
                 "variables": {"force": True},

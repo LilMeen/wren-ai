@@ -129,7 +129,9 @@ const makeProcessingError =
           </Button>
         </div>
         <div className="gray-7">
-          {config.description || data.intentReasoning || message}
+          {/* prefer the actual error message so root causes (e.g. engine
+              failures) are not hidden behind the generic intent reasoning */}
+          {config.description || message || data.intentReasoning}
         </div>
         {hasStacktrace && (
           <ErrorCollapse className="mt-2" message={stacktrace.join('\n')} />

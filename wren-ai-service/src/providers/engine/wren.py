@@ -22,6 +22,14 @@ class WrenUI(Engine):
         **_,
     ):
         self._endpoint = endpoint
+        # wren-ui requires authentication on /api/graphql; service-to-service
+        # calls authenticate with a shared secret instead of a user session
+        self._internal_secret = os.getenv("WREN_INTERNAL_API_SECRET", "")
+
+    def _headers(self) -> Dict[str, str]:
+        if self._internal_secret:
+            return {"x-wren-internal-secret": self._internal_secret}
+        return {}
 
     async def execute_sql(
         self,
@@ -46,6 +54,7 @@ class WrenUI(Engine):
         try:
             async with session.post(
                 f"{self._endpoint}/api/graphql",
+                headers=self._headers(),
                 json={
                     "query": "mutation PreviewSql($data: PreviewSQLDataInput) { previewSql(data: $data) }",
                     "variables": {"data": data},

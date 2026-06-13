@@ -122,10 +122,6 @@ const resolvers = {
     previewData: askingResolver.previewData,
     previewBreakdownData: askingResolver.previewBreakdownData,
 
-    // Generate Thread Response Breakdown
-    generateThreadResponseBreakdown:
-      askingResolver.generateThreadResponseBreakdown,
-
     // Generate Thread Response Answer
     generateThreadResponseAnswer: askingResolver.generateThreadResponseAnswer,
 

@@ -1,6 +1,5 @@
 import { IWrenAIAdaptor } from '@server/adaptors/wrenAIAdaptor';
 import {
-  AskResultStatus,
   RecommendationQuestionsResult,
   RecommendationQuestionsInput,
   RecommendationQuestion,
@@ -22,11 +21,7 @@ import { getLogger } from '@server/utils';
 import { getAuthUser } from '@server/utils/authStorage';
 import { isEmpty, isNil } from 'lodash';
 import { safeFormatSQL } from '@server/utils/sqlFormat';
-import {
-  PostHogTelemetry,
-  TelemetryEvent,
-  WrenService,
-} from '../telemetry/telemetry';
+import { PostHogTelemetry, TelemetryEvent } from '../telemetry/telemetry';
 import {
   IAskingTaskRepository,
   IViewRepository,
@@ -157,10 +152,6 @@ export interface IAskingService {
   ): Promise<ThreadResponse>;
   getResponsesWithThread(threadId: number): Promise<ThreadResponse[]>;
   getResponse(responseId: number): Promise<ThreadResponse>;
-  generateThreadResponseBreakdown(
-    threadResponseId: number,
-    configurations: { language: string },
-  ): Promise<ThreadResponse>;
   generateThreadResponseAnswer(
     threadResponseId: number,
     configurations: { language: string },
@@ -221,17 +212,6 @@ export interface IAskingService {
 }
 
 /**
- * utility function to check if the status is finalized
- */
-const isFinalized = (status: AskResultStatus) => {
-  return (
-    status === AskResultStatus.FAILED ||
-    status === AskResultStatus.FINISHED ||
-    status === AskResultStatus.STOPPED
-  );
-};
-
-/**
  * Given a list of steps, construct the SQL statement with CTEs
  * If stepIndex is provided, only construct the SQL from top to that step
  * @param steps
@@ -278,127 +258,6 @@ export const constructCteSql = (
   return sql;
 };
 
-/**
- * Background tracker to track the status of the asking breakdown task
- */
-class BreakdownBackgroundTracker {
-  // tasks is a kv pair of task id and thread response
-  private tasks: Record<number, ThreadResponse> = {};
-  private intervalTime: number;
-  private wrenAIAdaptor: IWrenAIAdaptor;
-  private threadResponseRepository: IThreadResponseRepository;
-  private runningJobs = new Set();
-  private telemetry: PostHogTelemetry;
-
-  constructor({
-    telemetry,
-    wrenAIAdaptor,
-    threadResponseRepository,
-  }: {
-    telemetry: PostHogTelemetry;
-    wrenAIAdaptor: IWrenAIAdaptor;
-    threadResponseRepository: IThreadResponseRepository;
-  }) {
-    this.telemetry = telemetry;
-    this.wrenAIAdaptor = wrenAIAdaptor;
-    this.threadResponseRepository = threadResponseRepository;
-    this.intervalTime = 1000;
-    this.start();
-  }
-
-  public start() {
-    logger.info('Background tracker started');
-    setInterval(() => {
-      const jobs = Object.values(this.tasks).map(
-        (threadResponse) => async () => {
-          // check if same job is running
-          if (this.runningJobs.has(threadResponse.id)) {
-            return;
-          }
-
-          // mark the job as running
-          this.runningJobs.add(threadResponse.id);
-
-          // get the answer detail
-          const breakdownDetail = threadResponse.breakdownDetail;
-
-          // get the latest result from AI service
-          const result = await this.wrenAIAdaptor.getAskDetailResult(
-            breakdownDetail.queryId,
-          );
-
-          // check if status change
-          if (breakdownDetail.status === result.status) {
-            // mark the job as finished
-            logger.debug(
-              `Job ${threadResponse.id} status not changed, finished`,
-            );
-            this.runningJobs.delete(threadResponse.id);
-            return;
-          }
-
-          // update database
-          const updatedBreakdownDetail = {
-            queryId: breakdownDetail.queryId,
-            status: result?.status,
-            error: result?.error,
-            description: result?.response?.description,
-            steps: result?.response?.steps,
-          };
-          logger.debug(`Job ${threadResponse.id} status changed, updating`);
-          await this.threadResponseRepository.updateOne(threadResponse.id, {
-            breakdownDetail: updatedBreakdownDetail,
-          });
-
-          // remove the task from tracker if it is finalized
-          if (isFinalized(result.status)) {
-            const eventProperties = {
-              question: threadResponse.question,
-              error: result.error,
-            };
-            if (result.status === AskResultStatus.FINISHED) {
-              this.telemetry.sendEvent(
-                TelemetryEvent.HOME_ANSWER_BREAKDOWN,
-                eventProperties,
-              );
-            } else {
-              this.telemetry.sendEvent(
-                TelemetryEvent.HOME_ANSWER_BREAKDOWN,
-                eventProperties,
-                WrenService.AI,
-                false,
-              );
-            }
-            logger.debug(`Job ${threadResponse.id} is finalized, removing`);
-            delete this.tasks[threadResponse.id];
-          }
-
-          // mark the job as finished
-          this.runningJobs.delete(threadResponse.id);
-        },
-      );
-
-      // run the jobs
-      Promise.allSettled(jobs.map((job) => job())).then((results) => {
-        // show reason of rejection
-        results.forEach((result, index) => {
-          if (result.status === 'rejected') {
-            logger.error(`Job ${index} failed: ${result.reason}`);
-          }
-        });
-      });
-    }, this.intervalTime);
-  }
-
-  public addTask(threadResponse: ThreadResponse) {
-    this.tasks[threadResponse.id] = threadResponse;
-  }
-
-  public getTasks() {
-    return this.tasks;
-  }
-}
-
 export class AskingService implements IAskingService {
   private wrenAIAdaptor: IWrenAIAdaptor;
   private deployService: IDeployService;
@@ -406,7 +265,6 @@ export class AskingService implements IAskingService {
   private viewRepository: IViewRepository;
   private threadRepository: IThreadRepository;
   private threadResponseRepository: IThreadResponseRepository;
-  private breakdownBackgroundTracker: BreakdownBackgroundTracker;
   private textBasedAnswerBackgroundTracker: TextBasedAnswerBackgroundTracker;
   private chartBackgroundTracker: ChartBackgroundTracker;
   private chartAdjustmentBackgroundTracker: ChartAdjustmentBackgroundTracker;
@@ -451,11 +309,6 @@ export class AskingService implements IAskingService {
     this.threadResponseRepository = threadResponseRepository;
     this.telemetry = telemetry;
     this.queryService = queryService;
-    this.breakdownBackgroundTracker = new BreakdownBackgroundTracker({
-      telemetry,
-      wrenAIAdaptor,
-      threadResponseRepository,
-    });
     this.textBasedAnswerBackgroundTracker =
       new TextBasedAnswerBackgroundTracker({
         wrenAIAdaptor,
@@ -564,22 +417,8 @@ export class AskingService implements IAskingService {
   }
 
   public async initialize() {
-    // list thread responses from database
-    // filter status not finalized and put them into background tracker
-    const threadResponses = await this.threadResponseRepository.findAll();
-    const unfininshedBreakdownThreadResponses = threadResponses.filter(
-      (threadResponse) =>
-        threadResponse?.breakdownDetail?.status &&
-        !isFinalized(
-          threadResponse?.breakdownDetail?.status as AskResultStatus,
-        ),
-    );
-    logger.info(
-      `Initialization: adding unfininshed breakdown thread responses (total: ${unfininshedBreakdownThreadResponses.length}) to background tracker`,
-    );
-    for (const threadResponse of unfininshedBreakdownThreadResponses) {
-      this.breakdownBackgroundTracker.addTask(threadResponse);
-    }
+    // SQL breakdown generation was removed (the AI service no longer exposes
+    // /v1/ask-details), so there are no unfinished breakdown tasks to resume
   }
 
   /**
@@ -785,44 +624,6 @@ export class AskingService implements IAskingService {
     return await this.threadResponseRepository.updateOne(responseId, {
       sql: data.sql,
     });
-  }
-
-  public async generateThreadResponseBreakdown(
-    threadResponseId: number,
-    configurations: { language: string },
-  ): Promise<ThreadResponse> {
-    const { language } = configurations;
-    const threadResponse = await this.threadResponseRepository.findOneBy({
-      id: threadResponseId,
-    });
-
-    if (!threadResponse) {
-      throw new Error(`Thread response ${threadResponseId} not found`);
-    }
-
-    // 1. create a task on AI service to generate the detail
-    const response = await this.wrenAIAdaptor.generateAskDetail({
-      query: threadResponse.question,
-      sql: threadResponse.sql,
-      configurations: { language },
-    });
-
-    // 2. update the thread response with breakdown detail
-    const updatedThreadResponse = await this.threadResponseRepository.updateOne(
-      threadResponse.id,
-      {
-        breakdownDetail: {
-          queryId: response.queryId,
-          status: AskResultStatus.UNDERSTANDING,
-        },
-      },
-    );
-
-    // 3. put the task into background tracker
-    this.breakdownBackgroundTracker.addTask(updatedThreadResponse);
-
-    // return the task id
-    return updatedThreadResponse;
   }
 
   public async generateThreadResponseAnswer(

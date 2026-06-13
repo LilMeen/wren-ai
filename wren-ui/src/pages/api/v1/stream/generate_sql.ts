@@ -1,3 +1,4 @@
+import { withApiAuth } from '@server/utils/apiAuth';
 import { NextApiRequest, NextApiResponse } from 'next';
 import { components } from '@/common';
 import { ApiType } from '@server/repositories/apiHistoryRepository';
@@ -32,10 +33,7 @@ logger.level = 'debug';
 const { apiHistoryRepository, projectService, deployService, wrenAIAdaptor } =
   components;
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse,
-) {
+async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { question, language, threadId } = req.body as AsyncAskRequest;
   const startTime = Date.now();
   let project;
@@ -199,3 +197,5 @@ export default async function handler(
     endStream(res, threadId || uuidv4(), startTime);
   }
 }
+
+export default withApiAuth(handler);

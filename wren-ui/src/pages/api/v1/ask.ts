@@ -1,3 +1,4 @@
+import { withApiAuth } from '@server/utils/apiAuth';
 import { NextApiRequest, NextApiResponse } from 'next';
 import { components } from '@/common';
 import { ApiType } from '@server/repositories/apiHistoryRepository';
@@ -41,10 +42,7 @@ interface AskRequest {
   threadId?: string;
 }
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse,
-) {
+async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { question, sampleSize, language, threadId } = req.body as AskRequest;
   const startTime = Date.now();
   let project;
@@ -319,3 +317,5 @@ export default async function handler(
     });
   }
 }
+
+export default withApiAuth(handler);

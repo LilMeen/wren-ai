@@ -1,3 +1,4 @@
+import { withApiAuth } from '@server/utils/apiAuth';
 import { NextApiRequest, NextApiResponse } from 'next';
 import { components } from '@/common';
 import { ApiType } from '@server/repositories/apiHistoryRepository';
@@ -32,10 +33,7 @@ interface GenerateSummaryRequest {
   threadId?: string;
 }
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse,
-) {
+async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { question, sql, sampleSize, language, threadId } =
     req.body as GenerateSummaryRequest;
   const startTime = Date.now();
@@ -197,3 +195,5 @@ export default async function handler(
     });
   }
 }
+
+export default withApiAuth(handler);

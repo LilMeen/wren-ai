@@ -48,6 +48,10 @@ export interface IContext {
   // authenticated user of the current request (null when not signed in)
   currentUser?: User | null;
 
+  // true when the request comes from a trusted backend service holding the
+  // internal API secret (e.g. wren-ai-service dry-running generated SQL)
+  isInternalRequest?: boolean;
+
   // adaptor
   wrenEngineAdaptor: IWrenEngineAdaptor;
   ibisServerAdaptor: IIbisAdaptor;

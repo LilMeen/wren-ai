@@ -95,6 +95,8 @@ services:
       WREN_ENGINE_ENDPOINT: http://wren-engine:${WREN_ENGINE_PORT}
       WREN_AI_ENDPOINT: http://wren-ai-service:${WREN_AI_SERVICE_PORT}
       IBIS_SERVER_ENDPOINT: http://ibis-server:${IBIS_SERVER_PORT}
+      # shared secret accepted from trusted backend services (wren-ai-service)
+      WREN_INTERNAL_API_SECRET: ${WREN_INTERNAL_API_SECRET}
       GENERATION_MODEL: ${GENERATION_MODEL}
       WREN_ENGINE_PORT: ${WREN_ENGINE_PORT}
       WREN_AI_SERVICE_VERSION: ${WREN_AI_SERVICE_VERSION}

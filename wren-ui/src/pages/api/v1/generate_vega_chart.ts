@@ -1,3 +1,4 @@
+import { withApiAuth } from '@server/utils/apiAuth';
 import { NextApiRequest, NextApiResponse } from 'next';
 import { components } from '@/common';
 import { ApiType } from '@server/repositories/apiHistoryRepository';
@@ -50,10 +51,7 @@ interface GenerateVegaSpecRequest {
   sampleSize?: number;
 }
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse,
-) {
+async function handler(req: NextApiRequest, res: NextApiResponse) {
   const {
     question,
     sql,
@@ -198,3 +196,5 @@ export default async function handler(
     });
   }
 }
+
+export default withApiAuth(handler);

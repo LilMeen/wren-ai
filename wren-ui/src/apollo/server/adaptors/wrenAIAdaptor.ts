@@ -2,8 +2,6 @@ import axios from 'axios';
 import { Readable } from 'stream';
 import {
   AskCandidateType,
-  AskDetailInput,
-  AskDetailResult,
   AskHistory,
   AskResult,
   AskResultStatus,
@@ -64,14 +62,6 @@ export interface IWrenAIAdaptor {
   cancelAsk(queryId: string): Promise<void>;
   getAskResult(queryId: string): Promise<AskResult>;
   getAskStreamingResult(queryId: string): Promise<Readable>;
-
-  /**
-   * After you choose a candidate, you can request AI service to generate the detail.
-   * 1. use generateAskDetail() to generate the detail. AI service will return a queryId
-   * 2. use getAskDetailResult() to get the result of the queryId
-   */
-  generateAskDetail(input: AskDetailInput): Promise<AsyncQueryResponse>;
-  getAskDetailResult(queryId: string): Promise<AskDetailResult>;
 
   /**
    * Generate recommendation questions
@@ -293,42 +283,6 @@ export class WrenAIAdaptor implements IWrenAIAdaptor {
       throw Errors.create(Errors.GeneralErrorCodes.INTERNAL_SERVER_ERROR, {
         originalError: err,
       });
-    }
-  }
-
-  /**
-   * After you choose a candidate, you can request AI service to generate the detail.
-   */
-
-  public async generateAskDetail(
-    input: AskDetailInput,
-  ): Promise<AsyncQueryResponse> {
-    try {
-      const res = await axios.post(
-        `${this.wrenAIBaseEndpoint}/v1/ask-details`,
-        input,
-      );
-      return { queryId: res.data.query_id };
-    } catch (err: any) {
-      logger.debug(
-        `Got error when generating ask detail: ${getAIServiceError(err)}`,
-      );
-      throw err;
-    }
-  }
-
-  public async getAskDetailResult(queryId: string): Promise<AskDetailResult> {
-    // make GET request /v1/ask-details/:query_id/result to get the result
-    try {
-      const res = await axios.get(
-        `${this.wrenAIBaseEndpoint}/v1/ask-details/${queryId}/result`,
-      );
-      return this.transformAskDetailResult(res.data);
-    } catch (err: any) {
-      logger.debug(
-        `Got error when getting ask detail result: ${getAIServiceError(err)}`,
-      );
-      throw err;
     }
   }
 
@@ -844,28 +798,6 @@ export class WrenAIAdaptor implements IWrenAIAdaptor {
       ...body,
       status,
       error,
-    };
-  }
-
-  private transformAskDetailResult(body: any): AskDetailResult {
-    const { type } = body;
-    const { status, error } = this.transformStatusAndError(body);
-
-    // snake_case to camelCase
-    const steps = (body?.response?.steps || []).map((step: any) => ({
-      summary: step.summary,
-      sql: step.sql,
-      cteName: step.cte_name,
-    }));
-
-    return {
-      type,
-      status: status as AskResultStatus,
-      error,
-      response: {
-        description: body?.response?.description,
-        steps,
-      },
     };
   }
 

@@ -110,8 +110,6 @@ export class AskingResolver {
 
     this.getThreadRecommendationQuestions =
       this.getThreadRecommendationQuestions.bind(this);
-    this.generateThreadResponseBreakdown =
-      this.generateThreadResponseBreakdown.bind(this);
     this.generateThreadResponseAnswer =
       this.generateThreadResponseAnswer.bind(this);
     this.generateThreadResponseChart =
@@ -559,21 +557,6 @@ export class AskingResolver {
         ? safeFormatSQL(adjustmentTask.invalidSql)
         : null,
     };
-  }
-
-  public async generateThreadResponseBreakdown(
-    _root: any,
-    args: { responseId: number },
-    ctx: IContext,
-  ): Promise<ThreadResponse> {
-    const project = await ctx.projectService.getCurrentProject();
-    const { responseId } = args;
-    const askingService = ctx.askingService;
-    const breakdownDetail = await askingService.generateThreadResponseBreakdown(
-      responseId,
-      { language: WrenAILanguage[project.language] || WrenAILanguage.EN },
-    );
-    return breakdownDetail;
   }
 
   public async generateThreadResponseAnswer(

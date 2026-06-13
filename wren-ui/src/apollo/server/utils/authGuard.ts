@@ -77,6 +77,13 @@ const guardResolver = (
       return resolve(root, args, ctx, info);
     }
 
+    // trusted service-to-service calls (wren-ai-service dry-running SQL,
+    // force-deploy on startup) authenticate with the internal API secret
+    // instead of a user session
+    if (ctx.isInternalRequest) {
+      return resolve(root, args, ctx, info);
+    }
+
     const user = ctx.currentUser;
     if (!user) {
       throw new AuthenticationError('You must be signed in to continue.');

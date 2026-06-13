@@ -72,6 +72,8 @@ export const errorMessages = {
     "Could you please provide more details or specify the information you're seeking?",
   [GeneralErrorCodes.NO_CHART]:
     "The chart couldn't be generated this time. Please try regenerating the chart or rephrasing your question for better results.",
+  [GeneralErrorCodes.AI_SERVICE_UNDEFINED_ERROR]:
+    'The AI service reported an unexpected error.',
 
   // Connector errors
   [GeneralErrorCodes.CONNECTION_ERROR]: 'Can not connect to data source',
@@ -135,6 +137,7 @@ export const shortMessages = {
   [GeneralErrorCodes.NO_RELEVANT_DATA]: 'Try a different query',
   [GeneralErrorCodes.NO_RELEVANT_SQL]: 'Clarification needed',
   [GeneralErrorCodes.NO_CHART]: 'Chart not available',
+  [GeneralErrorCodes.AI_SERVICE_UNDEFINED_ERROR]: 'AI service error',
   [GeneralErrorCodes.CONNECTION_ERROR]: 'Failed to connect',
   [GeneralErrorCodes.IBIS_SERVER_ERROR]: 'Data connection error',
   [GeneralErrorCodes.INIT_SQL_ERROR]: 'Invalid initializing SQL',
