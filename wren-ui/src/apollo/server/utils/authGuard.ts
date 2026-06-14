@@ -13,6 +13,15 @@ const PROJECT_CREATION_MUTATIONS = new Set([
   'startSampleDataset',
 ]);
 
+/**
+ * Operations invoked by trusted backend services (wren-ai-service) over the
+ * internal network, not by end users — so they have no user session. The AI
+ * service calls `previewSql` to execute SQL for chart generation / SQL
+ * validation, and `deploy` to (re)index the semantic model. These bypass the
+ * user-session check entirely.
+ */
+const SYSTEM_OPERATIONS = new Set(['previewSql', 'deploy']);
+
 const DEV_ONLY_MUTATIONS = new Set([
   // project / data source
   'deploy',
@@ -74,6 +83,12 @@ const guardResolver = (
   return async (root, args, ctx, info) => {
     // auth can be turned off entirely (e.g. for local debugging / e2e tests)
     if (!ctx.config.authEnabled) {
+      return resolve(root, args, ctx, info);
+    }
+
+    // system operations called by trusted backend services (wren-ai-service)
+    // have no user session — they must not be blocked by the auth check.
+    if (SYSTEM_OPERATIONS.has(fieldName)) {
       return resolve(root, args, ctx, info);
     }
 
