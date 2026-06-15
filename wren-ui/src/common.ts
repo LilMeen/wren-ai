@@ -164,6 +164,8 @@ export const initComponents = () => {
   });
   const ontologyService = new OntologyService({
     ontologyRepository,
+    modelRepository,
+    modelColumnRepository,
   });
 
   // background trackers

@@ -242,10 +242,8 @@ export class ModelResolver {
       args.force,
     );
 
-    // only generating for user's data source
-    if (project.sampleDataset === null) {
-      await ctx.projectService.generateProjectRecommendationQuestions();
-    }
+    // NOTE: project recommendation question generation is disabled to save
+    // tokens (the feature is temporarily limited across the app).
     return deployRes;
   }
 

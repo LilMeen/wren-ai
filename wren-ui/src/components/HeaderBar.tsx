@@ -104,6 +104,14 @@ export default function HeaderBar() {
                   <StyledButton
                     shape="round"
                     size="small"
+                    $isHighlight={pathname.startsWith(Path.Ontology)}
+                    onClick={() => router.push(Path.Ontology)}
+                  >
+                    Ontology
+                  </StyledButton>
+                  <StyledButton
+                    shape="round"
+                    size="small"
                     $isHighlight={pathname.startsWith(Path.Knowledge)}
                     onClick={() => router.push(Path.KnowledgeQuestionSQLPairs)}
                   >

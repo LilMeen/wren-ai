@@ -3,6 +3,8 @@ import {
   Ontology,
   OntologyDefinition,
 } from '../repositories/ontologyRepository';
+import { IModelRepository } from '../repositories/modelRepository';
+import { IModelColumnRepository } from '../repositories/modelColumnRepository';
 import { Manifest } from '../mdl/type';
 import { getLogger } from '@server/utils';
 
@@ -26,13 +28,21 @@ export interface IOntologyService {
 
 export class OntologyService implements IOntologyService {
   private ontologyRepository: IOntologyRepository;
+  private modelRepository: IModelRepository;
+  private modelColumnRepository: IModelColumnRepository;
 
   constructor({
     ontologyRepository,
+    modelRepository,
+    modelColumnRepository,
   }: {
     ontologyRepository: IOntologyRepository;
+    modelRepository: IModelRepository;
+    modelColumnRepository: IModelColumnRepository;
   }) {
     this.ontologyRepository = ontologyRepository;
+    this.modelRepository = modelRepository;
+    this.modelColumnRepository = modelColumnRepository;
   }
 
   public async getByProject(projectId: number) {
@@ -40,11 +50,69 @@ export class OntologyService implements IOntologyService {
   }
 
   public async save(projectId: number, data: SaveOntologyData) {
-    return this.ontologyRepository.upsertByProjectId(projectId, {
+    const saved = await this.ontologyRepository.upsertByProjectId(projectId, {
       definition: data.definition,
       generatedBy: data.generatedBy ?? 'user',
       status: data.status ?? 'active',
     });
+    // also persist the entity/attribute descriptions onto the underlying
+    // model & column metadata so they show up in the Modeling tab and MDL
+    await this.persistDescriptionsToModels(projectId, data.definition);
+    return saved;
+  }
+
+  /**
+   * Write ontology entity descriptions to their source model's properties and
+   * attribute descriptions to their source column's properties. Matching is by
+   * reference name (entity.sourceModel === model.referenceName and
+   * attribute.sourceColumn === column.referenceName).
+   */
+  private async persistDescriptionsToModels(
+    projectId: number,
+    definition: OntologyDefinition,
+  ) {
+    const entities = definition?.entities || [];
+    if (entities.length === 0) return;
+
+    const models = await this.modelRepository.findAllBy({ projectId });
+    if (models.length === 0) return;
+    const columns = await this.modelColumnRepository.findColumnsByModelIds(
+      models.map((m) => m.id),
+    );
+
+    for (const entity of entities) {
+      const model = models.find((m) => m.referenceName === entity.sourceModel);
+      if (!model) continue;
+
+      if (entity.description) {
+        const properties = model.properties ? JSON.parse(model.properties) : {};
+        properties.description = entity.description;
+        if (entity.displayName) properties.displayName = entity.displayName;
+        await this.modelRepository.updateOne(model.id, {
+          properties: JSON.stringify(properties),
+        });
+      }
+
+      for (const attribute of entity.attributes || []) {
+        if (!attribute.description) continue;
+        const column = columns.find(
+          (c) =>
+            c.modelId === model.id &&
+            c.referenceName === attribute.sourceColumn,
+        );
+        if (!column) continue;
+        const properties = column.properties
+          ? JSON.parse(column.properties)
+          : {};
+        properties.description = attribute.description;
+        await this.modelColumnRepository.updateOne(column.id, {
+          properties: JSON.stringify(properties),
+        });
+      }
+    }
+    logger.debug(
+      `Persisted ontology descriptions to models for project ${projectId}`,
+    );
   }
 
   /**

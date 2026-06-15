@@ -63,6 +63,10 @@ export const isRecommendedFinished = (status: RecommendedQuestionsTaskStatus) =>
     RecommendedQuestionsTaskStatus.NOT_STARTED,
   ].includes(status);
 
+// Instant recommended (follow-up) question generation is disabled to save
+// tokens — the recommendation-question feature is temporarily limited.
+const RECOMMENDED_QUESTIONS_ENABLED: boolean = false;
+
 const isNeedRecommendedQuestions = (askingTask: AskingTask) => {
   const isGeneralOrMisleadingQuery = [
     AskingTaskType.GENERAL,
@@ -244,8 +248,11 @@ export default function useAskPrompt(threadId?: number) {
   }, [askingTask?.status, threadId, checkFetchAskingStreamTask]);
 
   useEffect(() => {
-    // handle instant recommended questions
-    if (isNeedRecommendedQuestions(askingTask)) {
+    // handle instant recommended questions (disabled to save tokens)
+    if (
+      RECOMMENDED_QUESTIONS_ENABLED &&
+      isNeedRecommendedQuestions(askingTask)
+    ) {
       startRecommendedQuestions();
     }
   }, [askingTask?.type]);

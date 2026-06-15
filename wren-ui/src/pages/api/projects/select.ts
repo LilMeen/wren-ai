@@ -23,8 +23,13 @@ export default async function handler(
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { authService, projectRepository, mdlService, deployService } =
-    components;
+  const {
+    authService,
+    projectRepository,
+    mdlService,
+    deployService,
+    ontologyService,
+  } = components;
 
   if (serverConfig.authEnabled) {
     const sessionToken = getSessionTokenFromRequest(req);
@@ -47,15 +52,41 @@ export default async function handler(
     }
     setSelectedProjectCookie(res, project.id);
 
-    // Re-deploy the MDL in the background so the AI service is always in sync
-    // with the newly selected project. This is a no-op when the hash is unchanged.
-    void runWithAuthContext({ selectedProjectId: project.id }, async () => {
+    // Re-index the selected project's MDL into the AI service before returning.
+    //
+    // The AI service keeps every project's semantic documents in *shared*
+    // Qdrant collections, separated only by a `project_id` payload field, and
+    // retrieval filters strictly on that field. Those collections can lose a
+    // project's documents independently of wren-ui's Postgres `deploy_log`:
+    // the AI service recreates its indexes on startup when the embedding model
+    // changes, and its startup force-deploy only re-indexes a single project.
+    // When that happens the other projects still have a SUCCESS row in
+    // `deploy_log` but zero documents in Qdrant, so retrieval returns nothing
+    // and the LLM answers with no schema context ("no data / table not found").
+    // That is exactly the failure seen when switching to an older project that
+    // someone else created.
+    //
+    // A normal deploy short-circuits when the MDL hash already matches the last
+    // `deploy_log` entry, so it would trust the stale log and never re-index the
+    // missing documents. We therefore FORCE the deploy here to guarantee the
+    // selected project is actually present in the AI service, and AWAIT it so
+    // the project is queryable by the time the user lands on it. A deploy
+    // failure must never block switching, so it is swallowed and logged.
+    await runWithAuthContext({ selectedProjectId: project.id }, async () => {
       try {
         const { manifest } = await mdlService.makeCurrentModelMDL();
-        await deployService.deploy(manifest, project.id);
+        // Enrich with ontology exactly like the `deploy` GraphQL resolver, so
+        // the re-indexed semantic model matches what the modeling flow deploys
+        // (and the computed hash stays consistent across both paths).
+        const ontology = await ontologyService.getByProject(project.id);
+        const enrichedManifest = ontologyService.applyOntologyToManifest(
+          manifest,
+          ontology,
+        );
+        await deployService.deploy(enrichedManifest, project.id, true);
       } catch (err: any) {
         logger.warn(
-          `Background MDL re-deploy failed for project ${project.id}: ${err.message}`,
+          `MDL re-deploy on project select failed for project ${project.id}: ${err.message}`,
         );
       }
     });

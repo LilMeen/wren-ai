@@ -12,10 +12,6 @@ import { RobotSVG } from '@/utils/svgs';
 import { ANSWER_TAB_KEYS } from '@/utils/enum';
 import { canGenerateAnswer } from '@/hooks/useAskPrompt';
 import usePromptThreadStore from './store';
-import { RecommendedQuestionsProps } from '@/components/pages/home/promptThread';
-import RecommendedQuestions, {
-  getRecommendedQuestionProps,
-} from '@/components/pages/home/RecommendedQuestions';
 import ViewBlock from '@/components/pages/home/promptThread/ViewBlock';
 import ViewSQLTabContent from '@/components/pages/home/promptThread/ViewSQLTabContent';
 import TextBasedAnswer, {
@@ -140,22 +136,6 @@ const QuestionTitle = (props) => {
   );
 };
 
-const renderRecommendedQuestions = (
-  isLastThreadResponse: boolean,
-  recommendedQuestionProps,
-  onSelect: RecommendedQuestionsProps['onSelect'],
-) => {
-  if (!isLastThreadResponse || !recommendedQuestionProps.show) return null;
-
-  return (
-    <RecommendedQuestions
-      className="mt-5 mb-4"
-      {...recommendedQuestionProps.state}
-      onSelect={onSelect}
-    />
-  );
-};
-
 const AdjustmentInformation = (props: {
   adjustment: ThreadResponseAdjustment;
 }) => {
@@ -192,14 +172,9 @@ export default function AnswerResult(props: Props) {
 
   const {
     onOpenSaveAsViewModal,
-    onGenerateThreadRecommendedQuestions,
     onGenerateTextBasedAnswer,
     onGenerateChartAnswer,
     onOpenSaveToKnowledgeModal,
-    // recommend questions
-    recommendedQuestions,
-    showRecommendedQuestions,
-    onSelectRecommendedQuestion,
     preparation,
   } = usePromptThreadStore();
 
@@ -221,11 +196,6 @@ export default function AnswerResult(props: Props) {
 
   const isAdjustment = !!adjustment;
 
-  const recommendedQuestionProps = getRecommendedQuestionProps(
-    recommendedQuestions,
-    showRecommendedQuestions,
-  );
-
   const isAnswerPrepared = !!answerDetail?.queryId || !!answerDetail?.status;
   const isBreakdownOnly = useMemo(() => {
     // we support rendering different types of answers now, so we need to check if it's old data.
@@ -243,7 +213,8 @@ export default function AnswerResult(props: Props) {
       const debouncedGenerateAnswer = debounce(
         () => {
           onGenerateTextBasedAnswer(id);
-          onGenerateThreadRecommendedQuestions();
+          // recommended-question generation after answers is disabled to
+          // save tokens (feature temporarily limited).
         },
         250,
         { leading: false, trailing: true },
@@ -374,11 +345,6 @@ export default function AnswerResult(props: Props) {
             />
           </div>
           <OntologyUsedPanel sql={sql} />
-          {renderRecommendedQuestions(
-            isLastThreadResponse,
-            recommendedQuestionProps,
-            onSelectRecommendedQuestion,
-          )}
         </>
       )}
     </div>
