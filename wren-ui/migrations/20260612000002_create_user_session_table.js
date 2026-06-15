@@ -2,8 +2,10 @@
  * @param { import("knex").Knex } knex
  * @returns { Promise<void> }
  */
-exports.up = function (knex) {
-  return knex.schema.createTable('user_session', (table) => {
+exports.up = async function (knex) {
+  // idempotent: skip if the table already exists
+  if (await knex.schema.hasTable('user_session')) return;
+  await knex.schema.createTable('user_session', (table) => {
     table.increments('id').primary();
     table
       .integer('user_id')

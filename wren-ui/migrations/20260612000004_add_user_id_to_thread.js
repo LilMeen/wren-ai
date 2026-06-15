@@ -9,6 +9,8 @@ const DEFAULT_DEV_EMAIL = process.env.WREN_DEFAULT_DEV_EMAIL || 'admin@wren.ai';
  * @returns { Promise<void> }
  */
 exports.up = async function (knex) {
+  // idempotent: skip if the column already exists (column + backfill already done)
+  if (await knex.schema.hasColumn('thread', 'user_id')) return;
   await knex.schema.alterTable('thread', (table) => {
     table
       .integer('user_id')

@@ -9,6 +9,8 @@ const DEFAULT_DEV_PASSWORD = process.env.WREN_DEFAULT_DEV_PASSWORD || 'admin1234
  * @returns { Promise<void> }
  */
 exports.up = async function (knex) {
+  // idempotent: skip if the column already exists (column + backfill already done)
+  if (await knex.schema.hasColumn('project', 'owner_id')) return;
   await knex.schema.alterTable('project', (table) => {
     table
       .integer('owner_id')

@@ -2,8 +2,11 @@
  * @param { import("knex").Knex } knex
  * @returns { Promise<void> }
  */
-exports.up = function (knex) {
-  return knex.schema.createTable('user', (table) => {
+exports.up = async function (knex) {
+  // idempotent: skip if the table already exists (e.g. created by an earlier
+  // run whose migration record was lost / re-timestamped)
+  if (await knex.schema.hasTable('user')) return;
+  await knex.schema.createTable('user', (table) => {
     table.increments('id').primary();
     table.string('email').notNullable().unique().comment('Unique login email');
     table.text('password_hash').notNullable().comment('Hashed password only');
