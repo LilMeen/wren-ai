@@ -75,6 +75,10 @@ export interface AskInput {
   deployId: string;
   histories?: ThreadResponse[];
   configurations?: ProjectConfigurations;
+  // project_id is sent so the AI service can pass it back to wren-ui's
+  // previewSql callback (engine: wren_ui); without it the callback has no
+  // session and falls back to the wrong project's deployment
+  projectId?: string;
 }
 
 export interface AsyncQueryResponse {

@@ -46,9 +46,17 @@ logger.level = 'debug';
 
 const getAIServiceError = (error: any) => {
   const { data } = error.response || {};
-  return data?.detail
-    ? `${error.message}, detail: ${data.detail}`
-    : error.message;
+  if (data?.detail) {
+    // FastAPI 422 returns detail as an array of validation error objects
+    const detail =
+      typeof data.detail === 'string'
+        ? data.detail
+        : JSON.stringify(data.detail);
+    return `${error.message}, detail: ${detail}`;
+  }
+  return typeof error.message === 'string'
+    ? error.message
+    : JSON.stringify(error.message);
 };
 
 export interface IWrenAIAdaptor {
@@ -251,6 +259,7 @@ export class WrenAIAdaptor implements IWrenAIAdaptor {
         id: input.deployId,
         histories: this.transformHistoryInput(input.histories),
         configurations: input.configurations,
+        project_id: input.projectId,
       });
       return { queryId: res.data.query_id };
     } catch (err: any) {
@@ -388,6 +397,7 @@ export class WrenAIAdaptor implements IWrenAIAdaptor {
       max_questions: input.maxQuestions,
       max_categories: input.maxCategories,
       configuration: input.configuration,
+      project_id: input.projectId,
     };
     logger.info(`Wren AI: Generating recommendation questions`);
     try {

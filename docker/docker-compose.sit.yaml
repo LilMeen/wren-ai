@@ -115,6 +115,7 @@ services:
       - ${HOST_PORT}:3000
     volumes:
       - data:/app/data
+      - ${PROJECT_DIR}/../wren-ui/migrations:/app/migrations:ro
     networks:
       - wren
     depends_on:

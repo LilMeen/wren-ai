@@ -325,7 +325,7 @@ export default function DefineRelations(props: Props) {
             icon={<BulbOutlined />}
             loading={generating}
             onClick={generate}
-            disabled={fetching}
+            disabled={fetching || generating}
           >
             Generate with AI
           </Button>

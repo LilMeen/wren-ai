@@ -332,10 +332,13 @@ export class ModelService implements IModelService {
 
   public generateReferenceName(data: GenerateReferenceNameData): string {
     const { sourceTableName, existedReferenceNames } = data;
-    if (!existedReferenceNames.includes(sourceTableName)) {
-      return sourceTableName;
+    // dots in schema-qualified names (e.g. "sdp_golden.dim_table") are not
+    // valid identifiers in MDL/SQL — replace with underscores
+    const sanitized = sourceTableName.replace(/\./g, '_');
+    if (!existedReferenceNames.includes(sanitized)) {
+      return sanitized;
     }
-    return `${sourceTableName}_${existedReferenceNames.length + 1}`;
+    return `${sanitized}_${existedReferenceNames.length + 1}`;
   }
 
   public async saveRelations(relations: RelationData[]) {

@@ -546,6 +546,7 @@ export class AskingService implements IAskingService {
     const recommendQuestionData: RecommendationQuestionsInput = {
       manifest,
       previousQuestions: questions,
+      projectId: project.id.toString(),
       ...this.getThreadRecommendationQuestionsConfig(project),
     };
 
@@ -593,6 +594,7 @@ export class AskingService implements IAskingService {
     threadResponseId?: number,
   ): Promise<Task> {
     const { threadId, language } = payload;
+    const project = await this.projectService.getCurrentProject();
     const deployId = await this.getDeployId();
 
     // if it's a follow-up question, then the input will have a threadId
@@ -605,6 +607,7 @@ export class AskingService implements IAskingService {
       query: input.question,
       histories,
       deployId,
+      projectId: project.id.toString(),
       configurations: { language },
       rerunFromCancelled,
       previousTaskId,
@@ -1039,6 +1042,7 @@ export class AskingService implements IAskingService {
     const response = await this.wrenAIAdaptor.generateRecommendationQuestions({
       manifest,
       previousQuestions: input.previousQuestions,
+      projectId: project.id.toString(),
       ...this.getThreadRecommendationQuestionsConfig(project),
     });
     return { id: response.queryId };
