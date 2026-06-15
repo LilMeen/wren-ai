@@ -51,6 +51,10 @@ export enum WrenAILanguage {
 export interface DeployData {
   manifest: Manifest;
   hash: string;
+  // project_id must match the value used at retrieval time, otherwise the
+  // AI service indexes documents under a different project and retrieval
+  // returns nothing (empty schema -> the LLM hallucinates table names)
+  projectId?: string;
 }
 
 // ask
