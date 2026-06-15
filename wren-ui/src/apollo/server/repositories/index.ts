@@ -21,3 +21,4 @@ export * from './apiHistoryRepository';
 export * from './dashboardItemRefreshJobRepository';
 export * from './userRepository';
 export * from './userSessionRepository';
+export * from './ontologyRepository';

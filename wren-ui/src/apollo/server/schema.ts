@@ -1140,6 +1140,57 @@ export const typeDefs = gql`
     error: Error
   }
 
+  # Ontology (Fabric IQ-style semantic layer)
+  enum OntologyRecommendationStatus {
+    generating
+    finished
+    failed
+  }
+
+  type OntologyAttribute {
+    name: String!
+    sourceColumn: String!
+    description: String
+  }
+
+  type OntologyEntity {
+    id: String
+    name: String!
+    displayName: String
+    description: String
+    sourceModel: String!
+    attributes: [OntologyAttribute!]
+  }
+
+  type OntologyRelationship {
+    id: String
+    name: String!
+    fromEntity: String!
+    toEntity: String!
+    type: String!
+    description: String
+    sourceRelation: String
+  }
+
+  type OntologyGraph {
+    entities: [OntologyEntity!]!
+    relationships: [OntologyRelationship!]!
+  }
+
+  type Ontology {
+    id: Int!
+    projectId: Int!
+    definition: OntologyGraph
+    status: String!
+    generatedBy: String
+  }
+
+  type OntologyRecommendationTask {
+    status: OntologyRecommendationStatus!
+    definition: OntologyGraph
+    error: Error
+  }
+
   # Query and Mutation
   type Query {
     # On Boarding Steps
@@ -1202,6 +1253,10 @@ export const typeDefs = gql`
     relationshipRecommendationTask(
       taskId: String!
     ): RelationshipRecommendationTask!
+
+    # Ontology
+    ontology: Ontology
+    ontologyRecommendationTask(taskId: String!): OntologyRecommendationTask!
   }
 
   type Mutation {
@@ -1235,6 +1290,10 @@ export const typeDefs = gql`
     updateRelation(data: UpdateRelationInput!, where: WhereIdInput!): JSON!
     deleteRelation(where: WhereIdInput!): Boolean!
     generateRelationshipRecommendations: Task!
+
+    # Ontology
+    generateOntologyRecommendations: Task!
+    saveOntology(data: JSON!): Ontology!
 
     # Calculated field
     createCalculatedField(data: CreateCalculatedFieldInput!): JSON!

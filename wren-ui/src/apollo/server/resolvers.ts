@@ -8,6 +8,7 @@ import { DashboardResolver } from './resolvers/dashboardResolver';
 import { SqlPairResolver } from './resolvers/sqlPairResolver';
 import { InstructionResolver } from './resolvers/instructionResolver';
 import { ApiHistoryResolver } from './resolvers/apiHistoryResolver';
+import { OntologyResolver } from './resolvers/ontologyResolver';
 import { convertColumnType } from '@server/utils';
 import { DialectSQLScalar } from './scalars';
 
@@ -20,6 +21,7 @@ const dashboardResolver = new DashboardResolver();
 const sqlPairResolver = new SqlPairResolver();
 const instructionResolver = new InstructionResolver();
 const apiHistoryResolver = new ApiHistoryResolver();
+const ontologyResolver = new OntologyResolver();
 const resolvers = {
   JSON: GraphQLJSON,
   DialectSQL: DialectSQLScalar,
@@ -79,6 +81,10 @@ const resolvers = {
     // Relationship recommendation
     relationshipRecommendationTask:
       projectResolver.getRelationshipRecommendationTask,
+
+    // Ontology
+    ontology: ontologyResolver.getOntology,
+    ontologyRecommendationTask: ontologyResolver.getOntologyRecommendationTask,
   },
   Mutation: {
     deploy: modelResolver.deploy,
@@ -106,6 +112,11 @@ const resolvers = {
     deleteRelation: modelResolver.deleteRelation,
     generateRelationshipRecommendations:
       projectResolver.generateRelationshipRecommendations,
+
+    // Ontology
+    generateOntologyRecommendations:
+      ontologyResolver.generateOntologyRecommendations,
+    saveOntology: ontologyResolver.saveOntology,
 
     // Ask
     createAskingTask: askingResolver.createAskingTask,

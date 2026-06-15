@@ -82,6 +82,8 @@ pipes:
     llm: litellm_llm.default
   - name: relationship_recommendation
     llm: litellm_llm.default
+  - name: ontology_recommendation
+    llm: litellm_llm.default
     engine: wren_ui
   - name: question_recommendation
     llm: litellm_llm.default

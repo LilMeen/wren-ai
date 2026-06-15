@@ -7,6 +7,7 @@ import Starter from './Starter';
 import ConnectDataSource from './ConnectDataSource';
 import SelectModels from './SelectModels';
 import DefineRelations from './DefineRelations';
+import DefineOntology from './DefineOntology';
 import { SampleDatasetName } from '@/apollo/client/graphql/__types__';
 import { ERROR_CODES } from '@/utils/errorHandler';
 import {
@@ -20,7 +21,8 @@ type SetupStep = {
     props?: React.ComponentProps<typeof Starter> &
       React.ComponentProps<typeof ConnectDataSource> &
       React.ComponentProps<typeof SelectModels> &
-      React.ComponentProps<typeof DefineRelations>,
+      React.ComponentProps<typeof DefineRelations> &
+      React.ComponentProps<typeof DefineOntology>,
   ) => JSX.Element;
   maxWidth?: number;
 };
@@ -53,6 +55,10 @@ export const SETUP_STEPS = {
   [SETUP.DEFINE_RELATIONS]: {
     step: 2,
     component: DefineRelations,
+  },
+  [SETUP.DEFINE_ONTOLOGY]: {
+    step: 3,
+    component: DefineOntology,
   },
 } as { [key: string]: SetupStep };
 

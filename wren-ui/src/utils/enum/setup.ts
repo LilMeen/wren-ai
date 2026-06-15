@@ -4,4 +4,5 @@ export enum SETUP {
   SELECT_MODELS = 'selectModels',
   RECOMMEND_RELATIONS = 'recommendRelations',
   DEFINE_RELATIONS = 'defineRelations',
+  DEFINE_ONTOLOGY = 'defineOntology',
 }

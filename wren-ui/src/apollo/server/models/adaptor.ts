@@ -341,6 +341,51 @@ export interface RelationshipRecommendationResult {
   error?: WrenAIError;
 }
 
+// ontology recommendation
+export interface OntologyRecommendationInput {
+  manifest: Manifest;
+  projectId?: string;
+  configuration?: ProjectConfigurations;
+}
+
+export enum OntologyRecommendationStatus {
+  GENERATING = 'generating',
+  FINISHED = 'finished',
+  FAILED = 'failed',
+}
+
+export interface AIOntologyAttribute {
+  name: string;
+  sourceColumn: string;
+  description: string;
+}
+
+export interface AIOntologyEntity {
+  name: string;
+  displayName: string;
+  description: string;
+  sourceModel: string;
+  attributes: AIOntologyAttribute[];
+}
+
+export interface AIOntologyRelationship {
+  name: string;
+  fromEntity: string;
+  toEntity: string;
+  type: string;
+  description: string;
+  sourceRelation: string;
+}
+
+export interface OntologyRecommendationResult {
+  status: OntologyRecommendationStatus;
+  response?: {
+    entities: AIOntologyEntity[];
+    relationships: AIOntologyRelationship[];
+  };
+  error?: WrenAIError;
+}
+
 // ask feedback
 export interface AskFeedbackInput {
   question: string;

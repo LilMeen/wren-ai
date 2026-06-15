@@ -16,8 +16,9 @@ export default function useSetupRelations() {
   });
   const autoGenerateRelation = data?.autoGenerateRelation;
 
+  // after relationships, continue to the ontology step (instead of modeling)
   const onFinish = () => {
-    router.push(Path.Modeling);
+    router.push(Path.OnboardingOntology);
   };
 
   const [saveRelationsMutation, { loading: submitting }] =

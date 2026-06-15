@@ -21,6 +21,7 @@ import {
   DashboardItemRefreshJobRepository,
   UserRepository,
   UserSessionRepository,
+  OntologyRepository,
 } from '@server/repositories';
 import {
   WrenEngineAdaptor,
@@ -38,6 +39,7 @@ import {
   AskingTaskTracker,
   InstructionService,
   AuthService,
+  OntologyService,
 } from '@server/services';
 import { PostHogTelemetry } from './apollo/server/telemetry/telemetry';
 import {
@@ -80,6 +82,7 @@ export const initComponents = () => {
     new DashboardItemRefreshJobRepository(knex);
   const userRepository = new UserRepository(knex);
   const userSessionRepository = new UserSessionRepository(knex);
+  const ontologyRepository = new OntologyRepository(knex);
 
   // adaptors
   const wrenEngineAdaptor = new WrenEngineAdaptor({
@@ -159,6 +162,9 @@ export const initComponents = () => {
     userRepository,
     userSessionRepository,
   });
+  const ontologyService = new OntologyService({
+    ontologyRepository,
+  });
 
   // background trackers
   const projectRecommendQuestionBackgroundTracker =
@@ -207,6 +213,7 @@ export const initComponents = () => {
     dashboardItemRefreshJobRepository,
     userRepository,
     userSessionRepository,
+    ontologyRepository,
 
     // adaptors
     wrenEngineAdaptor,
@@ -224,6 +231,7 @@ export const initComponents = () => {
     sqlPairService,
     instructionService,
     authService,
+    ontologyService,
     askingTaskTracker,
 
     // background trackers

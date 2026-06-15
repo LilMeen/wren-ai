@@ -229,8 +229,15 @@ export class ModelResolver {
       });
     }
     const { manifest } = await ctx.mdlService.makeCurrentModelMDL();
-    const deployRes = await ctx.deployService.deploy(
+    // enrich the manifest with business semantics from the ontology (if any)
+    // so the deployed/indexed semantic model carries ontology descriptions
+    const ontology = await ctx.ontologyService.getByProject(project.id);
+    const enrichedManifest = ctx.ontologyService.applyOntologyToManifest(
       manifest,
+      ontology,
+    );
+    const deployRes = await ctx.deployService.deploy(
+      enrichedManifest,
       project.id,
       args.force,
     );

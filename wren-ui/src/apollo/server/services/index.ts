@@ -9,3 +9,4 @@ export * from './dashboardService';
 export * from './askingTaskTracker';
 export * from './instructionService';
 export * from './authService';
+export * from './ontologyService';

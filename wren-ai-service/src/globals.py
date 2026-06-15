@@ -19,6 +19,7 @@ class ServiceContainer:
     ask_feedback_service: services.AskFeedbackService
     question_recommendation: services.QuestionRecommendation
     relationship_recommendation: services.RelationshipRecommendation
+    ontology_recommendation: services.OntologyRecommendation
     semantics_description: services.SemanticsDescription
     semantics_preparation_service: services.SemanticsPreparationService
     chart_service: services.ChartService
@@ -217,6 +218,14 @@ def create_service_container(
             pipelines={
                 "relationship_recommendation": generation.RelationshipRecommendation(
                     **pipe_components["relationship_recommendation"],
+                )
+            },
+            **query_cache,
+        ),
+        ontology_recommendation=services.OntologyRecommendation(
+            pipelines={
+                "ontology_recommendation": generation.OntologyRecommendation(
+                    **pipe_components["ontology_recommendation"],
                 )
             },
             **query_cache,

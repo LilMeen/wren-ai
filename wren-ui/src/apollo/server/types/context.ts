@@ -21,6 +21,7 @@ import {
   IInstructionRepository,
   IApiHistoryRepository,
   IDashboardItemRefreshJobRepository,
+  IOntologyRepository,
   User,
 } from '@server/repositories';
 import {
@@ -32,6 +33,7 @@ import {
   IProjectService,
   IDashboardService,
   IInstructionService,
+  IOntologyService,
 } from '@server/services';
 import { ITelemetry } from '@server/telemetry/telemetry';
 import {
@@ -68,6 +70,7 @@ export interface IContext {
   dashboardService: IDashboardService;
   sqlPairService: ISqlPairService;
   instructionService: IInstructionService;
+  ontologyService: IOntologyService;
 
   // repository
   projectRepository: IProjectRepository;
@@ -85,6 +88,7 @@ export interface IContext {
   instructionRepository: IInstructionRepository;
   apiHistoryRepository: IApiHistoryRepository;
   dashboardItemRefreshJobRepository: IDashboardItemRefreshJobRepository;
+  ontologyRepository: IOntologyRepository;
 
   // background trackers
   projectRecommendQuestionBackgroundTracker: ProjectRecommendQuestionBackgroundTracker;

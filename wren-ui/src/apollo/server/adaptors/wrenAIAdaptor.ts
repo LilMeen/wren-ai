@@ -35,6 +35,8 @@ import {
   AskFeedbackStatus,
   RelationshipRecommendationInput,
   RelationshipRecommendationResult,
+  OntologyRecommendationInput,
+  OntologyRecommendationResult,
 } from '@server/models/adaptor';
 import { getLogger } from '@server/utils';
 import * as Errors from '@server/utils/error';
@@ -149,6 +151,16 @@ export interface IWrenAIAdaptor {
   getRelationshipRecommendationResult(
     queryId: string,
   ): Promise<RelationshipRecommendationResult>;
+
+  /**
+   * Ontology recommendation APIs
+   */
+  generateOntologyRecommendations(
+    input: OntologyRecommendationInput,
+  ): Promise<AsyncQueryResponse>;
+  getOntologyRecommendationResult(
+    queryId: string,
+  ): Promise<OntologyRecommendationResult>;
 }
 
 export class WrenAIAdaptor implements IWrenAIAdaptor {
@@ -1000,6 +1012,53 @@ export class WrenAIAdaptor implements IWrenAIAdaptor {
     } catch (err: any) {
       logger.debug(
         `Got error when getting relationship recommendation result: ${getAIServiceError(err)}`,
+      );
+      throw err;
+    }
+  }
+
+  public async generateOntologyRecommendations(
+    input: OntologyRecommendationInput,
+  ): Promise<AsyncQueryResponse> {
+    const body = {
+      mdl: JSON.stringify(input.manifest),
+      project_id: input.projectId,
+      configurations: input.configuration,
+    };
+    logger.info(`Wren AI: Generating ontology recommendations`);
+    try {
+      const res = await axios.post(
+        `${this.wrenAIBaseEndpoint}/v1/ontology-recommendations`,
+        body,
+      );
+      logger.info(
+        `Wren AI: Generating ontology recommendations, queryId: ${res.data.id}`,
+      );
+      return { queryId: res.data.id };
+    } catch (err: any) {
+      logger.debug(
+        `Got error when generating ontology recommendations: ${getAIServiceError(err)}`,
+      );
+      throw err;
+    }
+  }
+
+  public async getOntologyRecommendationResult(
+    queryId: string,
+  ): Promise<OntologyRecommendationResult> {
+    try {
+      const res = await axios.get(
+        `${this.wrenAIBaseEndpoint}/v1/ontology-recommendations/${queryId}`,
+      );
+      const body = res.data;
+      return {
+        status: body.status,
+        response: body.response,
+        error: body.error,
+      };
+    } catch (err: any) {
+      logger.debug(
+        `Got error when getting ontology recommendation result: ${getAIServiceError(err)}`,
       );
       throw err;
     }

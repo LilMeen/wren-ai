@@ -23,6 +23,7 @@ import TextBasedAnswer, {
 } from '@/components/pages/home/promptThread/TextBasedAnswer';
 import ChartAnswer from '@/components/pages/home/promptThread/ChartAnswer';
 import Preparation from '@/components/pages/home/preparation';
+import OntologyUsedPanel from '@/components/pages/ontology/OntologyUsedPanel';
 import {
   AskingTaskStatus,
   ThreadResponse,
@@ -372,6 +373,7 @@ export default function AnswerResult(props: Props) {
               }
             />
           </div>
+          <OntologyUsedPanel sql={sql} />
           {renderRecommendedQuestions(
             isLastThreadResponse,
             recommendedQuestionProps,
