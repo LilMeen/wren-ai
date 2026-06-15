@@ -460,6 +460,7 @@ export class AskingService implements IAskingService {
       new TextBasedAnswerBackgroundTracker({
         wrenAIAdaptor,
         threadResponseRepository,
+        threadRepository,
         projectService,
         deployService,
         queryService,

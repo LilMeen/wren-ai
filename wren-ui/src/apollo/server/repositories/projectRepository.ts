@@ -199,21 +199,42 @@ export class ProjectRepository
   }
 
   public async getCurrentProject() {
-    // when a request carries a selected project (multi-user mode), honor it;
-    // background jobs and single-project deployments fall back to the first project
+    // When a request carries a selected project (multi-user mode), honor it.
     const selectedProjectId = getSelectedProjectId();
     if (selectedProjectId) {
       const selectedProject = await this.findOneBy({ id: selectedProjectId });
       if (selectedProject) {
         return selectedProject;
       }
+      // The context explicitly selected a project that no longer exists. Do not
+      // silently fall back to another project — surface the inconsistency.
+      throw new Error(
+        `Selected project ${selectedProjectId} not found. It may have been ` +
+          `deleted; re-select a project.`,
+      );
     }
+
+    // No project in the current context. This happens for background jobs and
+    // for requests that never set the project cookie. Falling back to "the
+    // first project by id" is only safe when there is exactly one project:
+    // in multi-project setups it runs queries against the wrong project's MDL
+    // and connection (the cause of cross-project "table not found" errors).
+    // Fetch up to 2 so we can detect ambiguity without loading every project.
     const projects = await this.findAll({
       order: 'id',
-      limit: 1,
+      limit: 2,
     });
     if (!projects.length) {
       throw new Error('No project found');
+    }
+    if (projects.length > 1) {
+      throw new Error(
+        'No project selected in the current context, but multiple projects ' +
+          'exist. The caller must resolve the project explicitly (e.g. from ' +
+          'the owning thread/dashboard in background jobs, or by ensuring the ' +
+          'project cookie is set). Refusing to guess to avoid querying the ' +
+          'wrong project.',
+      );
     }
     return projects[0];
   }
