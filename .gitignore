@@ -104,3 +104,9 @@ wren-launcher/main
 .tmp
 
 !wren-ai-service/tools/.env.example
+
+## Claude Code (local, per-developer — không commit)
+.claude/
+CLAUDE.md
+MEMORY.md
+.claude-plans/
