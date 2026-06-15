@@ -1199,7 +1199,9 @@ export const typeDefs = gql`
     ): ApiHistoryPaginatedResponse!
 
     # Relationship recommendation
-    relationshipRecommendationTask(taskId: String!): RelationshipRecommendationTask!
+    relationshipRecommendationTask(
+      taskId: String!
+    ): RelationshipRecommendationTask!
   }
 
   type Mutation {
