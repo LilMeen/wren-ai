@@ -36,6 +36,8 @@ import DataSourceSchemaDetector, {
 } from '@server/managers/dataSourceSchemaDetector';
 import { encryptConnectionInfo } from '../dataSource';
 import { TelemetryEvent } from '../telemetry/telemetry';
+import { setSelectedProjectId } from '@server/utils/authStorage';
+import { setSelectedProjectCookie } from '@server/utils/authCookies';
 
 const logger = getLogger('DataSourceResolver');
 logger.level = 'debug';
@@ -263,8 +265,6 @@ export class ProjectResolver {
     ctx: IContext,
   ) {
     const { type, properties } = args.data;
-    // Currently only can create one project
-    await this.resetCurrentProject(_root, args, ctx);
 
     const { displayName, ...connectionInfo } = properties;
     const project = await ctx.projectService.createProject({
@@ -273,6 +273,16 @@ export class ProjectResolver {
       connectionInfo,
     } as ProjectData);
     logger.debug(`Project created.`);
+
+    // Make the freshly created project the current one. Without this the rest
+    // of the onboarding flow (dashboard init below + the follow-up requests:
+    // listDataSourceTables / saveTables / deploy) would keep targeting whatever
+    // project the request originally carried. Update the in-request context and
+    // persist the selection in a cookie so subsequent requests follow suit.
+    setSelectedProjectId(project.id);
+    if (ctx.res) {
+      setSelectedProjectCookie(ctx.res, project.id);
+    }
 
     // init dashboard
     logger.debug('Dashboard init...');

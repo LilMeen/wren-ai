@@ -138,10 +138,11 @@ const bootstrapServer = async () => {
         embed: true,
       }),
     ],
-    context: ({ req }): IContext => ({
+    context: ({ req, res }): IContext => ({
       config: serverConfig,
       telemetry,
       currentUser: (req as any)?.currentUser || null,
+      res,
       // adaptor
       wrenEngineAdaptor,
       ibisServerAdaptor: ibisAdaptor,

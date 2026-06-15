@@ -35,3 +35,16 @@ export const getAuthUser = (): User | undefined => {
 export const getSelectedProjectId = (): number | undefined => {
   return storage.getStore()?.selectedProjectId;
 };
+
+/**
+ * Override the selected project for the remainder of the current request.
+ * Used right after creating a new project so the following steps in the same
+ * request (e.g. dashboard init) target the new project instead of whatever
+ * project the request originally carried.
+ */
+export const setSelectedProjectId = (projectId: number): void => {
+  const store = storage.getStore();
+  if (store) {
+    store.selectedProjectId = projectId;
+  }
+};

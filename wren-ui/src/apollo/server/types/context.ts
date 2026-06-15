@@ -1,3 +1,4 @@
+import type { NextApiResponse } from 'next';
 import { IConfig } from '@server/config';
 import {
   IIbisAdaptor,
@@ -47,6 +48,10 @@ export interface IContext {
 
   // authenticated user of the current request (null when not signed in)
   currentUser?: User | null;
+
+  // raw response of the current request; used to set cookies (e.g. selecting
+  // the newly created project). Absent for non-HTTP callers / background jobs.
+  res?: NextApiResponse;
 
   // adaptor
   wrenEngineAdaptor: IWrenEngineAdaptor;
