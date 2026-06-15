@@ -67,6 +67,10 @@ export class ProjectResolver {
     this.getSchemaChange = this.getSchemaChange.bind(this);
     this.getProjectRecommendationQuestions =
       this.getProjectRecommendationQuestions.bind(this);
+    this.generateRelationshipRecommendations =
+      this.generateRelationshipRecommendations.bind(this);
+    this.getRelationshipRecommendationTask =
+      this.getRelationshipRecommendationTask.bind(this);
   }
 
   public async getSettings(_root: any, _arg: any, ctx: IContext) {
@@ -95,6 +99,91 @@ export class ProjectResolver {
     ctx: IContext,
   ) {
     return ctx.projectService.getProjectRecommendationQuestions();
+  }
+
+  public async generateRelationshipRecommendations(
+    _root: any,
+    _arg: any,
+    ctx: IContext,
+  ) {
+    const project = await ctx.projectService.getCurrentProject();
+    const { manifest } = await ctx.mdlService.makeCurrentModelMDL();
+    const { queryId } =
+      await ctx.wrenAIAdaptor.generateRelationshipRecommendations({
+        manifest,
+        projectId: String(project.id),
+        configuration: { language: project.language },
+      });
+    return { id: queryId };
+  }
+
+  public async getRelationshipRecommendationTask(
+    _root: any,
+    arg: { taskId: string },
+    ctx: IContext,
+  ) {
+    const { taskId } = arg;
+    const result =
+      await ctx.wrenAIAdaptor.getRelationshipRecommendationResult(taskId);
+
+    if (result.status !== 'finished' || !result.response?.relationships) {
+      return {
+        status: result.status,
+        relationships: null,
+        error: result.error || null,
+      };
+    }
+
+    const project = await ctx.projectService.getCurrentProject();
+    const models = await ctx.modelRepository.findAllBy({
+      projectId: project.id,
+    });
+    const modelIds = models.map((m) => m.id);
+    const columns =
+      await ctx.modelColumnRepository.findColumnsByModelIds(modelIds);
+
+    // Map AI relationship output back to resolved model/column ids
+    const resolvedRelationships = result.response.relationships
+      .map((rel) => {
+        const fromModel = models.find((m) => m.referenceName === rel.fromModel);
+        const toModel = models.find((m) => m.referenceName === rel.toModel);
+        if (!fromModel || !toModel || fromModel.id === toModel.id) return null;
+
+        const fromColumn = columns.find(
+          (c) =>
+            c.modelId === fromModel.id && c.referenceName === rel.fromColumn,
+        );
+        const toColumn = columns.find(
+          (c) => c.modelId === toModel.id && c.referenceName === rel.toColumn,
+        );
+        if (!fromColumn || !toColumn) return null;
+
+        return {
+          name: rel.name,
+          fromModel: rel.fromModel,
+          fromColumn: rel.fromColumn,
+          type: rel.type,
+          toModel: rel.toModel,
+          toColumn: rel.toColumn,
+          reason: rel.reason,
+          // resolved ids for the save step
+          fromModelId: fromModel.id,
+          fromModelReferenceName: fromModel.referenceName,
+          fromColumnId: fromColumn.id,
+          fromColumnReferenceName: fromColumn.referenceName,
+          toModelId: toModel.id,
+          toModelReferenceName: toModel.referenceName,
+          toColumnId: toColumn.id,
+          toColumnReferenceName: toColumn.referenceName,
+        };
+      })
+      .filter(Boolean);
+
+    return {
+      status: result.status,
+      relationships: resolvedRelationships,
+      error: null,
+    };
   }
 
   public async updateCurrentProject(

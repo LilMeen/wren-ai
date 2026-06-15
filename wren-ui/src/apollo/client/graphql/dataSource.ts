@@ -143,3 +143,41 @@ export const RESOLVE_SCHEMA_CHANGE = gql`
     resolveSchemaChange(where: $where)
   }
 `;
+
+export const GENERATE_RELATIONSHIP_RECOMMENDATIONS = gql`
+  mutation GenerateRelationshipRecommendations {
+    generateRelationshipRecommendations {
+      id
+    }
+  }
+`;
+
+export const GET_RELATIONSHIP_RECOMMENDATION_TASK = gql`
+  query RelationshipRecommendationTask($taskId: String!) {
+    relationshipRecommendationTask(taskId: $taskId) {
+      status
+      relationships {
+        name
+        fromModel
+        fromColumn
+        type
+        toModel
+        toColumn
+        reason
+        fromModelId
+        fromModelReferenceName
+        fromColumnId
+        fromColumnReferenceName
+        toModelId
+        toModelReferenceName
+        toColumnId
+        toColumnReferenceName
+      }
+      error {
+        code
+        message
+        shortMessage
+      }
+    }
+  }
+`;

@@ -85,9 +85,9 @@ services:
     restart: on-failure
     platform: ${PLATFORM}
     environment:
-      DB_TYPE: sqlite
-      # /app is the working directory in the container
-      SQLITE_FILE: /app/data/db.sqlite3
+      DB_TYPE: ${DB_TYPE}
+      PG_URL: ${PG_URL}
+      PG_SSL_REJECT_UNAUTHORIZED: ${PG_SSL_REJECT_UNAUTHORIZED}
       WREN_ENGINE_ENDPOINT: http://wren-engine:${WREN_ENGINE_PORT}
       WREN_AI_ENDPOINT: http://wren-ai-service:${WREN_AI_SERVICE_PORT}
       IBIS_SERVER_ENDPOINT: http://ibis-server:${IBIS_SERVER_PORT}

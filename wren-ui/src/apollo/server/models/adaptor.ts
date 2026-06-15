@@ -304,6 +304,35 @@ export interface InstructionResult {
   error?: WrenAIError;
 }
 
+// relationship recommendation
+export interface RelationshipRecommendationInput {
+  manifest: Manifest;
+  projectId?: string;
+  configuration?: ProjectConfigurations;
+}
+
+export enum RelationshipRecommendationStatus {
+  GENERATING = 'generating',
+  FINISHED = 'finished',
+  FAILED = 'failed',
+}
+
+export interface AIRelationship {
+  name: string;
+  fromModel: string;
+  fromColumn: string;
+  type: string;
+  toModel: string;
+  toColumn: string;
+  reason: string;
+}
+
+export interface RelationshipRecommendationResult {
+  status: RelationshipRecommendationStatus;
+  response?: { relationships: AIRelationship[] };
+  error?: WrenAIError;
+}
+
 // ask feedback
 export interface AskFeedbackInput {
   question: string;

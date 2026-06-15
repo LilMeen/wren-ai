@@ -33,6 +33,8 @@ import {
   AskFeedbackInput,
   AskFeedbackResult,
   AskFeedbackStatus,
+  RelationshipRecommendationInput,
+  RelationshipRecommendationResult,
 } from '@server/models/adaptor';
 import { getLogger } from '@server/utils';
 import * as Errors from '@server/utils/error';
@@ -129,6 +131,16 @@ export interface IWrenAIAdaptor {
   createAskFeedback(input: AskFeedbackInput): Promise<AsyncQueryResponse>;
   getAskFeedbackResult(queryId: string): Promise<AskFeedbackResult>;
   cancelAskFeedback(queryId: string): Promise<void>;
+
+  /**
+   * Relationship recommendation APIs
+   */
+  generateRelationshipRecommendations(
+    input: RelationshipRecommendationInput,
+  ): Promise<AsyncQueryResponse>;
+  getRelationshipRecommendationResult(
+    queryId: string,
+  ): Promise<RelationshipRecommendationResult>;
 }
 
 export class WrenAIAdaptor implements IWrenAIAdaptor {
@@ -933,5 +945,52 @@ export class WrenAIAdaptor implements IWrenAIAdaptor {
       sql: history.sql,
       question: history.question,
     }));
+  }
+
+  public async generateRelationshipRecommendations(
+    input: RelationshipRecommendationInput,
+  ): Promise<AsyncQueryResponse> {
+    const body = {
+      mdl: JSON.stringify(input.manifest),
+      project_id: input.projectId,
+      configurations: input.configuration,
+    };
+    logger.info(`Wren AI: Generating relationship recommendations`);
+    try {
+      const res = await axios.post(
+        `${this.wrenAIBaseEndpoint}/v1/relationship-recommendations`,
+        body,
+      );
+      logger.info(
+        `Wren AI: Generating relationship recommendations, queryId: ${res.data.id}`,
+      );
+      return { queryId: res.data.id };
+    } catch (err: any) {
+      logger.debug(
+        `Got error when generating relationship recommendations: ${getAIServiceError(err)}`,
+      );
+      throw err;
+    }
+  }
+
+  public async getRelationshipRecommendationResult(
+    queryId: string,
+  ): Promise<RelationshipRecommendationResult> {
+    try {
+      const res = await axios.get(
+        `${this.wrenAIBaseEndpoint}/v1/relationship-recommendations/${queryId}`,
+      );
+      const body = res.data;
+      return {
+        status: body.status,
+        response: body.response,
+        error: body.error,
+      };
+    } catch (err: any) {
+      logger.debug(
+        `Got error when getting relationship recommendation result: ${getAIServiceError(err)}`,
+      );
+      throw err;
+    }
   }
 }

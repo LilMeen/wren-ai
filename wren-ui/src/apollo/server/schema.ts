@@ -1110,6 +1110,36 @@ export const typeDefs = gql`
     id: Int!
   }
 
+  enum RelationshipRecommendationStatus {
+    generating
+    finished
+    failed
+  }
+
+  type AIRelationship {
+    name: String!
+    fromModel: String!
+    fromColumn: String!
+    type: String!
+    toModel: String!
+    toColumn: String!
+    reason: String!
+    fromModelId: Int!
+    fromModelReferenceName: String!
+    fromColumnId: Int!
+    fromColumnReferenceName: String!
+    toModelId: Int!
+    toModelReferenceName: String!
+    toColumnId: Int!
+    toColumnReferenceName: String!
+  }
+
+  type RelationshipRecommendationTask {
+    status: RelationshipRecommendationStatus!
+    relationships: [AIRelationship!]
+    error: Error
+  }
+
   # Query and Mutation
   type Query {
     # On Boarding Steps
@@ -1167,6 +1197,9 @@ export const typeDefs = gql`
       filter: ApiHistoryFilterInput
       pagination: ApiHistoryPaginationInput!
     ): ApiHistoryPaginatedResponse!
+
+    # Relationship recommendation
+    relationshipRecommendationTask(taskId: String!): RelationshipRecommendationTask!
   }
 
   type Mutation {
@@ -1199,6 +1232,7 @@ export const typeDefs = gql`
     createRelation(data: RelationInput!): JSON!
     updateRelation(data: UpdateRelationInput!, where: WhereIdInput!): JSON!
     deleteRelation(where: WhereIdInput!): Boolean!
+    generateRelationshipRecommendations: Task!
 
     # Calculated field
     createCalculatedField(data: CreateCalculatedFieldInput!): JSON!

@@ -75,6 +75,10 @@ const resolvers = {
 
     // API History
     apiHistory: apiHistoryResolver.getApiHistory,
+
+    // Relationship recommendation
+    relationshipRecommendationTask:
+      projectResolver.getRelationshipRecommendationTask,
   },
   Mutation: {
     deploy: modelResolver.deploy,
@@ -100,6 +104,8 @@ const resolvers = {
     createRelation: modelResolver.createRelation,
     updateRelation: modelResolver.updateRelation,
     deleteRelation: modelResolver.deleteRelation,
+    generateRelationshipRecommendations:
+      projectResolver.generateRelationshipRecommendations,
 
     // Ask
     createAskingTask: askingResolver.createAskingTask,

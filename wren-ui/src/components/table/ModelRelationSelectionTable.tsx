@@ -17,6 +17,8 @@ export interface RelationsDataType {
   type: JOIN_TYPE;
   toField: ModelField;
   properties: Record<string, any>;
+  // optional reason from AI recommendation explaining why this relationship is suggested
+  reason?: string;
 }
 
 interface Props {
