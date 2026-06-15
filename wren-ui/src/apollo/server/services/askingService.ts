@@ -1090,6 +1090,11 @@ export class AskingService implements IAskingService {
   private async getDeployId() {
     const { id } = await this.projectService.getCurrentProject();
     const lastDeploy = await this.deployService.getLastDeployment(id);
+    if (!lastDeploy) {
+      throw new Error(
+        'No MDL deployment found for this project. Please complete the data model setup first.',
+      );
+    }
     return lastDeploy.hash;
   }
 

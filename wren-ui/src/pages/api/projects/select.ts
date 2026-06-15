@@ -4,6 +4,7 @@ import {
   getSessionTokenFromRequest,
   setSelectedProjectCookie,
 } from '@server/utils/authCookies';
+import { runWithAuthContext } from '@server/utils/authStorage';
 import { getLogger } from '@server/utils';
 
 const logger = getLogger('AUTH');
@@ -22,7 +23,8 @@ export default async function handler(
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { authService, projectRepository } = components;
+  const { authService, projectRepository, mdlService, deployService } =
+    components;
 
   if (serverConfig.authEnabled) {
     const sessionToken = getSessionTokenFromRequest(req);
@@ -44,6 +46,20 @@ export default async function handler(
       return res.status(404).json({ error: 'Project not found' });
     }
     setSelectedProjectCookie(res, project.id);
+
+    // Re-deploy the MDL in the background so the AI service is always in sync
+    // with the newly selected project. This is a no-op when the hash is unchanged.
+    void runWithAuthContext({ selectedProjectId: project.id }, async () => {
+      try {
+        const { manifest } = await mdlService.makeCurrentModelMDL();
+        await deployService.deploy(manifest, project.id);
+      } catch (err: any) {
+        logger.warn(
+          `Background MDL re-deploy failed for project ${project.id}: ${err.message}`,
+        );
+      }
+    });
+
     return res.status(200).json({
       project: {
         id: project.id,

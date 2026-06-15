@@ -193,6 +193,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   // can access them without changing their signatures
   let currentUser: User | null = null;
   let selectedProjectId: number | undefined;
+  // Always read the project cookie so project switching works even when auth
+  // is disabled (e.g. development / SIT environments).
+  selectedProjectId = getSelectedProjectIdFromRequest(req);
   if (serverConfig.authEnabled) {
     const sessionToken = getSessionTokenFromRequest(req);
     if (sessionToken) {
@@ -205,7 +208,6 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         logger.error('Session validation failed (DB error):', err);
       }
     }
-    selectedProjectId = getSelectedProjectIdFromRequest(req);
   }
   (req as any).currentUser = currentUser;
 
