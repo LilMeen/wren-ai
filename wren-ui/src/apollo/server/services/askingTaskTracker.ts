@@ -141,6 +141,20 @@ export class AskingTaskTracker implements IAskingTaskTracker {
         await this.askingTaskRepository.updateOne(input.previousTaskId, {
           queryId,
         });
+      } else {
+        // Create the DB record now instead of waiting for the first status
+        // change to be polled. Otherwise task.taskId stays undefined for a
+        // window after the AI service has already reported a TEXT_TO_SQL
+        // type, and the client creates the thread inside that window:
+        // bindThreadResponse is skipped entirely since createThread guards
+        // on trackedAskingResult.taskId, so the thread response never gets
+        // linked to this task and its sql column never gets filled in.
+        const record = await this.askingTaskRepository.createOne({
+          queryId,
+          question: input.query,
+        });
+        task.taskId = record.id;
+        this.trackedTasksById.set(record.id, task);
       }
 
       logger.info(`Created asking task with queryId: ${queryId}`);
