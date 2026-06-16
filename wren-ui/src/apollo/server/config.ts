@@ -46,6 +46,10 @@ export interface IConfig {
   projectRecommendationQuestionsMaxQuestions?: number;
   threadRecommendationQuestionMaxCategories?: number;
   threadRecommendationQuestionsMaxQuestions?: number;
+  // master switch for recommendation question generation. Disabled by default
+  // in this fork to save AI tokens; set ENABLE_RECOMMENDATION_QUESTIONS=true to
+  // re-enable.
+  recommendationQuestionsEnabled?: boolean;
 
   // authentication
   authEnabled: boolean;
@@ -158,6 +162,9 @@ const config = {
     .THREAD_RECOMMENDATION_QUESTIONS_MAX_QUESTIONS
     ? parseInt(process.env.THREAD_RECOMMENDATION_QUESTIONS_MAX_QUESTIONS)
     : 1,
+  // off by default to save tokens; opt-in via env
+  recommendationQuestionsEnabled:
+    process.env.ENABLE_RECOMMENDATION_QUESTIONS === 'true',
 };
 
 export function getConfig(): IConfig {

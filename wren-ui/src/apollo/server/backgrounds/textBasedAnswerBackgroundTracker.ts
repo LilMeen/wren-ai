@@ -70,6 +70,30 @@ export class TextBasedAnswerBackgroundTracker {
           }
           this.runningJobs.add(threadResponse.id);
 
+          // Without a SQL statement there is nothing to query. Sending a null
+          // SQL to the ibis server returns a 422 and used to surface as a
+          // confusing "Data connection error". Fail fast with a clear message
+          // instead of querying with an invalid SQL.
+          if (!threadResponse.sql) {
+            logger.warn(
+              `Thread response ${threadResponse.id} has no SQL, skipping answer generation`,
+            );
+            await this.threadResponseRepository.updateOne(threadResponse.id, {
+              answerDetail: {
+                ...threadResponse.answerDetail,
+                status: ThreadResponseAnswerStatus.FAILED,
+                error: {
+                  code: 'NO_RELEVANT_SQL',
+                  message: 'No SQL is available to answer this question.',
+                  shortMessage: 'No relevant SQL',
+                },
+              },
+            });
+            delete this.tasks[threadResponse.id];
+            this.runningJobs.delete(threadResponse.id);
+            return;
+          }
+
           // update the status to fetching data
           await this.threadResponseRepository.updateOne(threadResponse.id, {
             answerDetail: {

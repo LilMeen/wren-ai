@@ -1,6 +1,22 @@
 import { GraphQLError } from 'graphql';
 import { WrenService } from '../telemetry/telemetry';
 
+/**
+ * Coerce any value into a string safely. Used to guard the GraphQL
+ * `Error.message` field, which must be a String — a non-string value there
+ * crashes response serialization.
+ */
+const safeStringify = (value: any): string => {
+  if (value === null || value === undefined) {
+    return '';
+  }
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+};
+
 export enum GeneralErrorCodes {
   INTERNAL_SERVER_ERROR = 'INTERNAL_SERVER_ERROR',
   // AI service errors
@@ -177,11 +193,18 @@ export const create = (
   code = code || GeneralErrorCodes.INTERNAL_SERVER_ERROR;
 
   // Get the error message based on the code
-  const message =
+  const rawMessage =
     customMessage ||
     originalError?.message ||
     errorMessages[code] ||
     errorMessages[GeneralErrorCodes.INTERNAL_SERVER_ERROR];
+
+  // The GraphQL `Error.message` field is a String. If a non-string (e.g. a
+  // FastAPI `{ detail: [...] }` body) leaks in here it gets persisted and later
+  // crashes GraphQL serialization ("String cannot represent value"), which can
+  // break an entire thread query. Coerce defensively as a last line of defense.
+  const message =
+    typeof rawMessage === 'string' ? rawMessage : safeStringify(rawMessage);
 
   // Return the GraphQLError
   const err = new GraphQLError(message, {

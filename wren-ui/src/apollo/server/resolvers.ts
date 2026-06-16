@@ -199,6 +199,18 @@ const resolvers = {
   DetailStep: askingResolver.getDetailStepNestedResolver(),
   ResultCandidate: askingResolver.getResultCandidateNestedResolver(),
 
+  // Guard the `Error.message` field (a String) against non-string values that
+  // may already be persisted in the DB (e.g. an old answer/breakdown task that
+  // stored a FastAPI `{ detail: [...] }` body). Without this, serializing such a
+  // value throws "String cannot represent value" and fails the whole thread
+  // query, leaving the UI stuck with no answers shown.
+  Error: {
+    message: (parent: any) =>
+      parent?.message == null || typeof parent.message === 'string'
+        ? parent?.message
+        : JSON.stringify(parent.message),
+  },
+
   // Handle struct type to record for UI
   DiagramModelField: { type: convertColumnType },
   DiagramModelNestedField: { type: convertColumnType },

@@ -27,6 +27,45 @@ logger.level = 'debug';
 
 const config = getConfig();
 
+/**
+ * Turn a FastAPI validation-error `detail` array into a readable single-line
+ * string, e.g. `body.sql: Input should be a valid string`. Returns undefined
+ * when the value is not a recognizable detail array so callers can fall back.
+ */
+const formatFastApiDetail = (detail: any): string | undefined => {
+  if (!Array.isArray(detail) || detail.length === 0) {
+    return undefined;
+  }
+  return detail
+    .map((item: any) => {
+      const loc = Array.isArray(item?.loc) ? item.loc.join('.') : undefined;
+      const msg = item?.msg || item?.message;
+      return [loc, msg].filter(Boolean).join(': ');
+    })
+    .filter(Boolean)
+    .join('; ');
+};
+
+/**
+ * Guarantee a string. Error messages eventually land in the GraphQL `Error`
+ * type whose `message` field is a `String`; an object there crashes response
+ * serialization. Strings pass through; objects are JSON-stringified; empty/null
+ * returns undefined so callers can fall back to the next candidate.
+ */
+const stringifyAIServiceError = (value: any): string | undefined => {
+  if (value === null || value === undefined) {
+    return undefined;
+  }
+  if (typeof value === 'string') {
+    return value || undefined;
+  }
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+};
+
 export interface HostBasedConnectionInfo {
   host: string;
   port: number;
@@ -580,13 +619,20 @@ export class IbisAdaptor implements IIbisAdaptor {
     defaultMessage: string,
     errorMessageBuilder?: CallableFunction,
   ) {
+    const errorData = e.response?.data;
+    // The message must always be a string. The ibis/FastAPI server can return
+    // a structured body (e.g. a 422 validation error `{ detail: [...] }`). If we
+    // pass that object through as the message, it ends up stored in the GraphQL
+    // `Error.message` (a String) field and later crashes serialization with
+    // "String cannot represent value: { detail: [...] }", which breaks the whole
+    // thread query. Coerce any non-string body into a readable string here.
     const customMessage =
-      e.response?.data?.message ||
-      e.response?.data ||
+      stringifyAIServiceError(errorData?.message) ||
+      formatFastApiDetail(errorData?.detail) ||
+      stringifyAIServiceError(errorData) ||
       e.message ||
       defaultMessage;
 
-    const errorData = e.response?.data;
     throw Errors.create(Errors.GeneralErrorCodes.IBIS_SERVER_ERROR, {
       customMessage: errorMessageBuilder
         ? errorMessageBuilder(customMessage)

@@ -521,6 +521,14 @@ export class AskingService implements IAskingService {
   public async generateThreadRecommendationQuestions(
     threadId: number,
   ): Promise<void> {
+    // Disabled by default in this fork to save AI tokens. Opt back in with
+    // ENABLE_RECOMMENDATION_QUESTIONS=true.
+    if (!config.recommendationQuestionsEnabled) {
+      logger.debug(
+        'Recommendation questions are disabled, skip thread recommendation generation',
+      );
+      return;
+    }
     const thread = await this.threadRepository.findOneBy({ id: threadId });
     if (!thread) {
       throw new Error(`Thread ${threadId} not found`);
