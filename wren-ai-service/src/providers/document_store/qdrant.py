@@ -1,5 +1,7 @@
+import asyncio
 import logging
 import os
+import time
 from typing import Any, Dict, List, Optional
 
 import numpy as np
@@ -317,7 +319,61 @@ class AsyncQdrantDocumentStore(QdrantDocumentStore):
                 )
 
                 progress_bar.update(self.write_batch_size)
+
+        # The global HNSW index is disabled (m=0) so Qdrant builds the
+        # per-tenant index asynchronously after upsert. wait=True above only
+        # guarantees the points are persisted, NOT that a filtered vector
+        # search can find them yet. Without this gate, a deploy can report
+        # "finished" while retrieval still returns nothing, producing a
+        # transient post-deploy window where asks fail with NO_RELEVANT_DATA.
+        # Block until a probe search actually returns a freshly written point.
+        await self._wait_until_searchable(document_objects)
+
         return len(document_objects)
+
+    async def _wait_until_searchable(
+        self,
+        documents: List[Document],
+        timeout: float = float(os.getenv("QDRANT_INDEX_READY_TIMEOUT", "30")),
+        interval: float = float(os.getenv("QDRANT_INDEX_READY_INTERVAL", "0.5")),
+    ) -> None:
+        # Pick any just-written document that carries a dense embedding to use
+        # as the probe vector; sparse-only writes have nothing to gate on.
+        probe = next((doc for doc in documents if doc.embedding is not None), None)
+        if probe is None:
+            return
+
+        # Mirror the retrieval path: filter by project_id so the probe exercises
+        # the same per-tenant partition that the ask pipeline will query.
+        project_id = (probe.meta or {}).get("project_id")
+        filters = (
+            {
+                "operator": "AND",
+                "conditions": [
+                    {"field": "project_id", "operator": "==", "value": project_id}
+                ],
+            }
+            if project_id is not None
+            else None
+        )
+
+        deadline = time.monotonic() + timeout
+        while True:
+            docs = await self._query_by_embedding(
+                query_embedding=probe.embedding,
+                filters=filters,
+                top_k=1,
+            )
+            if docs:
+                return
+            if time.monotonic() >= deadline:
+                logger.warning(
+                    f"Documents written to collection '{self.index}' were not "
+                    f"searchable within {timeout}s; proceeding without the "
+                    "readiness gate."
+                )
+                return
+            await asyncio.sleep(interval)
 
 
 class AsyncQdrantEmbeddingRetriever(QdrantEmbeddingRetriever):

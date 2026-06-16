@@ -43,10 +43,17 @@ import {
 import { useCreateViewMutation } from '@/apollo/client/graphql/view.generated';
 import {
   AdjustThreadResponseChartInput,
+  AskingTaskStatus,
   CreateThreadResponseInput,
   ThreadResponse,
   CreateSqlPairInput,
 } from '@/apollo/client/graphql/__types__';
+
+// Asking-task failures that are commonly transient — e.g. retrieval coming up
+// empty right after a deploy while the vector index is still settling. We
+// auto-retry these once so a transient miss doesn't strand the user on a dead
+// "Try a different query" response that would have succeeded a moment later.
+const TRANSIENT_ASKING_ERROR_CODES = ['NO_RELEVANT_DATA', 'NO_RELEVANT_SQL'];
 import { useCreateSqlPairMutation } from '@/apollo/client/graphql/sqlPairs.generated';
 
 const getThreadResponseIsFinished = (threadResponse: ThreadResponse) => {
@@ -85,6 +92,10 @@ export default function HomeThread() {
 
   const [showRecommendedQuestions, setShowRecommendedQuestions] =
     useState<boolean>(false);
+
+  // Track responses we've already auto-retried so a persistently failing
+  // question is attempted at most once more, never looped.
+  const autoRetriedResponseIds = useRef<Set<number>>(new Set());
 
   const [createViewMutation, { loading: creating }] = useCreateViewMutation({
     onError: (error) => console.error(error),
@@ -243,6 +254,23 @@ export default function HomeThread() {
     [askPrompt, fetchThreadResponse],
   );
 
+  // auto-retry the latest response once if its asking task failed transiently
+  const handleTransientAskingFailures = useCallback(
+    (responses: ThreadResponse[]) => {
+      const lastResponse = (responses || [])[responses.length - 1];
+      const task = lastResponse?.askingTask;
+      if (
+        task?.status === AskingTaskStatus.FAILED &&
+        TRANSIENT_ASKING_ERROR_CODES.includes(task?.error?.code || '') &&
+        !autoRetriedResponseIds.current.has(lastResponse.id)
+      ) {
+        autoRetriedResponseIds.current.add(lastResponse.id);
+        askPrompt.onReRun(lastResponse);
+      }
+    },
+    [askPrompt],
+  );
+
   // store thread questions for instant recommended questions
   const storeQuestionsToAskPrompt = useCallback(
     (responses: ThreadResponse[]) => {
@@ -270,6 +298,7 @@ export default function HomeThread() {
   useEffect(() => {
     if (!responses) return;
     handleUnfinishedTasks(responses);
+    handleTransientAskingFailures(responses);
     storeQuestionsToAskPrompt(responses);
   }, [responses]);
 
