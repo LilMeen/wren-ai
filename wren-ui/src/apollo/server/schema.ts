@@ -36,6 +36,7 @@ export const typeDefs = gql`
     apiType: ApiType
     statusCode: Int
     threadId: String
+    userId: Int
     projectId: Int
     startDate: String
     endDate: String
@@ -51,6 +52,8 @@ export const typeDefs = gql`
     projectId: Int!
     apiType: ApiType!
     threadId: String
+    userId: Int
+    userEmail: String
     headers: JSON
     requestPayload: JSON
     responsePayload: JSON
@@ -1219,7 +1222,7 @@ export const typeDefs = gql`
     view(where: ViewWhereUniqueInput!): ViewInfo!
 
     # Ask
-    askingTask(taskId: String!): AskingTask
+    askingTask(taskId: String!, threadId: String): AskingTask
     suggestedQuestions: SuggestedQuestionResponse!
     threads: [Thread!]!
     thread(threadId: Int!): DetailedThread!
@@ -1227,7 +1230,7 @@ export const typeDefs = gql`
     nativeSql(responseId: Int!): String!
 
     # Adjustment
-    adjustmentTask(taskId: String!): AdjustmentTask
+    adjustmentTask(taskId: String!, threadId: String): AdjustmentTask
 
     # Settings
     settings: Settings!

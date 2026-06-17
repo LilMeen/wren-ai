@@ -15,6 +15,7 @@ export default function DetailsDrawer(props: Props) {
 
   const {
     threadId,
+    userEmail,
     apiType,
     createdAt,
     durationMs,
@@ -56,6 +57,14 @@ export default function DetailsDrawer(props: Props) {
             <Tag className="gray-8">{apiType?.toLowerCase()}</Tag>
           </div>
         </Col>
+        <Col span={12}>
+          <Typography.Text className="d-block gray-7 mb-2">
+            User
+          </Typography.Text>
+          <div>{userEmail || '-'}</div>
+        </Col>
+      </Row>
+      <Row className="mb-6">
         <Col span={12}>
           <Typography.Text className="d-block gray-7 mb-2">
             Thread ID

@@ -54,6 +54,7 @@ const bootstrapServer = async () => {
     sqlPairRepository,
     instructionRepository,
     apiHistoryRepository,
+    userRepository,
     dashboardItemRefreshJobRepository,
     ontologyRepository,
     // adaptors
@@ -175,6 +176,7 @@ const bootstrapServer = async () => {
       sqlPairRepository,
       instructionRepository,
       apiHistoryRepository,
+      userRepository,
       dashboardItemRefreshJobRepository,
       ontologyRepository,
       // background trackers

@@ -22,6 +22,7 @@ import {
   IApiHistoryRepository,
   IDashboardItemRefreshJobRepository,
   IOntologyRepository,
+  IUserRepository,
   User,
 } from '@server/repositories';
 import {
@@ -87,6 +88,7 @@ export interface IContext {
   sqlPairRepository: ISqlPairRepository;
   instructionRepository: IInstructionRepository;
   apiHistoryRepository: IApiHistoryRepository;
+  userRepository: IUserRepository;
   dashboardItemRefreshJobRepository: IDashboardItemRefreshJobRepository;
   ontologyRepository: IOntologyRepository;
 

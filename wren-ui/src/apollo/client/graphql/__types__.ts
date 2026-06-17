@@ -73,6 +73,8 @@ export type ApiHistoryResponse = {
   responsePayload?: Maybe<Scalars['JSON']>;
   statusCode?: Maybe<Scalars['Int']>;
   threadId?: Maybe<Scalars['String']>;
+  userId?: Maybe<Scalars['Int']>;
+  userEmail?: Maybe<Scalars['String']>;
   updatedAt: Scalars['String'];
 };
 

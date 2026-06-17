@@ -24,6 +24,7 @@ export type SuggestedQuestionsQuery = { __typename?: 'Query', suggestedQuestions
 
 export type AskingTaskQueryVariables = Types.Exact<{
   taskId: Types.Scalars['String'];
+  threadId?: Types.InputMaybe<Types.Scalars['String']>;
 }>;
 
 
@@ -198,6 +199,7 @@ export type AdjustThreadResponseChartMutation = { __typename?: 'Mutation', adjus
 
 export type AdjustmentTaskQueryVariables = Types.Exact<{
   taskId: Types.Scalars['String'];
+  threadId?: Types.InputMaybe<Types.Scalars['String']>;
 }>;
 
 

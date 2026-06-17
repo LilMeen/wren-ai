@@ -233,10 +233,10 @@ export class AskingResolver {
 
   public async getAskingTask(
     _root: any,
-    args: { taskId: string },
+    args: { taskId: string; threadId?: string },
     ctx: IContext,
   ): Promise<AskingTask> {
-    const { taskId } = args;
+    const { taskId, threadId } = args;
     const askingService = ctx.askingService;
     const askResult = await askingService.getAskingTask(taskId);
 
@@ -257,6 +257,7 @@ export class AskingResolver {
         id: uuidv4(),
         projectId: project.id,
         apiType: ApiType.CHAT_TASK_RESULT,
+        threadId,
         requestPayload: { taskId, question: askResult.question },
         responsePayload: {
           status: askResult.status,
@@ -289,6 +290,7 @@ export class AskingResolver {
         id: uuidv4(),
         projectId: project.id,
         apiType: ApiType.CHAT_TASK_RESULT,
+        threadId,
         requestPayload: { taskId, question: askResult.question },
         responsePayload: {
           status: askResult.status,
@@ -670,10 +672,10 @@ export class AskingResolver {
 
   public async getAdjustmentTask(
     _root: any,
-    args: { taskId: string },
+    args: { taskId: string; threadId?: string },
     ctx: IContext,
   ): Promise<AdjustmentTask> {
-    const { taskId } = args;
+    const { taskId, threadId } = args;
     const askingService = ctx.askingService;
     const adjustmentTask = await askingService.getAdjustmentTask(taskId);
     const isDone =
@@ -685,6 +687,7 @@ export class AskingResolver {
         id: uuidv4(),
         projectId: project.id,
         apiType: ApiType.CHAT_ADJUSTMENT_RESULT,
+        threadId,
         requestPayload: { taskId },
         responsePayload: {
           status: adjustmentTask.status,
