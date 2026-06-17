@@ -5,6 +5,7 @@ import CheckCircleOutlined from '@ant-design/icons/CheckCircleOutlined';
 import CloseCircleOutlined from '@ant-design/icons/CloseCircleOutlined';
 import JsonCodeBlock from '@/components/code/JsonCodeBlock';
 import { ApiHistoryResponse } from '@/apollo/client/graphql/__types__';
+import ApiTypeSummary from './ApiTypeSummary';
 
 type Props = DrawerAction<ApiHistoryResponse> & {
   loading?: boolean;
@@ -130,6 +131,8 @@ export default function DetailsDrawer(props: Props) {
           <div>{durationMs != null ? `${durationMs} ms` : '-'}</div>
         </Col>
       </Row>
+
+      {defaultValue && <ApiTypeSummary record={defaultValue} />}
 
       <div className="mb-6">
         <Typography.Text className="d-block gray-7 mb-2">

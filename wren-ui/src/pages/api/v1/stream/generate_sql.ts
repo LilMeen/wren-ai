@@ -166,7 +166,14 @@ export default async function handler(
       threadId: newThreadId,
       headers: req.headers as Record<string, string>,
       requestPayload: { question, language },
-      responsePayload: { sql },
+      responsePayload: {
+        sql,
+        rephrasedQuestion: askResult.rephrasedQuestion ?? null,
+        intentReasoning: askResult.intentReasoning ?? null,
+        sqlGenerationReasoning: askResult.sqlGenerationReasoning ?? null,
+        retrievedTables: askResult.retrievedTables ?? [],
+        traceId: askResult.traceId ?? null,
+      },
       statusCode: 200,
       durationMs: Date.now() - startTime,
     });
