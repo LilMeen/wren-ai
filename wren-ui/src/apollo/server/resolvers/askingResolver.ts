@@ -252,6 +252,26 @@ export class AskingResolver {
         status: askResult.status,
         candidates: askResult.response,
       });
+      const project = await ctx.projectService.getCurrentProject();
+      await ctx.apiHistoryRepository.createOne({
+        id: uuidv4(),
+        projectId: project.id,
+        apiType: ApiType.CHAT_TASK_RESULT,
+        requestPayload: { taskId, question: askResult.question },
+        responsePayload: {
+          status: askResult.status,
+          candidates: askResult.response?.map((c) => ({
+            type: c.type,
+            sql: c.sql,
+          })),
+          rephrasedQuestion: askResult.rephrasedQuestion ?? null,
+          intentReasoning: askResult.intentReasoning ?? null,
+          sqlGenerationReasoning: askResult.sqlGenerationReasoning ?? null,
+          retrievedTables: askResult.retrievedTables ?? [],
+          traceId: askResult.traceId ?? null,
+        },
+        statusCode: 200,
+      });
     }
     if (askResult.status === AskResultStatus.FAILED) {
       ctx.telemetry.sendEvent(
@@ -264,6 +284,19 @@ export class AskingResolver {
         WrenService.AI,
         false,
       );
+      const project = await ctx.projectService.getCurrentProject();
+      await ctx.apiHistoryRepository.createOne({
+        id: uuidv4(),
+        projectId: project.id,
+        apiType: ApiType.CHAT_TASK_RESULT,
+        requestPayload: { taskId, question: askResult.question },
+        responsePayload: {
+          status: askResult.status,
+          error: askResult.error,
+          traceId: askResult.traceId ?? null,
+        },
+        statusCode: 500,
+      });
     }
 
     return this.transformAskingTask(askResult, ctx);
@@ -643,6 +676,27 @@ export class AskingResolver {
     const { taskId } = args;
     const askingService = ctx.askingService;
     const adjustmentTask = await askingService.getAdjustmentTask(taskId);
+    const isDone =
+      adjustmentTask?.status === AskFeedbackStatus.FINISHED ||
+      adjustmentTask?.status === AskFeedbackStatus.FAILED;
+    if (isDone) {
+      const project = await ctx.projectService.getCurrentProject();
+      await ctx.apiHistoryRepository.createOne({
+        id: uuidv4(),
+        projectId: project.id,
+        apiType: ApiType.CHAT_ADJUSTMENT_RESULT,
+        requestPayload: { taskId },
+        responsePayload: {
+          status: adjustmentTask.status,
+          sql: adjustmentTask?.response?.[0]?.sql ?? null,
+          invalidSql: adjustmentTask?.invalidSql ?? null,
+          traceId: adjustmentTask?.traceId ?? null,
+          error: adjustmentTask?.error ?? null,
+        },
+        statusCode:
+          adjustmentTask.status === AskFeedbackStatus.FINISHED ? 200 : 500,
+      });
+    }
     return {
       queryId: adjustmentTask?.queryId,
       status: adjustmentTask?.status,
@@ -662,12 +716,35 @@ export class AskingResolver {
   ): Promise<ThreadResponse> {
     const project = await ctx.projectService.getCurrentProject();
     const { responseId } = args;
+    const language = WrenAILanguage[project.language] || WrenAILanguage.EN;
     const askingService = ctx.askingService;
-    const breakdownDetail = await askingService.generateThreadResponseBreakdown(
+    const startTime = Date.now();
+    const result = await askingService.generateThreadResponseBreakdown(
       responseId,
-      { language: WrenAILanguage[project.language] || WrenAILanguage.EN },
+      { language },
     );
-    return breakdownDetail;
+    const threadResponse = await askingService
+      .getResponse(responseId)
+      .catch(() => null);
+    await ctx.apiHistoryRepository.createOne({
+      id: uuidv4(),
+      projectId: project.id,
+      apiType: ApiType.CHAT_BREAKDOWN,
+      threadId: threadResponse?.threadId
+        ? String(threadResponse.threadId)
+        : undefined,
+      requestPayload: { responseId, language },
+      responsePayload: {
+        steps: result?.breakdownDetail?.steps?.map((s) => ({
+          summary: s.summary,
+          sql: s.sql,
+          cteName: s.cteName,
+        })) ?? [],
+      },
+      statusCode: 200,
+      durationMs: Date.now() - startTime,
+    });
+    return result;
   }
 
   public async generateThreadResponseAnswer(
@@ -677,10 +754,33 @@ export class AskingResolver {
   ): Promise<ThreadResponse> {
     const project = await ctx.projectService.getCurrentProject();
     const { responseId } = args;
+    const language = WrenAILanguage[project.language] || WrenAILanguage.EN;
     const askingService = ctx.askingService;
-    return askingService.generateThreadResponseAnswer(responseId, {
-      language: WrenAILanguage[project.language] || WrenAILanguage.EN,
+    const startTime = Date.now();
+    const result = await askingService.generateThreadResponseAnswer(
+      responseId,
+      { language },
+    );
+    const threadResponse = await askingService
+      .getResponse(responseId)
+      .catch(() => null);
+    await ctx.apiHistoryRepository.createOne({
+      id: uuidv4(),
+      projectId: project.id,
+      apiType: ApiType.CHAT_ANSWER,
+      threadId: threadResponse?.threadId
+        ? String(threadResponse.threadId)
+        : undefined,
+      requestPayload: { responseId, language },
+      responsePayload: {
+        content: result?.answerDetail?.content ?? null,
+        numRowsUsedInLLM: result?.answerDetail?.numRowsUsedInLLM ?? null,
+        status: result?.answerDetail?.status ?? null,
+      },
+      statusCode: 200,
+      durationMs: Date.now() - startTime,
     });
+    return result;
   }
 
   public async generateThreadResponseChart(
