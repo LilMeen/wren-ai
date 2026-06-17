@@ -131,6 +131,11 @@ export const initComponents = () => {
     threadResponseRepository,
     viewRepository,
   });
+  const ontologyService = new OntologyService({
+    ontologyRepository,
+    modelRepository,
+    modelColumnRepository,
+  });
   const askingService = new AskingService({
     telemetry,
     wrenAIAdaptor,
@@ -143,6 +148,7 @@ export const initComponents = () => {
     mdlService,
     askingTaskTracker,
     askingTaskRepository,
+    ontologyService,
   });
   const dashboardService = new DashboardService({
     projectService,
@@ -161,11 +167,6 @@ export const initComponents = () => {
   const authService = new AuthService({
     userRepository,
     userSessionRepository,
-  });
-  const ontologyService = new OntologyService({
-    ontologyRepository,
-    modelRepository,
-    modelColumnRepository,
   });
 
   // background trackers

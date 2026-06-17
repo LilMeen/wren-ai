@@ -32,6 +32,8 @@ import {
   IViewRepository,
   Project,
 } from '../repositories';
+import { IOntologyService } from './ontologyService';
+import { OntologyDefinition } from '../repositories/ontologyRepository';
 import { IQueryService, PreviewDataResponse } from './queryService';
 import { IMDLService } from './mdlService';
 import {
@@ -63,6 +65,7 @@ export interface AskingPayload {
 
 export interface AskingTaskInput {
   question: string;
+  ontology?: OntologyDefinition | null;
 }
 
 export interface AskingDetailTaskInput {
@@ -417,6 +420,7 @@ export class AskingService implements IAskingService {
   private askingTaskTracker: IAskingTaskTracker;
   private askingTaskRepository: IAskingTaskRepository;
   private adjustmentBackgroundTracker: AdjustmentBackgroundTaskTracker;
+  private ontologyService: IOntologyService;
 
   constructor({
     telemetry,
@@ -430,6 +434,7 @@ export class AskingService implements IAskingService {
     queryService,
     mdlService,
     askingTaskTracker,
+    ontologyService,
   }: {
     telemetry: PostHogTelemetry;
     wrenAIAdaptor: IWrenAIAdaptor;
@@ -442,6 +447,7 @@ export class AskingService implements IAskingService {
     queryService: IQueryService;
     mdlService: IMDLService;
     askingTaskTracker: IAskingTaskTracker;
+    ontologyService: IOntologyService;
   }) {
     this.wrenAIAdaptor = wrenAIAdaptor;
     this.deployService = deployService;
@@ -492,6 +498,7 @@ export class AskingService implements IAskingService {
     this.askingTaskRepository = askingTaskRepository;
     this.mdlService = mdlService;
     this.askingTaskTracker = askingTaskTracker;
+    this.ontologyService = ontologyService;
   }
 
   public async getThreadRecommendationQuestions(
@@ -612,6 +619,8 @@ export class AskingService implements IAskingService {
     const histories = threadId
       ? await this.getAskingHistory(threadId, threadResponseId)
       : null;
+    const ontologyRecord = await this.ontologyService.getByProject(project.id);
+    const ontology = ontologyRecord?.definition ?? null;
     const response = await this.askingTaskTracker.createAskingTask({
       query: input.question,
       histories,
@@ -621,6 +630,7 @@ export class AskingService implements IAskingService {
       rerunFromCancelled,
       previousTaskId,
       threadResponseId,
+      ontology,
     });
     return {
       id: response.queryId,

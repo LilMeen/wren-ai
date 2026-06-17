@@ -30,6 +30,7 @@ class AskRequest(BaseRequest):
     use_dry_plan: bool = False
     allow_dry_plan_fallback: bool = True
     custom_instruction: Optional[str] = None
+    ontology: Optional[dict] = None
 
 
 class AskResponse(BaseModel):
@@ -92,6 +93,26 @@ class AskResultResponse(_AskResultResponse):
     general_type: Optional[
         Literal["MISLEADING_QUERY", "DATA_ASSISTANCE", "USER_GUIDE"]
     ] = Field(None, exclude=True)
+
+
+def _format_ontology_context(
+    entities: list[dict], relationships: list[dict]
+) -> str:
+    lines = ["Entities:"]
+    for e in entities:
+        desc = f": {e['description']}" if e.get("description") else ""
+        lines.append(f"- {e['name']} (table: {e['sourceModel']}){desc}")
+        for a in e.get("attributes", []):
+            adesc = f": {a['description']}" if a.get("description") else ""
+            lines.append(f"    - {a['name']} -> {a['sourceColumn']}{adesc}")
+    if relationships:
+        lines.append("Relationships:")
+        for r in relationships:
+            rdesc = f" ({r['description']})" if r.get("description") else ""
+            lines.append(
+                f"- {r['name']}: {r['fromEntity']} -[{r['type']}]-> {r['toEntity']}{rdesc}"
+            )
+    return "\n".join(lines)
 
 
 class AskService:
@@ -356,6 +377,27 @@ class AskService:
                 table_names = [document.get("table_name") for document in documents]
                 table_ddls = [document.get("table_ddl") for document in documents]
 
+                # Build ontology context filtered to retrieved tables only
+                ontology_context = None
+                if ask_request.ontology:
+                    table_name_set = set(table_names)
+                    filtered_entities = [
+                        e
+                        for e in ask_request.ontology.get("entities", [])
+                        if e.get("sourceModel") in table_name_set
+                    ]
+                    filtered_entity_names = {e["name"] for e in filtered_entities}
+                    filtered_relationships = [
+                        r
+                        for r in ask_request.ontology.get("relationships", [])
+                        if r.get("fromEntity") in filtered_entity_names
+                        or r.get("toEntity") in filtered_entity_names
+                    ]
+                    if filtered_entities:
+                        ontology_context = _format_ontology_context(
+                            filtered_entities, filtered_relationships
+                        )
+
                 if not documents:
                     logger.exception(f"ask pipeline - NO_RELEVANT_DATA: {user_query}")
                     if not self._is_stopped(query_id, self._ask_results):
@@ -477,6 +519,7 @@ class AskService:
                         use_dry_plan=use_dry_plan,
                         allow_dry_plan_fallback=allow_dry_plan_fallback,
                         sql_knowledge=sql_knowledge,
+                        ontology=ontology_context,
                     )
                 else:
                     text_to_sql_generation_results = await self._pipelines[
@@ -495,6 +538,7 @@ class AskService:
                         use_dry_plan=use_dry_plan,
                         allow_dry_plan_fallback=allow_dry_plan_fallback,
                         sql_knowledge=sql_knowledge,
+                        ontology=ontology_context,
                     )
 
                 if sql_valid_result := text_to_sql_generation_results["post_process"][
