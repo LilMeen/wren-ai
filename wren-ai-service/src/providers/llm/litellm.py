@@ -179,13 +179,24 @@ class LitellmLLMProvider(LLMProvider):
                     "completion_tokens": _usage.get("completion_tokens"),
                     "total_tokens": _usage.get("total_tokens"),
                 },
+                "params": {
+                    "temperature": generation_kwargs.get("temperature"),
+                    "max_tokens": generation_kwargs.get("max_tokens"),
+                    "n": generation_kwargs.get("n", 1),
+                    "response_format": generation_kwargs.get("response_format"),
+                },
+                "tools": generation_kwargs.get("tools") or generation_kwargs.get("functions"),
+                "history_messages": [
+                    {"role": m.role, "content": m.content}
+                    for m in (history_messages or [])
+                ],
                 "messages": [
                     {"role": m["role"], "content": m["content"]}
                     for m in openai_formatted_messages
                 ],
                 "response": completions[0].content if completions else None,
             }
-            _llm_logger.info("LLM_TRACE %s", json.dumps(_log, ensure_ascii=False))
+            _llm_logger.info("LLM_TRACE %s", json.dumps(_log, ensure_ascii=False, default=str))
 
             return {
                 "replies": [
