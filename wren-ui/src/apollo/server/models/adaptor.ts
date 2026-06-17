@@ -1,6 +1,7 @@
 import * as Errors from '@server/utils/error';
 import { Manifest } from '@server/mdl/type';
 import { ThreadResponse } from '../repositories';
+import { OntologyDefinition } from '../repositories/ontologyRepository';
 
 // Add branded types for SQL strings
 type Brand<T, B> = T & { __brand: B };
@@ -83,6 +84,7 @@ export interface AskInput {
   // previewSql callback (engine: wren_ui); without it the callback has no
   // session and falls back to the wrong project's deployment
   projectId?: string;
+  ontology?: OntologyDefinition | null;
 }
 
 export interface AsyncQueryResponse {

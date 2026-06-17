@@ -39,6 +39,11 @@ generate one SQL query to best answer user's question.
     {{ document }}
 {% endfor %}
 
+{% if ontology %}
+### BUSINESS ONTOLOGY ###
+{{ ontology }}
+{% endif %}
+
 {% if calculated_field_instructions %}
 {{ calculated_field_instructions }}
 {% endif %}
@@ -99,6 +104,7 @@ def prompt(
     has_json_field: bool = False,
     sql_functions: list[SqlFunction] | None = None,
     sql_knowledge: SqlKnowledge | None = None,
+    ontology: str | None = None,
 ) -> dict:
     _prompt = prompt_builder.run(
         query=query,
@@ -120,6 +126,7 @@ def prompt(
         ),
         sql_samples=sql_samples,
         sql_functions=sql_functions,
+        ontology=ontology,
     )
     return {"prompt": clean_up_new_lines(_prompt.get("prompt"))}
 
@@ -208,6 +215,7 @@ class FollowUpSQLGeneration(BasicPipeline):
         use_dry_plan: bool = False,
         allow_dry_plan_fallback: bool = True,
         sql_knowledge: SqlKnowledge | None = None,
+        ontology: str | None = None,
     ):
         logger.info("Follow-Up SQL Generation pipeline is running...")
 
@@ -234,6 +242,7 @@ class FollowUpSQLGeneration(BasicPipeline):
                 "allow_dry_plan_fallback": allow_dry_plan_fallback,
                 "data_source": metadata.get("data_source", "local_file"),
                 "sql_knowledge": sql_knowledge,
+                "ontology": ontology,
                 **self._components,
             },
         )
