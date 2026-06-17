@@ -9,7 +9,7 @@ export type ApiHistoryQueryVariables = Types.Exact<{
 }>;
 
 
-export type ApiHistoryQuery = { __typename?: 'Query', apiHistory: { __typename?: 'ApiHistoryPaginatedResponse', total: number, hasMore: boolean, items: Array<{ __typename?: 'ApiHistoryResponse', id: string, projectId: number, apiType: Types.ApiType, threadId?: string | null, headers?: any | null, requestPayload?: any | null, responsePayload?: any | null, statusCode?: number | null, durationMs?: number | null, createdAt: string, updatedAt: string }> } };
+export type ApiHistoryQuery = { __typename?: 'Query', apiHistory: { __typename?: 'ApiHistoryPaginatedResponse', total: number, hasMore: boolean, items: Array<{ __typename?: 'ApiHistoryResponse', id: string, projectId: number, apiType: Types.ApiType, threadId?: string | null, userId?: number | null, userEmail?: string | null, headers?: any | null, requestPayload?: any | null, responsePayload?: any | null, statusCode?: number | null, durationMs?: number | null, createdAt: string, updatedAt: string }> } };
 
 
 export const ApiHistoryDocument = gql`
@@ -20,6 +20,8 @@ export const ApiHistoryDocument = gql`
       projectId
       apiType
       threadId
+      userId
+      userEmail
       headers
       requestPayload
       responsePayload
