@@ -181,13 +181,14 @@ export class AskingResolver {
     const { question, threadId } = args.data;
     const startTime = Date.now();
     const project = await ctx.projectService.getCurrentProject();
+    const language = WrenAILanguage[project.language] || WrenAILanguage.EN;
 
     const askingService = ctx.askingService;
     const data = { question };
     try {
       const task = await askingService.createAskingTask(data, {
         threadId,
-        language: WrenAILanguage[project.language] || WrenAILanguage.EN,
+        language,
       });
       ctx.telemetry.sendEvent(TelemetryEvent.HOME_ASK_CANDIDATE, {
         question,
@@ -197,7 +198,8 @@ export class AskingResolver {
         id: uuidv4(),
         projectId: project.id,
         apiType: ApiType.CHAT_ASK,
-        requestPayload: { question, threadId },
+        threadId: threadId ? String(threadId) : undefined,
+        requestPayload: { question, threadId, language },
         responsePayload: { taskId: task.id },
         statusCode: 200,
         durationMs: Date.now() - startTime,
@@ -208,7 +210,8 @@ export class AskingResolver {
         id: uuidv4(),
         projectId: project.id,
         apiType: ApiType.CHAT_ASK,
-        requestPayload: { question, threadId },
+        threadId: threadId ? String(threadId) : undefined,
+        requestPayload: { question, threadId, language },
         responsePayload: { error: err.message },
         statusCode: 500,
         durationMs: Date.now() - startTime,
@@ -302,16 +305,29 @@ export class AskingResolver {
 
     const eventName = TelemetryEvent.HOME_CREATE_THREAD;
     const startTime = Date.now();
+    const project = await ctx.projectService.getCurrentProject();
+    const language = WrenAILanguage[project.language] || WrenAILanguage.EN;
     try {
       const thread = await askingService.createThread(threadInput);
       ctx.telemetry.sendEvent(eventName, {});
+      const sql =
+        threadInput.sql ??
+        threadInput.trackedAskingResult?.response?.[0]?.sql ??
+        null;
       await ctx.apiHistoryRepository.createOne({
         id: uuidv4(),
-        projectId: (await ctx.projectService.getCurrentProject()).id,
+        projectId: project.id,
         apiType: ApiType.CHAT_CREATE_THREAD,
         threadId: String(thread.id),
-        requestPayload: { question: threadInput.question },
-        responsePayload: { threadId: thread.id },
+        requestPayload: {
+          question: threadInput.question,
+          taskId: data.taskId,
+          language,
+        },
+        responsePayload: {
+          threadId: thread.id,
+          sql,
+        },
         statusCode: 200,
         durationMs: Date.now() - startTime,
       });
@@ -456,20 +472,30 @@ export class AskingResolver {
     }
 
     const startTime = Date.now();
+    const project = await ctx.projectService.getCurrentProject();
+    const language = WrenAILanguage[project.language] || WrenAILanguage.EN;
     try {
       const response = await askingService.createThreadResponse(
         threadResponseInput,
         threadId,
       );
       ctx.telemetry.sendEvent(eventName, { data });
-      const project = await ctx.projectService.getCurrentProject();
+      const sql =
+        threadResponseInput.sql ??
+        threadResponseInput.trackedAskingResult?.response?.[0]?.sql ??
+        null;
       await ctx.apiHistoryRepository.createOne({
         id: uuidv4(),
         projectId: project.id,
         apiType: ApiType.CHAT_THREAD_RESPONSE,
         threadId: String(threadId),
-        requestPayload: { question: threadResponseInput.question, threadId },
-        responsePayload: { responseId: response.id },
+        requestPayload: {
+          question: threadResponseInput.question,
+          threadId,
+          taskId: data.taskId,
+          language,
+        },
+        responsePayload: { responseId: response.id, sql },
         statusCode: 200,
         durationMs: Date.now() - startTime,
       });
@@ -529,7 +555,13 @@ export class AskingResolver {
     const { responseId, data } = args;
     const askingService = ctx.askingService;
     const startTime = Date.now();
-    const project = await ctx.projectService.getCurrentProject();
+    const [project, originalResponse] = await Promise.all([
+      ctx.projectService.getCurrentProject(),
+      askingService.getResponse(responseId).catch(() => null),
+    ]);
+    const threadId = originalResponse?.threadId
+      ? String(originalResponse.threadId)
+      : undefined;
     if (data.sql) {
       const response = await askingService.adjustThreadResponseWithSQL(
         responseId,
@@ -548,7 +580,12 @@ export class AskingResolver {
         id: uuidv4(),
         projectId: project.id,
         apiType: ApiType.CHAT_ADJUST,
-        requestPayload: { responseId, sql: data.sql },
+        threadId,
+        requestPayload: {
+          responseId,
+          sql_new: data.sql,
+          sql_before: originalResponse?.sql ?? null,
+        },
         responsePayload: { responseId: response.id },
         statusCode: 200,
         durationMs: Date.now() - startTime,
@@ -693,14 +730,23 @@ export class AskingResolver {
     const startTime = Date.now();
     const askingService = ctx.askingService;
     try {
-      const data = await askingService.previewData(responseId, limit);
-      const project = await ctx.projectService.getCurrentProject();
+      const [data, threadResponse, project] = await Promise.all([
+        askingService.previewData(responseId, limit),
+        askingService.getResponse(responseId).catch(() => null),
+        ctx.projectService.getCurrentProject(),
+      ]);
       await ctx.apiHistoryRepository.createOne({
         id: uuidv4(),
         projectId: project.id,
         apiType: ApiType.CHAT_PREVIEW_DATA,
-        requestPayload: { responseId, limit },
-        responsePayload: { rowCount: data?.data?.length ?? 0 },
+        threadId: threadResponse?.threadId
+          ? String(threadResponse.threadId)
+          : undefined,
+        requestPayload: { responseId, limit, sql: threadResponse?.sql ?? null },
+        responsePayload: {
+          rowCount: data?.data?.length ?? 0,
+          columns: data?.columns ?? [],
+        },
         statusCode: 200,
         durationMs: Date.now() - startTime,
       });
