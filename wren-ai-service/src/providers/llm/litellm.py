@@ -1,8 +1,12 @@
+import json
+import logging
 import os
+import time
 from typing import Any, Callable, Dict, List, Optional
 
 import backoff
 import openai
+from langfuse.decorators import langfuse_context
 from litellm import Router, acompletion
 
 from src.core.provider import LLMProvider
@@ -17,6 +21,8 @@ from src.providers.llm import (
 )
 from src.providers.loader import provider
 from src.utils import extract_braces_content, remove_trailing_slash
+
+_llm_logger = logging.getLogger("wren-ai-service.llm")
 
 
 @provider("litellm_llm")
@@ -108,6 +114,8 @@ class LitellmLLMProvider(LLMProvider):
                 "allowed_openai_params", []
             ) + (["reasoning_effort"] if self._model.startswith("gpt-5") else [])
 
+            _t0 = time.time()
+
             if self._has_fallbacks:
                 completion = await self._router.acompletion(
                     model=self._model,
@@ -155,6 +163,29 @@ class LitellmLLMProvider(LLMProvider):
             # before returning, do post-processing of the completions
             for response in completions:
                 check_finish_reason(response)
+
+            _duration_ms = int((time.time() - _t0) * 1000)
+            _meta = completions[0].meta if completions else {}
+            _usage = _meta.get("usage", {})
+            _log = {
+                "event": "llm_call",
+                "query_id": query_id,
+                "trace_id": langfuse_context.get_current_trace_id(),
+                "model": _meta.get("model") or self._model,
+                "duration_ms": _duration_ms,
+                "finish_reason": _meta.get("finish_reason"),
+                "usage": {
+                    "prompt_tokens": _usage.get("prompt_tokens"),
+                    "completion_tokens": _usage.get("completion_tokens"),
+                    "total_tokens": _usage.get("total_tokens"),
+                },
+                "messages": [
+                    {"role": m["role"], "content": m["content"]}
+                    for m in openai_formatted_messages
+                ],
+                "response": completions[0].content if completions else None,
+            }
+            _llm_logger.info("LLM_TRACE %s", json.dumps(_log, ensure_ascii=False))
 
             return {
                 "replies": [
