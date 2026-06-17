@@ -5,7 +5,11 @@ import {
   mapValues,
   snakeCase,
 } from 'lodash';
-import { BaseRepository, IBasicRepository, IQueryOptions } from './baseRepository';
+import {
+  BaseRepository,
+  IBasicRepository,
+  IQueryOptions,
+} from './baseRepository';
 import { Knex } from 'knex';
 import { getAuthUser } from '@server/utils/authStorage';
 
@@ -85,7 +89,10 @@ export class ApiHistoryRepository
     super({ knexPg, tableName: 'api_history' });
   }
 
-  public override async createOne(data: Partial<ApiHistory>, queryOptions?: IQueryOptions) {
+  public override async createOne(
+    data: Partial<ApiHistory>,
+    queryOptions?: IQueryOptions,
+  ) {
     const currentUser = getAuthUser();
     return super.createOne(
       { ...data, userId: data.userId ?? currentUser?.id ?? null },

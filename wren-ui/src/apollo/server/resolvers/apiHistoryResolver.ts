@@ -141,7 +141,9 @@ export class ApiHistoryResolver {
     },
     userEmail: async (apiHistory: ApiHistory, _args: any, ctx: IContext) => {
       if (!apiHistory.userId) return null;
-      const user = await ctx.userRepository.findOneBy({ id: apiHistory.userId });
+      const user = await ctx.userRepository.findOneBy({
+        id: apiHistory.userId,
+      });
       return user?.email ?? null;
     },
   });

@@ -47,6 +47,7 @@ export type ApiHistoryFilterInput = {
   startDate?: InputMaybe<Scalars['String']>;
   statusCode?: InputMaybe<Scalars['Int']>;
   threadId?: InputMaybe<Scalars['String']>;
+  userId?: InputMaybe<Scalars['Int']>;
 };
 
 export type ApiHistoryPaginatedResponse = {
@@ -1176,6 +1177,7 @@ export type Query = {
 
 export type QueryAdjustmentTaskArgs = {
   taskId: Scalars['String'];
+  threadId?: InputMaybe<Scalars['String']>;
 };
 
 
@@ -1187,6 +1189,7 @@ export type QueryApiHistoryArgs = {
 
 export type QueryAskingTaskArgs = {
   taskId: Scalars['String'];
+  threadId?: InputMaybe<Scalars['String']>;
 };
 
 
