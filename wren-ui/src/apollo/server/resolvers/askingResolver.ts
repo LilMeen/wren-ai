@@ -735,11 +735,12 @@ export class AskingResolver {
         : undefined,
       requestPayload: { responseId, language },
       responsePayload: {
-        steps: result?.breakdownDetail?.steps?.map((s) => ({
-          summary: s.summary,
-          sql: s.sql,
-          cteName: s.cteName,
-        })) ?? [],
+        steps:
+          result?.breakdownDetail?.steps?.map((s) => ({
+            summary: s.summary,
+            sql: s.sql,
+            cteName: s.cteName,
+          })) ?? [],
       },
       statusCode: 200,
       durationMs: Date.now() - startTime,
