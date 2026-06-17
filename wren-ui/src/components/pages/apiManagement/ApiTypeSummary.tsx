@@ -63,12 +63,7 @@ const TextPreview = ({
 
 // ── SQL Generation group ────────────────────────────────────────────────────
 const SqlGenerationSummary = ({ req, res }: { req: any; res: any }) => {
-  const sql =
-    res?.sql ||
-    res?.candidates?.[0]?.sql ||
-    res?.candidates?.[0]?.type === 'SQL'
-      ? res?.candidates?.[0]?.sql
-      : null;
+  const sql = res?.sql || res?.candidates?.[0]?.sql || null;
   const candidateCount = res?.candidates?.length;
   const tables: string[] = res?.retrievedTables ?? [];
 
@@ -234,7 +229,9 @@ const ContentSummary = ({ res }: { res: any }) => {
 const VizSummary = ({ res }: { res: any }) => {
   const spec = res?.vegaSpec;
   const chartType =
-    spec?.mark?.type || spec?.mark || spec?.layer ? 'layered' : null;
+    spec?.mark?.type ||
+    (typeof spec?.mark === 'string' ? spec.mark : null) ||
+    (spec?.layer ? 'layered' : null);
   const encodingFields = spec?.encoding
     ? Object.entries(spec.encoding)
         .map(([channel, def]: [string, any]) =>
