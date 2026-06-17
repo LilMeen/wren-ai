@@ -676,6 +676,7 @@ export class AskingResolver {
     ctx: IContext,
   ): Promise<AdjustmentTask> {
     const { taskId, threadId } = args;
+    const startTime = Date.now();
     const askingService = ctx.askingService;
     const adjustmentTask = await askingService.getAdjustmentTask(taskId);
     const isDone =
@@ -698,6 +699,7 @@ export class AskingResolver {
         },
         statusCode:
           adjustmentTask.status === AskFeedbackStatus.FINISHED ? 200 : 500,
+        durationMs: Date.now() - startTime,
       });
     }
     return {
