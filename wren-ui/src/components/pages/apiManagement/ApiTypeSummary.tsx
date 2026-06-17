@@ -14,13 +14,7 @@ const Label = ({ children }: { children: React.ReactNode }) => (
   </Text>
 );
 
-const Field = ({
-  label,
-  value,
-}: {
-  label: string;
-  value: React.ReactNode;
-}) => {
+const Field = ({ label, value }: { label: string; value: React.ReactNode }) => {
   if (value === null || value === undefined || value === '') return null;
   return (
     <div className="mb-4">
@@ -98,18 +92,29 @@ const SqlGenerationSummary = ({ req, res }: { req: any; res: any }) => {
         />
       )}
       {tables.length > 0 && (
-        <Field label="Retrieved Tables" value={<TableChips tables={tables} />} />
+        <Field
+          label="Retrieved Tables"
+          value={<TableChips tables={tables} />}
+        />
       )}
       {res?.traceId && (
         <Field
           label="Trace ID"
-          value={<Text code copyable>{res.traceId}</Text>}
+          value={
+            <Text code copyable>
+              {res.traceId}
+            </Text>
+          }
         />
       )}
       {req?.taskId && (
         <Field
           label="Task ID"
-          value={<Text code copyable>{req.taskId}</Text>}
+          value={
+            <Text code copyable>
+              {req.taskId}
+            </Text>
+          }
         />
       )}
     </>
@@ -140,10 +145,7 @@ const DataSummary = ({ req, res }: { req: any; res: any }) => {
         />
       )}
       {columns.length > 0 && (
-        <Field
-          label="Columns"
-          value={<TableChips tables={columns} />}
-        />
+        <Field label="Columns" value={<TableChips tables={columns} />} />
       )}
     </>
   );
@@ -189,14 +191,18 @@ const AdjustmentSummary = ({ req, res }: { req: any; res: any }) => (
     {res?.traceId && (
       <Field
         label="Trace ID"
-        value={<Text code copyable>{res.traceId}</Text>}
+        value={
+          <Text code copyable>
+            {res.traceId}
+          </Text>
+        }
       />
     )}
   </>
 );
 
 // ── Content group ────────────────────────────────────────────────────────────
-const ContentSummary = ({ req, res }: { req: any; res: any }) => {
+const ContentSummary = ({ res }: { res: any }) => {
   const content = res?.content || res?.summary;
   const steps: any[] = res?.steps ?? [];
   return (
@@ -227,10 +233,13 @@ const ContentSummary = ({ req, res }: { req: any; res: any }) => {
 // ── Visualization group ──────────────────────────────────────────────────────
 const VizSummary = ({ res }: { res: any }) => {
   const spec = res?.vegaSpec;
-  const chartType = spec?.mark?.type || spec?.mark || spec?.layer ? 'layered' : null;
+  const chartType =
+    spec?.mark?.type || spec?.mark || spec?.layer ? 'layered' : null;
   const encodingFields = spec?.encoding
     ? Object.entries(spec.encoding)
-        .map(([channel, def]: [string, any]) => def?.field ? `${channel}: ${def.field}` : null)
+        .map(([channel, def]: [string, any]) =>
+          def?.field ? `${channel}: ${def.field}` : null,
+        )
         .filter(Boolean)
     : [];
 
@@ -282,7 +291,10 @@ const KnowledgeSummary = ({
   ) {
     return <Field label="Count" value={`${res.length} SQL pairs`} />;
   }
-  if (apiType === ApiType.DELETE_INSTRUCTION || apiType === ApiType.DELETE_SQL_PAIR) {
+  if (
+    apiType === ApiType.DELETE_INSTRUCTION ||
+    apiType === ApiType.DELETE_SQL_PAIR
+  ) {
     const id = req?.id;
     return <Field label="Deleted ID" value={id ? String(id) : '-'} />;
   }
@@ -348,7 +360,10 @@ export default function ApiTypeSummary({ record }: Props) {
     ApiType.ASK,
   ];
 
-  const THREAD_TYPES = [ApiType.CHAT_CREATE_THREAD, ApiType.CHAT_THREAD_RESPONSE];
+  const THREAD_TYPES = [
+    ApiType.CHAT_CREATE_THREAD,
+    ApiType.CHAT_THREAD_RESPONSE,
+  ];
 
   const DATA_TYPES = [ApiType.CHAT_PREVIEW_DATA, ApiType.RUN_SQL];
 
