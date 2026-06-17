@@ -1,3 +1,4 @@
+import React from 'react';
 import { Typography, Tag, Space } from 'antd';
 import { ApiHistoryResponse, ApiType } from '@/apollo/client/graphql/__types__';
 
@@ -267,8 +268,6 @@ const KnowledgeSummary = ({
   const sql = res?.sql || req?.sql;
   const question = res?.question || req?.question;
   const isGlobal = res?.isGlobal ?? req?.isGlobal;
-  const items: any[] = res ?? [];
-
   if (
     apiType === ApiType.GET_INSTRUCTIONS &&
     Array.isArray(res) &&
