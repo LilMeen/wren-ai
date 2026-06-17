@@ -21,6 +21,11 @@ export const typeDefs = gql`
     GET_MODELS
     STREAM_ASK
     STREAM_GENERATE_SQL
+    CHAT_ASK
+    CHAT_CREATE_THREAD
+    CHAT_THREAD_RESPONSE
+    CHAT_PREVIEW_DATA
+    CHAT_ADJUST
   }
 
   input ApiHistoryFilterInput {

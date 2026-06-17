@@ -82,7 +82,7 @@ services:
       - wren
 
   wren-ui:
-    image: ghcr.io/canner/wren-ui:${WREN_UI_VERSION}
+    image: ${DOCKERHUB_DEV_USERNAME}/wren-ui:logging-monitoring
     restart: on-failure
     platform: ${PLATFORM}
     environment:
