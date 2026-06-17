@@ -400,7 +400,7 @@ export default function ApiTypeSummary({ record }: Props) {
   } else if (ADJUSTMENT_TYPES.includes(apiType)) {
     content = <AdjustmentSummary req={req} res={res} />;
   } else if (CONTENT_TYPES.includes(apiType)) {
-    content = <ContentSummary req={req} res={res} />;
+    content = <ContentSummary res={res} />;
   } else if (apiType === ApiType.GENERATE_VEGA_CHART) {
     content = <VizSummary res={res} />;
   } else if (KNOWLEDGE_TYPES.includes(apiType)) {
