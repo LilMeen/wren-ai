@@ -5,8 +5,13 @@ import {
   mapValues,
   snakeCase,
 } from 'lodash';
-import { BaseRepository, IBasicRepository } from './baseRepository';
+import {
+  BaseRepository,
+  IBasicRepository,
+  IQueryOptions,
+} from './baseRepository';
 import { Knex } from 'knex';
+import { getAuthUser } from '@server/utils/authStorage';
 
 export enum ApiType {
   GENERATE_SQL = 'GENERATE_SQL',
@@ -25,6 +30,16 @@ export enum ApiType {
   GET_MODELS = 'GET_MODELS',
   STREAM_ASK = 'STREAM_ASK',
   STREAM_GENERATE_SQL = 'STREAM_GENERATE_SQL',
+  // GraphQL chat UI events
+  CHAT_ASK = 'CHAT_ASK',
+  CHAT_TASK_RESULT = 'CHAT_TASK_RESULT',
+  CHAT_CREATE_THREAD = 'CHAT_CREATE_THREAD',
+  CHAT_THREAD_RESPONSE = 'CHAT_THREAD_RESPONSE',
+  CHAT_PREVIEW_DATA = 'CHAT_PREVIEW_DATA',
+  CHAT_ADJUST = 'CHAT_ADJUST',
+  CHAT_ADJUSTMENT_RESULT = 'CHAT_ADJUSTMENT_RESULT',
+  CHAT_BREAKDOWN = 'CHAT_BREAKDOWN',
+  CHAT_ANSWER = 'CHAT_ANSWER',
 }
 
 export interface ApiHistory {
@@ -32,6 +47,7 @@ export interface ApiHistory {
   projectId: number;
   apiType: ApiType;
   threadId?: string;
+  userId?: number;
   headers?: Record<string, string>;
   requestPayload?: Record<string, any>;
   responsePayload?: Record<string, any>;
@@ -71,6 +87,17 @@ export class ApiHistoryRepository
 
   constructor(knexPg: Knex) {
     super({ knexPg, tableName: 'api_history' });
+  }
+
+  public override async createOne(
+    data: Partial<ApiHistory>,
+    queryOptions?: IQueryOptions,
+  ) {
+    const currentUser = getAuthUser();
+    return super.createOne(
+      { ...data, userId: data.userId ?? currentUser?.id ?? null },
+      queryOptions,
+    );
   }
 
   /**

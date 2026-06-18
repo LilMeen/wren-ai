@@ -5,6 +5,7 @@ import CheckCircleOutlined from '@ant-design/icons/CheckCircleOutlined';
 import CloseCircleOutlined from '@ant-design/icons/CloseCircleOutlined';
 import JsonCodeBlock from '@/components/code/JsonCodeBlock';
 import { ApiHistoryResponse } from '@/apollo/client/graphql/__types__';
+import ApiTypeSummary from './ApiTypeSummary';
 
 type Props = DrawerAction<ApiHistoryResponse> & {
   loading?: boolean;
@@ -14,9 +15,14 @@ export default function DetailsDrawer(props: Props) {
   const { visible, onClose, defaultValue } = props;
 
   const {
+    id,
+    projectId,
     threadId,
+    userId,
+    userEmail,
     apiType,
     createdAt,
+    updatedAt,
     durationMs,
     statusCode,
     headers,
@@ -50,6 +56,22 @@ export default function DetailsDrawer(props: Props) {
       <Row className="mb-6">
         <Col span={12}>
           <Typography.Text className="d-block gray-7 mb-2">
+            Record ID
+          </Typography.Text>
+          <Typography.Text code copyable className="gray-8">
+            {id || '-'}
+          </Typography.Text>
+        </Col>
+        <Col span={12}>
+          <Typography.Text className="d-block gray-7 mb-2">
+            Project ID
+          </Typography.Text>
+          <div>{projectId ?? '-'}</div>
+        </Col>
+      </Row>
+      <Row className="mb-6">
+        <Col span={12}>
+          <Typography.Text className="d-block gray-7 mb-2">
             API type
           </Typography.Text>
           <div>
@@ -58,9 +80,33 @@ export default function DetailsDrawer(props: Props) {
         </Col>
         <Col span={12}>
           <Typography.Text className="d-block gray-7 mb-2">
+            Status code
+          </Typography.Text>
+          <div>{statusCode ? getStatusTag(statusCode) : '-'}</div>
+        </Col>
+      </Row>
+      <Row className="mb-6">
+        <Col span={12}>
+          <Typography.Text className="d-block gray-7 mb-2">
+            User
+          </Typography.Text>
+          <div>{userEmail || '-'}</div>
+        </Col>
+        <Col span={12}>
+          <Typography.Text className="d-block gray-7 mb-2">
+            User ID
+          </Typography.Text>
+          <div>{userId ?? '-'}</div>
+        </Col>
+      </Row>
+      <Row className="mb-6">
+        <Col span={24}>
+          <Typography.Text className="d-block gray-7 mb-2">
             Thread ID
           </Typography.Text>
-          <div>{threadId || '-'}</div>
+          <Typography.Text code copyable={!!threadId} className="gray-8">
+            {threadId || '-'}
+          </Typography.Text>
         </Col>
       </Row>
       <Row className="mb-6">
@@ -72,19 +118,21 @@ export default function DetailsDrawer(props: Props) {
         </Col>
         <Col span={12}>
           <Typography.Text className="d-block gray-7 mb-2">
-            Duration
+            Updated at
           </Typography.Text>
-          <div>{durationMs} ms</div>
+          <div>{getAbsoluteTime(updatedAt)}</div>
         </Col>
       </Row>
       <Row className="mb-6">
         <Col span={12}>
           <Typography.Text className="d-block gray-7 mb-2">
-            Status code
+            Duration
           </Typography.Text>
-          <div>{getStatusTag(statusCode)}</div>
+          <div>{durationMs != null ? `${durationMs} ms` : '-'}</div>
         </Col>
       </Row>
+
+      {defaultValue && <ApiTypeSummary record={defaultValue} />}
 
       <div className="mb-6">
         <Typography.Text className="d-block gray-7 mb-2">

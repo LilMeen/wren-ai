@@ -280,6 +280,11 @@ export default async function handler(
         requestPayload: { question, sampleSize, language },
         responsePayload: {
           explanation,
+          rephrasedQuestion: askResult.rephrasedQuestion ?? null,
+          intentReasoning: askResult.intentReasoning ?? null,
+          sqlGenerationReasoning: askResult.sqlGenerationReasoning ?? null,
+          retrievedTables: askResult.retrievedTables ?? [],
+          traceId: askResult.traceId ?? null,
         },
         statusCode: 200,
         durationMs: Date.now() - startTime,
@@ -439,6 +444,11 @@ export default async function handler(
       responsePayload: {
         sql,
         summary,
+        rephrasedQuestion: askResult.rephrasedQuestion ?? null,
+        intentReasoning: askResult.intentReasoning ?? null,
+        sqlGenerationReasoning: askResult.sqlGenerationReasoning ?? null,
+        retrievedTables: askResult.retrievedTables ?? [],
+        traceId: askResult.traceId ?? null,
       },
       statusCode: 200,
       durationMs: Date.now() - startTime,

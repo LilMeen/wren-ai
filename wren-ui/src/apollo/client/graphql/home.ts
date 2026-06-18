@@ -164,8 +164,8 @@ export const SUGGESTED_QUESTIONS = gql`
 `;
 
 export const ASKING_TASK = gql`
-  query AskingTask($taskId: String!) {
-    askingTask(taskId: $taskId) {
+  query AskingTask($taskId: String!, $threadId: String) {
+    askingTask(taskId: $taskId, threadId: $threadId) {
       ...CommonAskingTask
     }
   }
@@ -389,8 +389,8 @@ export const ADJUST_THREAD_RESPONSE_CHART = gql`
 `;
 
 export const ADJUSTMENT_TASK = gql`
-  query AdjustmentTask($taskId: String!) {
-    adjustmentTask(taskId: $taskId) {
+  query AdjustmentTask($taskId: String!, $threadId: String) {
+    adjustmentTask(taskId: $taskId, threadId: $threadId) {
       queryId
       status
       error {

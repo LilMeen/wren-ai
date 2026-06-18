@@ -11,6 +11,8 @@ export const API_HISTORY = gql`
         projectId
         apiType
         threadId
+        userId
+        userEmail
         headers
         requestPayload
         responsePayload
