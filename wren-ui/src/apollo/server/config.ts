@@ -54,6 +54,12 @@ export interface IConfig {
   // authentication
   authEnabled: boolean;
   authCookieSecure: boolean;
+
+  // OpenMetadata integration (infra-level, admin set). When either value is
+  // missing, all OpenMetadata features are disabled and the wizard behaves as
+  // before.
+  openMetadataUrl?: string | null;
+  openMetadataToken?: string | null;
 }
 
 const defaultConfig = {
@@ -165,6 +171,10 @@ const config = {
   // off by default to save tokens; opt-in via env
   recommendationQuestionsEnabled:
     process.env.ENABLE_RECOMMENDATION_QUESTIONS === 'true',
+
+  // OpenMetadata integration
+  openMetadataUrl: process.env.OPENMETADATA_URL || null,
+  openMetadataToken: process.env.OPENMETADATA_TOKEN || null,
 };
 
 export function getConfig(): IConfig {

@@ -4,6 +4,7 @@ import {
   IIbisAdaptor,
   IWrenAIAdaptor,
   IWrenEngineAdaptor,
+  IOpenMetadataAdaptor,
 } from '@server/adaptors';
 import {
   IModelColumnRepository,
@@ -60,6 +61,8 @@ export interface IContext {
   wrenEngineAdaptor: IWrenEngineAdaptor;
   ibisServerAdaptor: IIbisAdaptor;
   wrenAIAdaptor: IWrenAIAdaptor;
+  // null when OpenMetadata env vars are not configured
+  openMetadataAdaptor: IOpenMetadataAdaptor | null;
 
   // services
   projectService: IProjectService;

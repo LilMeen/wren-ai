@@ -61,6 +61,7 @@ const bootstrapServer = async () => {
     wrenEngineAdaptor,
     ibisAdaptor,
     wrenAIAdaptor,
+    openMetadataAdaptor,
 
     // services
     projectService,
@@ -150,6 +151,7 @@ const bootstrapServer = async () => {
       wrenEngineAdaptor,
       ibisServerAdaptor: ibisAdaptor,
       wrenAIAdaptor,
+      openMetadataAdaptor,
       // services
       projectService,
       modelService,

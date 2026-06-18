@@ -13,6 +13,7 @@ import {
   IbisRedshiftConnectionType,
   IbisDatabricksConnectionType,
 } from '@server/adaptors/ibisAdaptor';
+import { OPEN_METADATA_PROJECT_CONFIG } from '@server/adaptors/openMetadataAdaptor';
 import { getSelectedProjectId } from '@server/utils/authStorage';
 
 export interface BIG_QUERY_CONNECTION_INFO {
@@ -182,6 +183,10 @@ export interface Project {
   questions?: RecommendationQuestionResult[];
   questionsStatus?: string;
   questionsError?: object;
+
+  // Per-project OpenMetadata config: { serviceName, enabled }. Null when the
+  // project does not use OpenMetadata enrichment.
+  omConfig?: OPEN_METADATA_PROJECT_CONFIG | null;
 }
 
 export interface IProjectRepository extends IBasicRepository<Project> {
@@ -192,7 +197,12 @@ export class ProjectRepository
   extends BaseRepository<Project>
   implements IProjectRepository
 {
-  private jsonTypeColumns = ['questions', 'questions_error', 'connection_info'];
+  private jsonTypeColumns = [
+    'questions',
+    'questions_error',
+    'connection_info',
+    'om_config',
+  ];
 
   constructor(knexPg: Knex) {
     super({ knexPg, tableName: 'project' });

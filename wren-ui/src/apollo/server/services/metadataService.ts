@@ -6,6 +6,10 @@
 
 import { IIbisAdaptor } from '../adaptors/ibisAdaptor';
 import { IWrenEngineAdaptor } from '../adaptors/wrenEngineAdaptor';
+import {
+  IOpenMetadataAdaptor,
+  stripServicePrefix,
+} from '../adaptors/openMetadataAdaptor';
 import { Project } from '../repositories';
 import { DataSourceName } from '../types';
 import { getLogger } from '@server/utils';
@@ -54,25 +58,75 @@ export interface IDataSourceMetadataService {
 export class DataSourceMetadataService implements IDataSourceMetadataService {
   private readonly ibisAdaptor: IIbisAdaptor;
   private readonly wrenEngineAdaptor: IWrenEngineAdaptor;
+  // Optional: null when OpenMetadata env vars are not configured.
+  private readonly openMetadataAdaptor: IOpenMetadataAdaptor | null;
 
   constructor({
     ibisAdaptor,
     wrenEngineAdaptor,
+    openMetadataAdaptor,
   }: {
     ibisAdaptor: IIbisAdaptor;
     wrenEngineAdaptor: IWrenEngineAdaptor;
+    openMetadataAdaptor?: IOpenMetadataAdaptor | null;
   }) {
     this.ibisAdaptor = ibisAdaptor;
     this.wrenEngineAdaptor = wrenEngineAdaptor;
+    this.openMetadataAdaptor = openMetadataAdaptor || null;
   }
 
-  public async listTables(project): Promise<CompactTable[]> {
+  public async listTables(project: Project): Promise<CompactTable[]> {
     const { type: dataSource, connectionInfo } = project;
+    let tables: CompactTable[];
     if (dataSource === DataSourceName.DUCKDB) {
-      const tables = await this.wrenEngineAdaptor.listTables();
-      return tables;
+      tables = await this.wrenEngineAdaptor.listTables();
+    } else {
+      tables = await this.ibisAdaptor.getTables(dataSource, connectionInfo);
     }
-    return await this.ibisAdaptor.getTables(dataSource, connectionInfo);
+
+    // Enrich with OpenMetadata descriptions when the adaptor exists and the
+    // project opted in. Failures are non-fatal — the wizard keeps working with
+    // the un-enriched tables.
+    const omConfig = project.omConfig;
+    if (this.openMetadataAdaptor && omConfig?.enabled === true) {
+      try {
+        const omTables = await this.openMetadataAdaptor.getTablesWithMetadata(
+          omConfig.serviceName,
+        );
+        tables = this.mergeOMDescriptions(tables, omTables);
+      } catch (e) {
+        logger.warn(`OM enrichment skipped: ${(e as Error).message}`);
+      }
+    }
+    return tables;
+  }
+
+  private mergeOMDescriptions(
+    tables: CompactTable[],
+    omTables: CompactTable[],
+  ): CompactTable[] {
+    const omMap = new Map(omTables.map((t) => [stripServicePrefix(t.name), t]));
+    return tables.map((table) => {
+      const omTable = omMap.get(table.name);
+      if (!omTable) return table;
+      return {
+        ...table,
+        description: omTable.description || table.description,
+        properties: { ...table.properties, ...omTable.properties },
+        columns: table.columns.map((col) => {
+          const omCol = omTable.columns?.find((c) => c.name === col.name);
+          if (!omCol?.description) return col;
+          return {
+            ...col,
+            description: omCol.description,
+            properties: {
+              ...col.properties,
+              description: omCol.description,
+            },
+          };
+        }),
+      };
+    });
   }
 
   public async listConstraints(

@@ -27,6 +27,7 @@ import {
   WrenEngineAdaptor,
   WrenAIAdaptor,
   IbisAdaptor,
+  OpenMetadataAdaptor,
 } from '@server/adaptors';
 import {
   DataSourceMetadataService,
@@ -94,11 +95,21 @@ export const initComponents = () => {
   const ibisAdaptor = new IbisAdaptor({
     ibisServerEndpoint: serverConfig.ibisServerEndpoint,
   });
+  // Only wire up OpenMetadata when both url and token are configured. Otherwise
+  // it stays null and all OM features are disabled.
+  const openMetadataAdaptor =
+    serverConfig.openMetadataUrl && serverConfig.openMetadataToken
+      ? new OpenMetadataAdaptor({
+          url: serverConfig.openMetadataUrl,
+          token: serverConfig.openMetadataToken,
+        })
+      : null;
 
   // services
   const metadataService = new DataSourceMetadataService({
     ibisAdaptor,
     wrenEngineAdaptor,
+    openMetadataAdaptor,
   });
   const queryService = new QueryService({
     ibisAdaptor,
@@ -222,6 +233,7 @@ export const initComponents = () => {
     wrenEngineAdaptor,
     wrenAIAdaptor,
     ibisAdaptor,
+    openMetadataAdaptor,
 
     // services
     metadataService,

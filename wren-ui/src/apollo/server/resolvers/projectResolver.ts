@@ -35,6 +35,8 @@ import DataSourceSchemaDetector, {
   SchemaChangeType,
 } from '@server/managers/dataSourceSchemaDetector';
 import { encryptConnectionInfo } from '../dataSource';
+import { OMGlossaryTerm } from '@server/adaptors';
+import { InstructionInput } from '@server/models';
 import { TelemetryEvent } from '../telemetry/telemetry';
 import { setSelectedProjectId } from '@server/utils/authStorage';
 import { setSelectedProjectCookie } from '@server/utils/authCookies';
@@ -71,6 +73,82 @@ export class ProjectResolver {
       this.generateRelationshipRecommendations.bind(this);
     this.getRelationshipRecommendationTask =
       this.getRelationshipRecommendationTask.bind(this);
+    this.listOpenMetadataServices = this.listOpenMetadataServices.bind(this);
+    this.listOpenMetadataGlossaries =
+      this.listOpenMetadataGlossaries.bind(this);
+    this.saveOpenMetadataConfig = this.saveOpenMetadataConfig.bind(this);
+    this.importOpenMetadataGlossary =
+      this.importOpenMetadataGlossary.bind(this);
+  }
+
+  public async listOpenMetadataServices(_root: any, _arg: any, ctx: IContext) {
+    // No adaptor means OpenMetadata is not configured on this server.
+    if (!ctx.openMetadataAdaptor) {
+      return [];
+    }
+    return ctx.openMetadataAdaptor.listDatabaseServices();
+  }
+
+  public async listOpenMetadataGlossaries(
+    _root: any,
+    _arg: any,
+    ctx: IContext,
+  ) {
+    if (!ctx.openMetadataAdaptor) {
+      return [];
+    }
+    return ctx.openMetadataAdaptor.listGlossaries();
+  }
+
+  public async saveOpenMetadataConfig(
+    _root: any,
+    arg: { data: { serviceName?: string | null; enabled: boolean } },
+    ctx: IContext,
+  ) {
+    const project = await ctx.projectService.getCurrentProject();
+    await ctx.projectRepository.updateOne(project.id, {
+      omConfig: {
+        serviceName: arg.data.serviceName ?? null,
+        enabled: arg.data.enabled,
+      },
+    });
+    return true;
+  }
+
+  public async importOpenMetadataGlossary(
+    _root: any,
+    arg: { glossaryNames: string[] },
+    ctx: IContext,
+  ) {
+    if (!ctx.openMetadataAdaptor) {
+      throw new Error('OpenMetadata is not configured on this server');
+    }
+    const project = await ctx.projectService.getCurrentProject();
+    const terms = await ctx.openMetadataAdaptor.getGlossaryTerms(
+      arg.glossaryNames,
+    );
+    const inputs: InstructionInput[] = terms
+      .filter((t) => t.description?.trim())
+      .map((t) => ({
+        projectId: project.id,
+        instruction: this.buildOMInstructionText(t),
+        questions: [t.name, t.displayName, ...(t.synonyms || [])].filter(
+          Boolean,
+        ),
+        isDefault: false,
+      }));
+    if (!inputs.length) {
+      return [];
+    }
+    return ctx.instructionService.createInstructions(inputs);
+  }
+
+  private buildOMInstructionText(term: OMGlossaryTerm): string {
+    let text = `${term.displayName || term.name}: ${term.description}`;
+    if (term.relatedTerms?.length) {
+      text += ` Related: ${term.relatedTerms.join(', ')}.`;
+    }
+    return text.substring(0, 1000);
   }
 
   public async getSettings(_root: any, _arg: any, ctx: IContext) {
