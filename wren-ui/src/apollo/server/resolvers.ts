@@ -85,6 +85,10 @@ const resolvers = {
     // Ontology
     ontology: ontologyResolver.getOntology,
     ontologyRecommendationTask: ontologyResolver.getOntologyRecommendationTask,
+
+    // OpenMetadata
+    listOpenMetadataServices: projectResolver.listOpenMetadataServices,
+    listOpenMetadataGlossaries: projectResolver.listOpenMetadataGlossaries,
   },
   Mutation: {
     deploy: modelResolver.deploy,
@@ -194,6 +198,10 @@ const resolvers = {
     createInstruction: instructionResolver.createInstruction,
     updateInstruction: instructionResolver.updateInstruction,
     deleteInstruction: instructionResolver.deleteInstruction,
+
+    // OpenMetadata
+    saveOpenMetadataConfig: projectResolver.saveOpenMetadataConfig,
+    importOpenMetadataGlossary: projectResolver.importOpenMetadataGlossary,
   },
   ThreadResponse: askingResolver.getThreadResponseNestedResolver(),
   DetailStep: askingResolver.getDetailStepNestedResolver(),

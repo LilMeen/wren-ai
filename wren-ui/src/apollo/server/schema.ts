@@ -1203,6 +1203,26 @@ export const typeDefs = gql`
     error: Error
   }
 
+  # OpenMetadata integration
+  type OMService {
+    name: String!
+    serviceType: String!
+    description: String
+    hostPort: String
+    username: String
+  }
+
+  type OMGlossary {
+    name: String!
+    displayName: String
+    description: String
+  }
+
+  input OpenMetadataProjectConfigInput {
+    serviceName: String
+    enabled: Boolean!
+  }
+
   # Query and Mutation
   type Query {
     # On Boarding Steps
@@ -1269,6 +1289,10 @@ export const typeDefs = gql`
     # Ontology
     ontology: Ontology
     ontologyRecommendationTask(taskId: String!): OntologyRecommendationTask!
+
+    # OpenMetadata
+    listOpenMetadataServices: [OMService!]!
+    listOpenMetadataGlossaries: [OMGlossary!]!
   }
 
   type Mutation {
@@ -1419,5 +1443,9 @@ export const typeDefs = gql`
       data: UpdateInstructionInput!
     ): Instruction!
     deleteInstruction(where: InstructionWhereInput!): Boolean!
+
+    # OpenMetadata
+    saveOpenMetadataConfig(data: OpenMetadataProjectConfigInput!): Boolean!
+    importOpenMetadataGlossary(glossaryNames: [String!]!): [Instruction!]!
   }
 `;
