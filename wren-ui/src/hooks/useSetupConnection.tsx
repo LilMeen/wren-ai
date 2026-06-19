@@ -79,7 +79,7 @@ export default function useSetupConnection() {
 
     const dispatchConnectContextLayer = (data: StepData) => {
       setupConnectionContextLayer.saveContextLayer(
-        data as ContextLayerStepData,
+        data as unknown as ContextLayerStepData,
       );
     };
 
