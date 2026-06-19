@@ -90,7 +90,22 @@ export class DataSourceMetadataService implements IDataSourceMetadataService {
         const omTables = await this.openMetadataAdaptor.getTablesWithMetadata(
           omConfig.serviceName,
         );
+        logger.debug(
+          `OM tables fetched: ${omTables.length} (service=${omConfig.serviceName}). ` +
+            `Sample OM names: ${omTables
+              .slice(0, 3)
+              .map((t) => t.name)
+              .join(', ')}. ` +
+            `Sample ibis names: ${tables
+              .slice(0, 3)
+              .map((t) => t.name)
+              .join(', ')}`,
+        );
         tables = this.mergeOMDescriptions(tables, omTables);
+        const enriched = tables.filter((t) => t.description).length;
+        logger.debug(
+          `OM enrichment: ${enriched}/${tables.length} tables got descriptions`,
+        );
       } catch (e) {
         logger.warn(`OM enrichment skipped: ${(e as Error).message}`);
       }
@@ -102,12 +117,29 @@ export class DataSourceMetadataService implements IDataSourceMetadataService {
     tables: CompactTable[],
     omTables: CompactTable[],
   ): CompactTable[] {
-    // omTable.name is already stripped by openMetadataAdaptor.toCompactTable —
-    // do NOT call stripServicePrefix again or 3-part names (MySQL/StarRocks)
-    // would be double-stripped to a 1-part name that never matches ibis.
-    const omMap = new Map(omTables.map((t) => [t.name, t]));
+    // omTable.name is already stripped by openMetadataAdaptor.toCompactTable.
+    //
+    // Matching strategy: ibis scopes to a specific catalog/database so its
+    // table names may have fewer parts than the OM FQN after service-strip.
+    // Example: OM = "default.sdp_golden.dim_date" (3 parts after stripping
+    //          "SDP"), ibis = "sdp_golden.dim_date" (2 parts — the "default"
+    //          catalog is implicit in the connection and not returned by ibis).
+    // We build BOTH an exact-match map AND a suffix map so we catch all variants:
+    //   • exact:  full match (e.g. Postgres catalog.schema.table)
+    //   • suffix: Trino/StarRocks where ibis drops the leading catalog segment(s)
+    const omExactMap = new Map(omTables.map((t) => [t.name, t]));
+    const omSuffixMap = new Map<string, CompactTable>();
+    for (const omTable of omTables) {
+      const parts = omTable.name.split('.');
+      for (let i = 1; i < parts.length; i++) {
+        const suffix = parts.slice(i).join('.');
+        if (!omSuffixMap.has(suffix)) {
+          omSuffixMap.set(suffix, omTable);
+        }
+      }
+    }
     return tables.map((table) => {
-      const omTable = omMap.get(table.name);
+      const omTable = omExactMap.get(table.name) ?? omSuffixMap.get(table.name);
       if (!omTable) return table;
       return {
         ...table,
