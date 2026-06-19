@@ -106,12 +106,33 @@ export class ProjectResolver {
     ctx: IContext,
   ) {
     const project = await ctx.projectService.getCurrentProject();
+    const updatedOmConfig = {
+      serviceName: arg.data.serviceName ?? null,
+      enabled: arg.data.enabled,
+    };
     await ctx.projectRepository.updateOne(project.id, {
-      omConfig: {
-        serviceName: arg.data.serviceName ?? null,
-        enabled: arg.data.enabled,
-      },
+      omConfig: updatedOmConfig,
     });
+
+    // When OM is being enabled, immediately sync descriptions from OM into
+    // existing model/column properties so the modeling page shows them without
+    // requiring the user to re-import tables.
+    if (arg.data.enabled && ctx.openMetadataAdaptor) {
+      const projectWithNewConfig = { ...project, omConfig: updatedOmConfig };
+      const models = await ctx.modelRepository.findAllBy({
+        projectId: project.id,
+      });
+      const modelIds = models.map((m) => m.id);
+      const columns =
+        await ctx.modelColumnRepository.findColumnsByModelIds(modelIds);
+      await this.syncOMDescriptionsToModels(
+        projectWithNewConfig,
+        models,
+        columns,
+        ctx,
+      );
+    }
+
     return true;
   }
 
