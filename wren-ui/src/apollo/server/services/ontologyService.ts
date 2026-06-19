@@ -5,6 +5,7 @@ import {
 } from '../repositories/ontologyRepository';
 import { IModelRepository } from '../repositories/modelRepository';
 import { IModelColumnRepository } from '../repositories/modelColumnRepository';
+import { IProjectRepository } from '../repositories/projectRepository';
 import { Manifest } from '../mdl/type';
 import { getLogger } from '@server/utils';
 
@@ -30,19 +31,23 @@ export class OntologyService implements IOntologyService {
   private ontologyRepository: IOntologyRepository;
   private modelRepository: IModelRepository;
   private modelColumnRepository: IModelColumnRepository;
+  private projectRepository: IProjectRepository;
 
   constructor({
     ontologyRepository,
     modelRepository,
     modelColumnRepository,
+    projectRepository,
   }: {
     ontologyRepository: IOntologyRepository;
     modelRepository: IModelRepository;
     modelColumnRepository: IModelColumnRepository;
+    projectRepository: IProjectRepository;
   }) {
     this.ontologyRepository = ontologyRepository;
     this.modelRepository = modelRepository;
     this.modelColumnRepository = modelColumnRepository;
+    this.projectRepository = projectRepository;
   }
 
   public async getByProject(projectId: number) {
@@ -80,13 +85,21 @@ export class OntologyService implements IOntologyService {
       models.map((m) => m.id),
     );
 
+    // When the project uses OM enrichment, descriptions on model/column
+    // records were fetched from OpenMetadata and must not be overwritten by
+    // AI-generated ontology descriptions.
+    const project = await this.projectRepository.findOneBy({ id: projectId });
+    const omEnabled = project?.omConfig?.enabled === true;
+
     for (const entity of entities) {
       const model = models.find((m) => m.referenceName === entity.sourceModel);
       if (!model) continue;
 
       if (entity.description) {
         const properties = model.properties ? JSON.parse(model.properties) : {};
-        properties.description = entity.description;
+        if (!(omEnabled && properties.description)) {
+          properties.description = entity.description;
+        }
         if (entity.displayName) properties.displayName = entity.displayName;
         await this.modelRepository.updateOne(model.id, {
           properties: JSON.stringify(properties),
@@ -104,7 +117,9 @@ export class OntologyService implements IOntologyService {
         const properties = column.properties
           ? JSON.parse(column.properties)
           : {};
-        properties.description = attribute.description;
+        if (!(omEnabled && properties.description)) {
+          properties.description = attribute.description;
+        }
         await this.modelColumnRepository.updateOne(column.id, {
           properties: JSON.stringify(properties),
         });

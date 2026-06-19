@@ -110,6 +110,9 @@ services:
       EXPERIMENTAL_ENGINE_RUST_VERSION: ${EXPERIMENTAL_ENGINE_RUST_VERSION}
       # configs
       WREN_PRODUCT_VERSION: ${WREN_PRODUCT_VERSION}
+      # OpenMetadata integration (optional — features auto-disable when unset)
+      OPENMETADATA_URL: ${OPENMETADATA_URL}
+      OPENMETADATA_TOKEN: ${OPENMETADATA_TOKEN}
     ports:
       # HOST_PORT is the port you want to expose to the host machine
       - ${HOST_PORT}:3000

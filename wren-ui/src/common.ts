@@ -146,6 +146,7 @@ export const initComponents = () => {
     ontologyRepository,
     modelRepository,
     modelColumnRepository,
+    projectRepository,
   });
   const askingService = new AskingService({
     telemetry,

@@ -580,6 +580,14 @@ export class ProjectResolver {
         ctx,
         project,
       );
+
+      // When the project uses OpenMetadata enrichment, persist OM table/column
+      // descriptions onto the newly created model records so that AI
+      // relationship and ontology generation can use them as context.
+      if (project.omConfig?.enabled && ctx.openMetadataAdaptor) {
+        await this.syncOMDescriptionsToModels(project, models, columns, ctx);
+      }
+
       // telemetry
       ctx.telemetry.sendEvent(eventName, {
         dataSourceType: project.type,
@@ -865,6 +873,51 @@ export class ProjectResolver {
       } as RelationData;
     });
     return relationInput;
+  }
+
+  private async syncOMDescriptionsToModels(
+    project: Project,
+    models: Model[],
+    columns: ModelColumn[],
+    ctx: IContext,
+  ) {
+    try {
+      // getProjectDataSourceTables calls metadataService.listTables() which
+      // merges OM descriptions into CompactTable when omConfig.enabled=true.
+      const tables =
+        await ctx.projectService.getProjectDataSourceTables(project);
+      const tableMap = new Map(tables.map((t) => [t.name, t]));
+
+      for (const model of models) {
+        const table = tableMap.get(model.sourceTableName);
+        if (!table?.description) continue;
+        const props = model.properties ? JSON.parse(model.properties) : {};
+        if (!props.description) {
+          props.description = table.description;
+          await ctx.modelRepository.updateOne(model.id, {
+            properties: JSON.stringify(props),
+          });
+        }
+        for (const col of columns.filter((c) => c.modelId === model.id)) {
+          const compactCol = table.columns?.find(
+            (c) => c.name === col.sourceColumnName,
+          );
+          if (!compactCol?.description) continue;
+          const cProps = col.properties ? JSON.parse(col.properties) : {};
+          if (!cProps.description) {
+            cProps.description = compactCol.description;
+            await ctx.modelColumnRepository.updateOne(col.id, {
+              properties: JSON.stringify(cProps),
+            });
+          }
+        }
+      }
+      logger.debug(
+        `Synced OM descriptions to models for project ${project.id}`,
+      );
+    } catch (e) {
+      logger.warn(`OM description sync skipped: ${(e as Error).message}`);
+    }
   }
 
   private async overwriteModelsAndColumns(

@@ -5,6 +5,7 @@ import IdCardOutlined from '@ant-design/icons/IdcardOutlined';
 import { SETUP, DATA_SOURCES } from '@/utils/enum';
 import Starter from './Starter';
 import ConnectDataSource from './ConnectDataSource';
+import ConnectContextLayer from './ConnectContextLayer';
 import SelectModels from './SelectModels';
 import DefineRelations from './DefineRelations';
 import DefineOntology from './DefineOntology';
@@ -20,6 +21,7 @@ type SetupStep = {
   component: (
     props?: React.ComponentProps<typeof Starter> &
       React.ComponentProps<typeof ConnectDataSource> &
+      React.ComponentProps<typeof ConnectContextLayer> &
       React.ComponentProps<typeof SelectModels> &
       React.ComponentProps<typeof DefineRelations> &
       React.ComponentProps<typeof DefineOntology>,
@@ -45,6 +47,11 @@ export const SETUP_STEPS = {
   [SETUP.CREATE_DATA_SOURCE]: {
     step: 0,
     component: ConnectDataSource,
+    maxWidth: 960,
+  },
+  [SETUP.CONNECT_CONTEXT_LAYER]: {
+    step: 0,
+    component: ConnectContextLayer,
     maxWidth: 960,
   },
   [SETUP.SELECT_MODELS]: {

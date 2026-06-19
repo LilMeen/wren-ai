@@ -1,11 +1,8 @@
-import { useMemo, useState } from 'react';
+import { Form, Row, Col, Alert, Button, Typography } from 'antd';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Alert, Typography, Form, Row, Col, Button, Radio, Select } from 'antd';
 import styled from 'styled-components';
-import { useQuery } from '@apollo/client';
 import { DATA_SOURCES } from '@/utils/enum/dataSources';
-import { LIST_OPEN_METADATA_SERVICES } from '@/apollo/client/graphql/openMetadata';
 import { getDataSource, getPostgresErrorMessage } from './utils';
 
 const StyledForm = styled(Form)`
@@ -26,63 +23,10 @@ interface Props {
   connectError?: Record<string, any>;
 }
 
-interface OMService {
-  name: string;
-  serviceType: string;
-  description?: string;
-  hostPort?: string;
-  username?: string;
-}
-
-enum ImportMode {
-  MANUAL = 'manual',
-  OPEN_METADATA = 'openmetadata',
-}
-
-// OpenMetadata exposes a service's host:port as a single string; split it into
-// the host/port fields the connection forms expect.
-const parseHostPort = (hostPort?: string): { host?: string; port?: string } => {
-  if (!hostPort) return {};
-  const lastColon = hostPort.lastIndexOf(':');
-  if (lastColon === -1) return { host: hostPort };
-  return {
-    host: hostPort.slice(0, lastColon),
-    port: hostPort.slice(lastColon + 1),
-  };
-};
-
 export default function ConnectDataSource(props: Props) {
   const { connectError, dataSource, submitting, onNext, onBack } = props;
   const [form] = Form.useForm();
   const current = getDataSource(dataSource);
-
-  const [importMode, setImportMode] = useState<ImportMode>(ImportMode.MANUAL);
-
-  // OpenMetadata is only offered when the server has it configured: the query
-  // returns an empty list when env vars are unset, so the toggle stays hidden.
-  const { data: omData } = useQuery(LIST_OPEN_METADATA_SERVICES, {
-    fetchPolicy: 'cache-first',
-    onError: () => {},
-  });
-  const omServices: OMService[] = useMemo(
-    () => omData?.listOpenMetadataServices || [],
-    [omData],
-  );
-  const omAvailable = omServices.length > 0;
-
-  const onSelectService = (serviceName: string) => {
-    const service = omServices.find((s) => s.name === serviceName);
-    if (!service) return;
-    const { host, port } = parseHostPort(service.hostPort);
-    // Pre-fill the shared connection form. Sources use either `user` or
-    // `username`; set both so whichever the form registered gets populated.
-    form.setFieldsValue({
-      host,
-      port: port ? Number(port) : undefined,
-      user: service.username,
-      username: service.username,
-    });
-  };
 
   const submit = () => {
     form
@@ -138,45 +82,6 @@ export default function ConnectDataSource(props: Props) {
             .
           </Col>
         </Row>
-
-        {omAvailable && (
-          <div className="mb-6">
-            <Radio.Group
-              value={importMode}
-              onChange={(e) => setImportMode(e.target.value)}
-            >
-              <Radio value={ImportMode.MANUAL}>Manual setup</Radio>
-              <Radio value={ImportMode.OPEN_METADATA}>
-                Import from OpenMetadata
-              </Radio>
-            </Radio.Group>
-
-            {importMode === ImportMode.OPEN_METADATA && (
-              <div className="mt-4">
-                <Typography.Text className="d-block mb-2 gray-7">
-                  Select an OpenMetadata service to auto-fill connection
-                  details. You still need to enter the password and any
-                  remaining fields below.
-                </Typography.Text>
-                <Select
-                  className="mb-3"
-                  style={{ width: '100%' }}
-                  placeholder="Select a service"
-                  onChange={onSelectService}
-                  options={omServices.map((service) => ({
-                    label: `${service.name} (${service.serviceType})`,
-                    value: service.name,
-                  }))}
-                />
-                <Alert
-                  type="info"
-                  showIcon
-                  message="Table and column descriptions from OpenMetadata are imported automatically when the data source is saved."
-                />
-              </div>
-            )}
-          </div>
-        )}
 
         <current.component />
       </StyledForm>

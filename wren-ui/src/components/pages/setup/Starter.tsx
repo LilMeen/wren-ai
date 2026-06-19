@@ -1,6 +1,7 @@
 import Link from 'next/link';
-import { ComponentProps, useState } from 'react';
-import { Typography, Row, Col } from 'antd';
+import { ComponentProps, useMemo, useState } from 'react';
+import { Button, Divider, Typography, Row, Col } from 'antd';
+import { useQuery } from '@apollo/client';
 import { getDataSources, getTemplates } from './utils';
 import { makeIterable } from '@/utils/iteration';
 import ButtonItem from './ButtonItem';
@@ -8,6 +9,7 @@ import {
   DataSourceName,
   SampleDatasetName,
 } from '@/apollo/client/graphql/__types__';
+import { LIST_OPEN_METADATA_SERVICES } from '@/apollo/client/graphql/openMetadata';
 
 const ButtonTemplate = (props: ComponentProps<typeof ButtonItem>) => {
   return (
@@ -28,6 +30,17 @@ export default function Starter(props) {
   const dataSources = getDataSources();
   const templates = getTemplates();
 
+  // Silently check whether OpenMetadata services are configured. The section
+  // is only shown when at least one service is available.
+  const { data: omData } = useQuery(LIST_OPEN_METADATA_SERVICES, {
+    fetchPolicy: 'cache-first',
+    onError: () => {},
+  });
+  const omAvailable = useMemo(
+    () => (omData?.listOpenMetadataServices?.length ?? 0) > 0,
+    [omData],
+  );
+
   const onSelectDataSource = (value: DataSourceName) => {
     onNext && onNext({ dataSource: value });
   };
@@ -35,6 +48,10 @@ export default function Starter(props) {
   const onSelectTemplate = (value: string) => {
     setTemplate(value as SampleDatasetName);
     onNext && onNext({ template: value });
+  };
+
+  const onSelectContextLayer = () => {
+    onNext && onNext({ contextLayer: true });
   };
 
   return (
@@ -74,6 +91,28 @@ export default function Starter(props) {
           selectedTemplate={template}
         />
       </Row>
+
+      {omAvailable && (
+        <>
+          <Divider />
+          <Typography.Title level={1} className="mb-3">
+            Connect a centralized context layer
+          </Typography.Title>
+          <Typography.Text>
+            Use OpenMetadata as your context source. WrenAI will import
+            connection details and table/column descriptions automatically.
+          </Typography.Text>
+          <div className="mt-6">
+            <Button
+              size="large"
+              onClick={onSelectContextLayer}
+              disabled={submitting}
+            >
+              Import from OpenMetadata
+            </Button>
+          </div>
+        </>
+      )}
 
       <div className="py-12" />
     </>
