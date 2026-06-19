@@ -1,8 +1,8 @@
 import Link from 'next/link';
 import { ComponentProps, useMemo, useState } from 'react';
-import { Button, Divider, Typography, Row, Col } from 'antd';
+import { Typography, Row, Col } from 'antd';
 import { useQuery } from '@apollo/client';
-import { getDataSources, getTemplates } from './utils';
+import { getDataSources, getTemplates, ButtonOption } from './utils';
 import { makeIterable } from '@/utils/iteration';
 import ButtonItem from './ButtonItem';
 import {
@@ -20,7 +20,16 @@ const ButtonTemplate = (props: ComponentProps<typeof ButtonItem>) => {
 };
 
 const DataSourceIterator = makeIterable(ButtonTemplate);
+const ContextLayerIterator = makeIterable(ButtonTemplate);
 const TemplatesIterator = makeIterable(ButtonTemplate);
+
+const omContextLayers: ButtonOption[] = [
+  {
+    value: 'openmetadata',
+    label: 'OpenMetadata',
+    logo: '/images/dataSource/openmetadata.svg',
+  },
+];
 
 export default function Starter(props) {
   const { onNext, submitting } = props;
@@ -45,13 +54,13 @@ export default function Starter(props) {
     onNext && onNext({ dataSource: value });
   };
 
+  const onSelectContextLayer = () => {
+    onNext && onNext({ contextLayer: true });
+  };
+
   const onSelectTemplate = (value: string) => {
     setTemplate(value as SampleDatasetName);
     onNext && onNext({ template: value });
-  };
-
-  const onSelectContextLayer = () => {
-    onNext && onNext({ contextLayer: true });
   };
 
   return (
@@ -78,6 +87,27 @@ export default function Starter(props) {
         />
       </Row>
 
+      {omAvailable && (
+        <>
+          <div className="py-8" />
+          <Typography.Title level={1} className="mb-3">
+            Connect a centralized context layer
+          </Typography.Title>
+          <Typography.Text>
+            Use OpenMetadata as your context source. WrenAI will import
+            connection details, table/column descriptions, and business glossary
+            terms automatically.
+          </Typography.Text>
+          <Row className="mt-6" gutter={[16, 16]}>
+            <ContextLayerIterator
+              data={omContextLayers}
+              onSelect={() => onSelectContextLayer()}
+              submitting={submitting}
+            />
+          </Row>
+        </>
+      )}
+
       <div className="py-8" />
 
       <Typography.Title level={1} className="mb-3">
@@ -91,28 +121,6 @@ export default function Starter(props) {
           selectedTemplate={template}
         />
       </Row>
-
-      {omAvailable && (
-        <>
-          <Divider />
-          <Typography.Title level={1} className="mb-3">
-            Connect a centralized context layer
-          </Typography.Title>
-          <Typography.Text>
-            Use OpenMetadata as your context source. WrenAI will import
-            connection details and table/column descriptions automatically.
-          </Typography.Text>
-          <div className="mt-6">
-            <Button
-              size="large"
-              onClick={onSelectContextLayer}
-              disabled={submitting}
-            >
-              Import from OpenMetadata
-            </Button>
-          </div>
-        </>
-      )}
 
       <div className="py-12" />
     </>

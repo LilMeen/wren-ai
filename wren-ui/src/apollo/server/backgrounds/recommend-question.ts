@@ -131,10 +131,22 @@ export class ProjectRecommendQuestionBackgroundTracker {
 
       // run the jobs
       Promise.allSettled(jobs.map((job) => job())).then((results) => {
-        // show reason of rejection
         results.forEach((result, index) => {
           if (result.status === 'rejected') {
-            this.logger.error(`Job ${index} failed: ${result.reason}`);
+            const msg = String(result.reason);
+            // Network errors are transient — log as warn, not error, to
+            // avoid flooding the log when wren-ai-service is temporarily down.
+            if (
+              msg.includes('ECONNREFUSED') ||
+              msg.includes('ENOTFOUND') ||
+              msg.includes('ETIMEDOUT')
+            ) {
+              this.logger.warn(
+                `Job ${index} skipped (AI service unreachable): ${result.reason}`,
+              );
+            } else {
+              this.logger.error(`Job ${index} failed: ${result.reason}`);
+            }
           }
         });
       });
@@ -280,10 +292,20 @@ export class ThreadRecommendQuestionBackgroundTracker {
 
       // run the jobs
       Promise.allSettled(jobs.map((job) => job())).then((results) => {
-        // show reason of rejection
         results.forEach((result, index) => {
           if (result.status === 'rejected') {
-            this.logger.error(`Job ${index} failed: ${result.reason}`);
+            const msg = String(result.reason);
+            if (
+              msg.includes('ECONNREFUSED') ||
+              msg.includes('ENOTFOUND') ||
+              msg.includes('ETIMEDOUT')
+            ) {
+              this.logger.warn(
+                `Job ${index} skipped (AI service unreachable): ${result.reason}`,
+              );
+            } else {
+              this.logger.error(`Job ${index} failed: ${result.reason}`);
+            }
           }
         });
       });

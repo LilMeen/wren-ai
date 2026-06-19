@@ -15,6 +15,7 @@ import {
 } from '@server/adaptors/ibisAdaptor';
 import { OPEN_METADATA_PROJECT_CONFIG } from '@server/adaptors/openMetadataAdaptor';
 import { getSelectedProjectId } from '@server/utils/authStorage';
+import { GraphQLError } from 'graphql';
 
 export interface BIG_QUERY_CONNECTION_INFO {
   projectId: string;
@@ -238,12 +239,17 @@ export class ProjectRepository
       throw new Error('No project found');
     }
     if (projects.length > 1) {
-      throw new Error(
+      // Throw a typed GraphQLError so Apollo assigns it a non-500 code.
+      // A plain Error here becomes INTERNAL_SERVER_ERROR, which triggers
+      // sendEvent(graphql_error_failed) telemetry on every unauthenticated
+      // call — very noisy in multi-project SIT environments.
+      throw new GraphQLError(
         'No project selected in the current context, but multiple projects ' +
           'exist. The caller must resolve the project explicitly (e.g. from ' +
           'the owning thread/dashboard in background jobs, or by ensuring the ' +
           'project cookie is set). Refusing to guess to avoid querying the ' +
           'wrong project.',
+        { extensions: { code: 'PROJECT_NOT_SELECTED' } },
       );
     }
     return projects[0];
