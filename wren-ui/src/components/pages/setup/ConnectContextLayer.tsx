@@ -29,6 +29,7 @@ const StyledForm = styled(Form)`
 // Map OpenMetadata serviceType strings → WrenAI DATA_SOURCES enum values.
 const OM_SERVICE_TYPE_MAP: Record<string, DATA_SOURCES> = {
   Mysql: DATA_SOURCES.MYSQL,
+  StarRocks: DATA_SOURCES.MYSQL,
   Postgres: DATA_SOURCES.POSTGRES,
   BigQuery: DATA_SOURCES.BIG_QUERY,
   Snowflake: DATA_SOURCES.SNOWFLAKE,
