@@ -79,6 +79,8 @@ export class ProjectResolver {
     this.saveOpenMetadataConfig = this.saveOpenMetadataConfig.bind(this);
     this.importOpenMetadataGlossary =
       this.importOpenMetadataGlossary.bind(this);
+    this.resyncOpenMetadataDescriptions =
+      this.resyncOpenMetadataDescriptions.bind(this);
   }
 
   public async listOpenMetadataServices(_root: any, _arg: any, ctx: IContext) {
@@ -162,6 +164,31 @@ export class ProjectResolver {
       return [];
     }
     return ctx.instructionService.createInstructions(inputs);
+  }
+
+  public async resyncOpenMetadataDescriptions(
+    _root: any,
+    _arg: any,
+    ctx: IContext,
+  ) {
+    if (!ctx.openMetadataAdaptor) {
+      throw new Error('OpenMetadata is not configured on this server');
+    }
+    const project = await ctx.projectService.getCurrentProject();
+    if (!project.omConfig?.enabled) {
+      throw new Error(
+        'OpenMetadata is not enabled for this project. Call saveOpenMetadataConfig first.',
+      );
+    }
+    const models = await ctx.modelRepository.findAllBy({
+      projectId: project.id,
+    });
+    if (!models.length) return 0;
+    const modelIds = models.map((m) => m.id);
+    const columns =
+      await ctx.modelColumnRepository.findColumnsByModelIds(modelIds);
+    await this.syncOMDescriptionsToModels(project, models, columns, ctx);
+    return models.length;
   }
 
   private buildOMInstructionText(term: OMGlossaryTerm): string {
@@ -913,24 +940,20 @@ export class ProjectResolver {
         const table = tableMap.get(model.sourceTableName);
         if (!table?.description) continue;
         const props = model.properties ? JSON.parse(model.properties) : {};
-        if (!props.description) {
-          props.description = table.description;
-          await ctx.modelRepository.updateOne(model.id, {
-            properties: JSON.stringify(props),
-          });
-        }
+        props.description = table.description;
+        await ctx.modelRepository.updateOne(model.id, {
+          properties: JSON.stringify(props),
+        });
         for (const col of columns.filter((c) => c.modelId === model.id)) {
           const compactCol = table.columns?.find(
             (c) => c.name === col.sourceColumnName,
           );
           if (!compactCol?.description) continue;
           const cProps = col.properties ? JSON.parse(col.properties) : {};
-          if (!cProps.description) {
-            cProps.description = compactCol.description;
-            await ctx.modelColumnRepository.updateOne(col.id, {
-              properties: JSON.stringify(cProps),
-            });
-          }
+          cProps.description = compactCol.description;
+          await ctx.modelColumnRepository.updateOne(col.id, {
+            properties: JSON.stringify(cProps),
+          });
         }
       }
       logger.debug(

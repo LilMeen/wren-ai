@@ -39,3 +39,9 @@ export const IMPORT_OPEN_METADATA_GLOSSARY = gql`
     }
   }
 `;
+
+export const RESYNC_OPEN_METADATA_DESCRIPTIONS = gql`
+  mutation ResyncOpenMetadataDescriptions {
+    resyncOpenMetadataDescriptions
+  }
+`;

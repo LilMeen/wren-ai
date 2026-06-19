@@ -1447,5 +1447,8 @@ export const typeDefs = gql`
     # OpenMetadata
     saveOpenMetadataConfig(data: OpenMetadataProjectConfigInput!): Boolean!
     importOpenMetadataGlossary(glossaryNames: [String!]!): [Instruction!]!
+    # Force-sync OM table/column descriptions into existing model rows.
+    # Returns the number of model rows updated.
+    resyncOpenMetadataDescriptions: Int!
   }
 `;

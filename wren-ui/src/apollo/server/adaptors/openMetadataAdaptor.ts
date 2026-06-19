@@ -47,13 +47,17 @@ export interface IOpenMetadataAdaptor {
 }
 
 /**
- * OpenMetadata stores FQNs as `service.catalog.schema.table`, while WrenAI uses
- * `catalog.schema.table`. Drop the leading service segment so OM table names can
- * be matched against WrenAI `sourceTableName`.
+ * OpenMetadata FQNs always start with the service name:
+ *   4-part: service.catalog.schema.table  (Postgres, BigQuery, …)
+ *   3-part: service.database.table        (MySQL, StarRocks, …)
+ *
+ * WrenAI / ibis uses the same names but WITHOUT the leading service segment.
+ * Strip it whenever there are 3+ parts so both formats produce a name that
+ * matches what ibis returns (catalog.schema.table or database.table).
  */
 export function stripServicePrefix(fqn: string): string {
   const parts = fqn.split('.');
-  return parts.length >= 4 ? parts.slice(1).join('.') : fqn;
+  return parts.length >= 3 ? parts.slice(1).join('.') : fqn;
 }
 
 export class OpenMetadataAdaptor implements IOpenMetadataAdaptor {

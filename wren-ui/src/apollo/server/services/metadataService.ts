@@ -6,10 +6,7 @@
 
 import { IIbisAdaptor } from '../adaptors/ibisAdaptor';
 import { IWrenEngineAdaptor } from '../adaptors/wrenEngineAdaptor';
-import {
-  IOpenMetadataAdaptor,
-  stripServicePrefix,
-} from '../adaptors/openMetadataAdaptor';
+import { IOpenMetadataAdaptor } from '../adaptors/openMetadataAdaptor';
 import { Project } from '../repositories';
 import { DataSourceName } from '../types';
 import { getLogger } from '@server/utils';
@@ -105,7 +102,10 @@ export class DataSourceMetadataService implements IDataSourceMetadataService {
     tables: CompactTable[],
     omTables: CompactTable[],
   ): CompactTable[] {
-    const omMap = new Map(omTables.map((t) => [stripServicePrefix(t.name), t]));
+    // omTable.name is already stripped by openMetadataAdaptor.toCompactTable —
+    // do NOT call stripServicePrefix again or 3-part names (MySQL/StarRocks)
+    // would be double-stripped to a 1-part name that never matches ibis.
+    const omMap = new Map(omTables.map((t) => [t.name, t]));
     return tables.map((table) => {
       const omTable = omMap.get(table.name);
       if (!omTable) return table;

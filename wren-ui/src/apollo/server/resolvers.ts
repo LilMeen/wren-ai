@@ -202,6 +202,8 @@ const resolvers = {
     // OpenMetadata
     saveOpenMetadataConfig: projectResolver.saveOpenMetadataConfig,
     importOpenMetadataGlossary: projectResolver.importOpenMetadataGlossary,
+    resyncOpenMetadataDescriptions:
+      projectResolver.resyncOpenMetadataDescriptions,
   },
   ThreadResponse: askingResolver.getThreadResponseNestedResolver(),
   DetailStep: askingResolver.getDetailStepNestedResolver(),
