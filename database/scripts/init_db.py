@@ -11,6 +11,7 @@ import subprocess
 import sys
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
@@ -117,9 +118,42 @@ def schema_objects() -> dict[str, dict[str, str]]:
     return out
 
 
+def _rewrite_redirect_url(location: str, host: str, http_port: int, be_http_port: int) -> str:
+    """Replace Docker-internal hostname in redirect URL with the configured host."""
+    parsed = urllib.parse.urlparse(location)
+    if parsed.hostname and parsed.hostname != host:
+        port = parsed.port or be_http_port
+        return urllib.parse.urlunparse(parsed._replace(netloc=f"{host}:{port}"))
+    return location
+
+
+def _make_no_redirect_opener() -> urllib.request.OpenerDirector:
+    """Build a urllib opener that does NOT follow redirects.
+
+    urllib's default opener follows 307/308 redirects automatically, which causes
+    a hang on Windows when StarRocks FE redirects to a Docker-internal BE hostname
+    (e.g. starrocks-be:8040) that is not resolvable from the host.
+    Without HTTPRedirectHandler, 307/308 responses go through HTTPErrorProcessor
+    which raises HTTPError — letting the caller rewrite the URL and retry.
+    """
+    opener = urllib.request.OpenerDirector()
+    for cls in [
+        urllib.request.UnknownHandler,
+        urllib.request.HTTPHandler,
+        urllib.request.HTTPDefaultErrorHandler,
+        urllib.request.HTTPErrorProcessor,
+    ]:
+        opener.add_handler(cls())
+    return opener
+
+
+_NO_REDIRECT_OPENER = _make_no_redirect_opener()
+
+
 def stream_load(env: dict[str, str], database: str, table: str, csv_path: Path) -> None:
     host = require(env, "STARROCKS_HOST")
     http_port = int(env.get("STARROCKS_HTTP_PORT", "8030"))
+    be_http_port = int(env.get("STARROCKS_BE_HTTP_PORT", "8040"))
     scheme = env.get("STARROCKS_HTTP_SCHEME", "http")
     user = require(env, "STARROCKS_USER")
     password = env.get("STARROCKS_PASSWORD", "")
@@ -141,21 +175,28 @@ def stream_load(env: dict[str, str], database: str, table: str, csv_path: Path) 
         "Expect": "100-continue",
     }
     print(f"LOAD {database}.{table} <- {csv_path} ({csv_path.stat().st_size} bytes)")
-    data = csv_path.read_bytes()
-    req = urllib.request.Request(url, data=data, headers=headers, method="PUT")
-    try:
-        with urllib.request.urlopen(req, timeout=int(env.get("STARROCKS_HTTP_TIMEOUT", "300"))) as resp:
-            body = resp.read().decode("utf-8", errors="replace")
-    except urllib.error.HTTPError as err:
-        if err.code in (307, 308) and err.headers.get("Location"):
-            req = urllib.request.Request(err.headers["Location"], data=data, headers=headers, method="PUT")
-            with urllib.request.urlopen(req, timeout=int(env.get("STARROCKS_HTTP_TIMEOUT", "300"))) as resp:
+    timeout = int(env.get("STARROCKS_HTTP_TIMEOUT", "300"))
+    # Prefer curl: it handles Expect:100-continue + redirects reliably across environments.
+    # Fall back to urllib only when curl is not installed.
+    if shutil.which("curl"):
+        body = stream_load_with_curl(env, url, host, be_http_port, user, password, headers, csv_path, database, table, None)
+    else:
+        data = csv_path.read_bytes()
+        req = urllib.request.Request(url, data=data, headers=headers, method="PUT")
+        try:
+            with _NO_REDIRECT_OPENER.open(req, timeout=timeout) as resp:
                 body = resp.read().decode("utf-8", errors="replace")
-        else:
-            detail = err.read().decode("utf-8", errors="replace")
-            raise SystemExit(f"Stream load failed for {database}.{table}: HTTP {err.code}\n{detail}") from err
-    except (urllib.error.URLError, TimeoutError, ConnectionAbortedError, OSError) as err:
-        body = stream_load_with_curl(env, url, user, password, headers, csv_path, database, table, err)
+        except urllib.error.HTTPError as err:
+            if err.code in (307, 308) and err.headers.get("Location"):
+                redirect_url = _rewrite_redirect_url(err.headers["Location"], host, http_port, be_http_port)
+                req2 = urllib.request.Request(redirect_url, data=data, headers=headers, method="PUT")
+                with _NO_REDIRECT_OPENER.open(req2, timeout=timeout) as resp:
+                    body = resp.read().decode("utf-8", errors="replace")
+            else:
+                detail = err.read().decode("utf-8", errors="replace")
+                raise SystemExit(f"Stream load failed for {database}.{table}: HTTP {err.code}\n{detail}") from err
+        except (urllib.error.URLError, OSError) as err:
+            raise SystemExit(f"Stream load failed for {database}.{table}: {err}\nInstall curl for better compatibility.") from err
     result = json.loads(body)
     status = result.get("Status")
     if status not in ("Success", "Publish Timeout"):
@@ -166,17 +207,22 @@ def stream_load(env: dict[str, str], database: str, table: str, csv_path: Path) 
 def stream_load_with_curl(
     env: dict[str, str],
     url: str,
+    host: str,
+    be_http_port: int,
     user: str,
     password: str,
     headers: dict[str, str],
     csv_path: Path,
     database: str,
     table: str,
-    original_error: Exception,
+    original_error: Exception | None,
 ) -> str:
     curl = shutil.which("curl")
     if not curl:
-        raise SystemExit(f"Stream load failed for {database}.{table}: {original_error}") from original_error
+        msg = f"Stream load failed for {database}.{table}: curl not found"
+        if original_error:
+            msg += f" (urllib also failed: {original_error})"
+        raise SystemExit(msg) from original_error
     cmd = [
         curl,
         "--fail-with-body",
@@ -185,13 +231,20 @@ def stream_load_with_curl(
         "--show-error",
         "--max-time",
         env.get("STARROCKS_HTTP_TIMEOUT", "300"),
+    ]
+    # When connecting from a Windows host (localhost/127.0.0.1), Docker-internal BE
+    # hostnames are not resolvable — map them to localhost so curl can follow redirects.
+    # Inside Docker the hostname already resolves via Docker DNS, so skip --resolve.
+    if host in ("localhost", "127.0.0.1"):
+        cmd.extend(["--resolve", f"starrocks-be:{be_http_port}:127.0.0.1"])
+    cmd.extend([
         "-u",
         f"{user}:{password}",
         "-T",
         str(csv_path),
         "-X",
         "PUT",
-    ]
+    ])
     for key, value in headers.items():
         if key == "Authorization":
             continue
@@ -206,27 +259,50 @@ def stream_load_with_curl(
         ) from original_error
     return proc.stdout
 
-def import_csv(env: dict[str, str]) -> None:
+def refresh_materialized_views(env: dict[str, str]) -> None:
+    """Synchronously refresh all async materialized views after data load."""
     objects = schema_objects()
-    truncate = env.get("STARROCKS_TRUNCATE_BEFORE_LOAD", "true").lower() == "true"
+    mvs = [obj for obj in objects.values() if obj["kind"] == "materialized_view"]
+    if not mvs:
+        return
+    print(f"Refreshing {len(mvs)} materialized view(s)...")
+    with connect_mysql(env) as conn:
+        with conn.cursor() as cur:
+            for obj in mvs:
+                stmt = f"REFRESH MATERIALIZED VIEW `{obj['database']}`.`{obj['table']}`"
+                print(f"  {stmt}")
+                cur.execute(stmt)
+    print("Materialized view refresh complete.")
+
+
+def import_csv(env: dict[str, str], only_tables: set[str] | None = None, skip_truncate: bool = False) -> None:
+    objects = schema_objects()
+    truncate = (not skip_truncate) and env.get("STARROCKS_TRUNCATE_BEFORE_LOAD", "true").lower() == "true"
     loadable = [obj for obj in objects.values() if obj["kind"] == "table"]
     skipped = [obj for obj in objects.values() if obj["kind"] != "table"]
     if skipped:
         print("Skip non-loadable objects:", ", ".join(f"{x['database']}.{x['table']}({x['kind']})" for x in skipped))
+    if only_tables:
+        print(f"Filter: only loading {len(only_tables)} table(s): {', '.join(sorted(only_tables))}\n")
     if truncate:
         with connect_mysql(env) as conn:
             with conn.cursor() as cur:
                 for obj in loadable:
+                    if only_tables and obj["table"] not in only_tables:
+                        continue
                     csv_path = DATA_DIR / f"{obj['table']}.csv"
                     if csv_path.exists():
                         print(f"TRUNCATE {obj['database']}.{obj['table']}")
                         cur.execute(f"TRUNCATE TABLE `{obj['database']}`.`{obj['table']}`")
     for obj in loadable:
+        if only_tables and obj["table"] not in only_tables:
+            continue
         csv_path = DATA_DIR / f"{obj['table']}.csv"
         if not csv_path.exists():
             print(f"Skip missing CSV: {csv_path}")
             continue
         stream_load(env, obj["database"], obj["table"], csv_path)
+    refresh_materialized_views(env)
 
 
 def main() -> None:
@@ -234,12 +310,17 @@ def main() -> None:
     parser.add_argument("--env", default=str(ENV_PATH), help="Path to .env file")
     parser.add_argument("--skip-schema", action="store_true", help="Do not execute create schema SQL")
     parser.add_argument("--skip-load", action="store_true", help="Do not import CSV data")
+    parser.add_argument("--skip-truncate", action="store_true",
+                        help="Skip TRUNCATE before load (useful when resuming a failed run)")
+    parser.add_argument("--tables", nargs="+", metavar="TABLE",
+                        help="Only load these table(s) by name, e.g. --tables stg_vehicle_histories dim_device")
     args = parser.parse_args()
     env = load_env(Path(args.env))
     if not args.skip_schema:
         run_schema_sql(env)
     if not args.skip_load:
-        import_csv(env)
+        only = set(args.tables) if args.tables else None
+        import_csv(env, only_tables=only, skip_truncate=args.skip_truncate)
 
 
 if __name__ == "__main__":

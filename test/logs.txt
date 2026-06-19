@@ -1,0 +1,236 @@
+================================================================================
+WREN AI TEST LOGS
+URL: http://74.48.140.178:27668/home
+Tổng câu: 149 (Q001–Q149)
+Batches: 15 (batch_01 → batch_15)
+================================================================================
+
+FORMAT: Q{id} | PASS/FAIL | Response time | Ghi chú
+--------------------------------------------------------------------------------
+
+[BATCH 01 - Parking Cơ Bản | Ngày: __________ | Người test: __________]
+Q001 | PASS | 26.5s | SQL ok (175 chars) / type=TEXT_TO_SQL
+Q002 | PASS | 15.8s | SQL ok (243 chars) / type=TEXT_TO_SQL
+Q003 | PASS | 19.3s | SQL ok (842 chars) / type=TEXT_TO_SQL
+Q004 | PASS | 15.8s | SQL ok (344 chars) / type=TEXT_TO_SQL
+Q005 | PASS | 23.2s | SQL ok (522 chars) / type=TEXT_TO_SQL
+Q006 | FAIL | 5.2s | AI trả lời general, không sinh SQL
+Q007 | FAIL | 8.6s | AI trả lời general, không sinh SQL
+Q008 | PASS | 25.8s | SQL ok (298 chars) / type=TEXT_TO_SQL
+Q009 | PASS | 15.6s | SQL ok (235 chars) / type=TEXT_TO_SQL
+Q010 | PASS | 15.6s | SQL ok (342 chars) / type=TEXT_TO_SQL
+BATCH 01 SUMMARY: Pass= | Fail= | Rate=
+--------------------------------------------------------------------------------
+
+[BATCH 02 - Parking Nâng Cao | Ngày: __________ | Người test: __________]
+Q011 | FAIL | 4.8s | AI trả lời general, không sinh SQL
+Q012 | PASS | 13.1s | SQL ok (388 chars) / type=TEXT_TO_SQL
+Q013 | PASS | 8.4s | SQL ok (403 chars) / type=TEXT_TO_SQL
+Q014 | PASS | 13.4s | SQL ok (748 chars) / type=TEXT_TO_SQL
+Q015 | PASS | 15.7s | SQL ok (492 chars) / type=TEXT_TO_SQL
+Q016 | PASS | 15.5s | SQL ok (853 chars) / type=TEXT_TO_SQL
+Q017 | FAIL | 4.8s | AI trả lời general, không sinh SQL
+Q018 | PASS | 22.8s | SQL ok (529 chars) / type=TEXT_TO_SQL
+Q019 | PASS | 15.6s | SQL ok (722 chars) / type=TEXT_TO_SQL
+Q020 | PASS | 16.6s | SQL ok (743 chars) / type=TEXT_TO_SQL
+BATCH 02 SUMMARY: Pass= | Fail= | Rate=
+--------------------------------------------------------------------------------
+
+[BATCH 03 - Parking Phức Tạp + Device & Asset Cơ Bản | Ngày: __________ | Người test: __________]
+Q021 | PASS | 13.2s | SQL ok (807 chars) / type=TEXT_TO_SQL
+Q022 | PASS | 12.1s | SQL ok (458 chars) / type=TEXT_TO_SQL
+Q023 | FAIL | 8.9s | AI trả lời general, không sinh SQL
+Q024 | PASS | 22.9s | SQL ok (936 chars) / type=TEXT_TO_SQL
+Q025 | FAIL | 4.8s | AI trả lời general, không sinh SQL
+Q026 | FAIL | 15.1s | AI trả lời general, không sinh SQL
+Q027 | FAIL | 14.0s | AI trả lời general, không sinh SQL
+Q028 | PASS | 18.7s | SQL ok (142 chars) / type=TEXT_TO_SQL
+Q029 | PASS | 14.1s | SQL ok (106 chars) / type=TEXT_TO_SQL
+Q030 | PASS | 12.1s | SQL ok (127 chars) / type=TEXT_TO_SQL
+BATCH 03 SUMMARY: Pass= | Fail= | Rate=
+--------------------------------------------------------------------------------
+
+[BATCH 04 - Device & Asset Nâng Cao | Ngày: __________ | Người test: __________]
+Q031 | PASS | 8.4s | SQL ok (476 chars) / type=TEXT_TO_SQL
+Q032 | PASS | 13.0s | SQL ok (526 chars) / type=TEXT_TO_SQL
+Q033 | PASS | 12.0s | SQL ok (343 chars) / type=TEXT_TO_SQL
+Q034 | PASS | 16.0s | SQL ok (421 chars) / type=TEXT_TO_SQL
+Q035 | FAIL | 4.8s | AI trả lời general, không sinh SQL
+Q036 | PASS | 23.2s | SQL ok (291 chars) / type=TEXT_TO_SQL
+Q037 | PASS | 13.0s | SQL ok (443 chars) / type=TEXT_TO_SQL
+Q038 | PASS | 12.1s | SQL ok (351 chars) / type=TEXT_TO_SQL
+Q039 | PASS | 15.6s | SQL ok (454 chars) / type=TEXT_TO_SQL
+Q040 | PASS | 12.0s | SQL ok (405 chars) / type=TEXT_TO_SQL
+BATCH 04 SUMMARY: Pass= | Fail= | Rate=
+--------------------------------------------------------------------------------
+
+[BATCH 05 - Telemetry: Điện & Nước | Ngày: __________ | Người test: __________]
+Q041 | PASS | 15.6s | SQL ok (433 chars) / type=TEXT_TO_SQL
+Q042 | PASS | 15.6s | SQL ok (738 chars) / type=TEXT_TO_SQL
+Q043 | PASS | 12.0s | SQL ok (480 chars) / type=TEXT_TO_SQL
+Q044 | FAIL | 30.3s | FAILED / NO_RELEVANT_SQL: (1064, 'Getting analyzing error fr
+Q045 | FAIL | 8.4s | AI trả lời general, không sinh SQL
+Q046 | PASS | 19.2s | SQL ok (776 chars) / type=TEXT_TO_SQL
+Q047 | PASS | 21.2s | SQL ok (374 chars) / type=TEXT_TO_SQL
+Q048 | PASS | 15.6s | SQL ok (488 chars) / type=TEXT_TO_SQL
+Q049 | FAIL | 4.8s | AI trả lời general, không sinh SQL
+Q050 | PASS | 22.8s | SQL ok (511 chars) / type=TEXT_TO_SQL
+BATCH 05 SUMMARY: Pass= | Fail= | Rate=
+--------------------------------------------------------------------------------
+
+[BATCH 06 - Telemetry: Camera & NVR | Ngày: __________ | Người test: __________]
+Q051 | PASS | 12.0s | SQL ok (701 chars) / type=TEXT_TO_SQL
+Q052 | PASS | 15.6s | SQL ok (563 chars) / type=TEXT_TO_SQL
+Q053 | FAIL | 4.8s | AI trả lời general, không sinh SQL
+Q054 | FAIL | 40.8s | FAILED / NO_RELEVANT_SQL: Schema error: No field named t."de
+Q055 | PASS | 15.5s | SQL ok (864 chars) / type=TEXT_TO_SQL
+Q056 | FAIL | 4.8s | AI trả lời general, không sinh SQL
+Q057 | PASS | 22.8s | SQL ok (707 chars) / type=TEXT_TO_SQL
+Q058 | PASS | 12.0s | SQL ok (325 chars) / type=TEXT_TO_SQL
+Q059 | PASS | 15.7s | SQL ok (384 chars) / type=TEXT_TO_SQL
+Q060 | PASS | 20.6s | SQL ok (605 chars) / type=TEXT_TO_SQL
+BATCH 06 SUMMARY: Pass= | Fail= | Rate=
+--------------------------------------------------------------------------------
+
+[BATCH 07 - Telemetry: Chiller + DMP Status Cơ Bản | Ngày: __________ | Người test: __________]
+Q061 | PASS | 8.5s | SQL ok (311 chars) / type=TEXT_TO_SQL
+Q062 | PASS | 8.4s | SQL ok (418 chars) / type=TEXT_TO_SQL
+Q063 | FAIL | 8.4s | AI trả lời general, không sinh SQL
+Q064 | PASS | 19.1s | SQL ok (531 chars) / type=TEXT_TO_SQL
+Q065 | PASS | 15.6s | SQL ok (421 chars) / type=TEXT_TO_SQL
+Q066 | PASS | 12.0s | SQL ok (507 chars) / type=TEXT_TO_SQL
+Q067 | PASS | 15.7s | SQL ok (962 chars) / type=TEXT_TO_SQL
+Q068 | PASS | 12.0s | SQL ok (747 chars) / type=TEXT_TO_SQL
+Q069 | FAIL | 33.5s | FAILED / NO_RELEVANT_SQL: Schema error: No field named event
+Q070 | PASS | 15.7s | SQL ok (1477 chars) / type=TEXT_TO_SQL
+BATCH 07 SUMMARY: Pass= | Fail= | Rate=
+--------------------------------------------------------------------------------
+
+[BATCH 08 - DMP Status Nâng Cao + ISO §7.x & §10.x | Ngày: __________ | Người test: __________]
+Q071 | PASS | 12.1s | SQL ok (1128 chars) / type=TEXT_TO_SQL
+Q072 | PASS | 12.0s | SQL ok (749 chars) / type=TEXT_TO_SQL
+Q073 | PASS | 15.6s | SQL ok (686 chars) / type=TEXT_TO_SQL
+Q074 | FAIL | 4.8s | AI trả lời general, không sinh SQL
+Q075 | FAIL | 37.1s | FAILED / NO_RELEVANT_SQL: Schema error: No field named devic
+Q076 | PASS | 12.0s | SQL ok (138 chars) / type=TEXT_TO_SQL
+Q077 | PASS | 12.1s | SQL ok (129 chars) / type=TEXT_TO_SQL
+Q078 | PASS | 15.6s | SQL ok (231 chars) / type=TEXT_TO_SQL
+Q079 | PASS | 12.1s | SQL ok (680 chars) / type=TEXT_TO_SQL
+Q080 | FAIL | 8.4s | AI trả lời general, không sinh SQL
+BATCH 08 SUMMARY: Pass= | Fail= | Rate=
+--------------------------------------------------------------------------------
+
+[BATCH 09 - ISO 37122: §15.x, §18.x, §19.x | Ngày: __________ | Người test: __________]
+Q081 | PASS | 19.3s | SQL ok (112 chars) / type=TEXT_TO_SQL
+Q082 | FAIL | 8.4s | AI trả lời general, không sinh SQL
+Q083 | PASS | 19.3s | SQL ok (309 chars) / type=TEXT_TO_SQL
+Q084 | PASS | 15.6s | SQL ok (65 chars) / type=TEXT_TO_SQL
+Q085 | FAIL | 4.8s | AI trả lời general, không sinh SQL
+Q086 | PASS | 22.7s | SQL ok (346 chars) / type=TEXT_TO_SQL
+Q087 | PASS | 15.7s | SQL ok (636 chars) / type=TEXT_TO_SQL
+Q088 | PASS | 15.7s | SQL ok (722 chars) / type=TEXT_TO_SQL
+Q089 | PASS | 12.0s | SQL ok (338 chars) / type=TEXT_TO_SQL
+Q090 | PASS | 15.6s | SQL ok (2017 chars) / type=TEXT_TO_SQL
+BATCH 09 SUMMARY: Pass= | Fail= | Rate=
+--------------------------------------------------------------------------------
+
+[BATCH 10 - ISO 37122 Tổng Hợp + Cross-domain | Ngày: __________ | Người test: __________]
+Q091 | PASS | 8.4s | SQL ok (836 chars) / type=TEXT_TO_SQL
+Q092 | FAIL | 4.8s | AI trả lời general, không sinh SQL
+Q093 | PASS | 22.9s | SQL ok (1184 chars) / type=TEXT_TO_SQL
+Q094 | PASS | 12.0s | SQL ok (352 chars) / type=TEXT_TO_SQL
+Q095 | PASS | 12.0s | SQL ok (283 chars) / type=TEXT_TO_SQL
+Q096 | PASS | 15.6s | SQL ok (1352 chars) / type=TEXT_TO_SQL
+Q097 | PASS | 26.4s | SQL ok (592 chars) / type=TEXT_TO_SQL
+Q098 | PASS | 12.1s | SQL ok (1588 chars) / type=TEXT_TO_SQL
+Q099 | PASS | 12.0s | SQL ok (984 chars) / type=TEXT_TO_SQL
+Q100 | FAIL | 5.9s | AI trả lời general, không sinh SQL
+BATCH 10 SUMMARY: Pass= | Fail= | Rate=
+--------------------------------------------------------------------------------
+
+[BATCH 11 - SQL Pairs Bổ Sung: Parking & Device | Ngày: __________ | Người test: __________]
+Q101 | PASS | 22.8s | SQL ok (293 chars) / type=TEXT_TO_SQL
+Q102 | PASS | 16.6s | SQL ok (422 chars) / type=TEXT_TO_SQL
+Q103 | PASS | 37.3s | SQL ok (485 chars) / type=TEXT_TO_SQL
+Q104 | FAIL | 6.0s | AI trả lời general, không sinh SQL
+Q105 | FAIL | 23.5s | AI trả lời general, không sinh SQL
+Q106 | PASS | 19.2s | SQL ok (206 chars) / type=TEXT_TO_SQL
+Q107 | FAIL | 4.8s | AI trả lời general, không sinh SQL
+Q108 | PASS | 19.4s | SQL ok (518 chars) / type=TEXT_TO_SQL
+Q109 | FAIL | 8.4s | AI trả lời general, không sinh SQL
+Q110 | PASS | 26.6s | SQL ok (921 chars) / type=TEXT_TO_SQL
+BATCH 11 SUMMARY: Pass= | Fail= | Rate=
+--------------------------------------------------------------------------------
+
+[BATCH 12 - SQL Pairs Bổ Sung: Telemetry + AC-1 | Ngày: __________ | Người test: __________]
+Q111 | PASS | 19.1s | SQL ok (937 chars) / type=TEXT_TO_SQL
+Q112 | PASS | 13.0s | SQL ok (779 chars) / type=TEXT_TO_SQL
+Q113 | FAIL | 8.4s | AI trả lời general, không sinh SQL
+Q114 | FAIL | 12.1s | AI trả lời general, không sinh SQL
+Q115 | PASS | 26.5s | SQL ok (1120 chars) / type=TEXT_TO_SQL
+Q116 | PASS | 15.7s | SQL ok (596 chars) / type=TEXT_TO_SQL
+Q117 | PASS | 12.1s | SQL ok (668 chars) / type=TEXT_TO_SQL
+Q118 | PASS | 12.1s | SQL ok (284 chars) / type=TEXT_TO_SQL
+Q119 | PASS | 12.1s | SQL ok (288 chars) / type=TEXT_TO_SQL
+Q120 | PASS | 15.8s | SQL ok (558 chars) / type=TEXT_TO_SQL
+BATCH 12 SUMMARY: Pass= | Fail= | Rate=
+--------------------------------------------------------------------------------
+
+[BATCH 13 - AC.xlsx: Metric & Trend | Ngày: __________ | Người test: __________]
+Q121 | PASS | 8.4s | SQL ok (906 chars) / type=TEXT_TO_SQL
+Q122 | FAIL | 4.8s | AI trả lời general, không sinh SQL
+Q123 | PASS | 20.2s | SQL ok (591 chars) / type=TEXT_TO_SQL
+Q124 | PASS | 30.1s | SQL ok (1140 chars) / type=TEXT_TO_SQL
+Q125 | PASS | 13.0s | SQL ok (702 chars) / type=TEXT_TO_SQL
+Q126 | PASS | 12.0s | SQL ok (808 chars) / type=TEXT_TO_SQL
+Q127 | FAIL | 8.4s | AI trả lời general, không sinh SQL
+Q128 | FAIL | 12.1s | AI trả lời general, không sinh SQL
+Q129 | PASS | 19.3s | SQL ok (527 chars) / type=TEXT_TO_SQL
+Q130 | PASS | 15.8s | SQL ok (927 chars) / type=TEXT_TO_SQL
+BATCH 13 SUMMARY: Pass= | Fail= | Rate=
+--------------------------------------------------------------------------------
+
+[BATCH 14 - AC.xlsx: Status & Threshold | Ngày: __________ | Người test: __________]
+Q131 | PASS | 11.9s | SQL ok (809 chars) / type=TEXT_TO_SQL
+Q132 | PASS | 15.7s | SQL ok (1522 chars) / type=TEXT_TO_SQL
+Q133 | PASS | 11.9s | SQL ok (668 chars) / type=TEXT_TO_SQL
+Q134 | FAIL | 4.8s | AI trả lời general, không sinh SQL
+Q135 | PASS | 22.9s | SQL ok (516 chars) / type=TEXT_TO_SQL
+Q136 | FAIL | 4.8s | AI trả lời general, không sinh SQL
+Q137 | PASS | 22.8s | SQL ok (832 chars) / type=TEXT_TO_SQL
+Q138 | FAIL | 4.8s | AI trả lời general, không sinh SQL
+Q139 | FAIL | 15.6s | AI trả lời general, không sinh SQL
+Q140 | FAIL | 12.0s | AI trả lời general, không sinh SQL
+BATCH 14 SUMMARY: Pass= | Fail= | Rate=
+--------------------------------------------------------------------------------
+
+[BATCH 15 - AC.xlsx: Uptime, Multi-turn & Edge Cases | Ngày: __________ | Người test: __________]
+Q141 | FAIL | 37.1s | FAILED / NO_RELEVANT_SQL: Error during planning: Invalid fun
+Q142 | PASS | 12.0s | SQL ok (236 chars) / type=TEXT_TO_SQL
+Q143 | PASS | 22.8s | SQL ok (428 chars) / type=TEXT_TO_SQL
+Q144 | FAIL | 4.8s | AI trả lời general, không sinh SQL
+Q145 | FAIL | 8.4s | AI trả lời general, không sinh SQL  [Cần chạy sau Q124 trong cùng phiên]
+Q146 | FAIL | 8.4s | AI trả lời general, không sinh SQL  [Cần chạy sau Q130 trong cùng phiên]
+Q147 | PASS | 22.9s | SQL ok (1794 chars) / type=TEXT_TO_SQL  [Cần chạy sau ≥5 lượt kể từ Q120]
+Q148 | PASS | 4.8s | AI từ chối đúng / type=GENERAL  [Out-of-scope: không nên sinh SQL]
+Q149 | PASS | 14.3s | Hệ thống xử lý không crash / status=FINISHED type=GENERAL
+BATCH 15 SUMMARY: Pass= | Fail= | Rate=
+--------------------------------------------------------------------------------
+
+OVERALL SUMMARY
+================================================================================
+Total:    149
+Pass:      0
+Fail:      0
+Pass Rate:  0%
+--------------------------------------------------------------------------------
+Domain Breakdown:
+  Parking (Q001-Q025):            Pass= | Fail= | Rate=
+  Device & Asset (Q026-Q040):     Pass= | Fail= | Rate=
+  Telemetry (Q041-Q065):          Pass= | Fail= | Rate=
+  DMP Status (Q066-Q075):         Pass= | Fail= | Rate=
+  ISO 37122 (Q076-Q095):          Pass= | Fail= | Rate=
+  Cross-domain (Q096-Q100):       Pass= | Fail= | Rate=
+  SQL Pairs Bổ Sung (Q101-Q119):  Pass= | Fail= | Rate=
+  AC.xlsx (Q120-Q149):            Pass= | Fail= | Rate=
+================================================================================

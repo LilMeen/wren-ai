@@ -1,0 +1,292 @@
+relationships:
+  # ─────────────────────────────────────────────
+  # Device / asset profile (staging ↔ staging)
+  # ─────────────────────────────────────────────
+  - name: stg_dmp_devices_stg_dmp_device_profiles
+    models:
+      - stg_dmp_devices
+      - stg_dmp_device_profiles
+    join_type: MANY_TO_ONE
+    condition: stg_dmp_devices.device_profile_id = stg_dmp_device_profiles.device_profile_id
+    description: Joins each staging device record to its device profile via device_profile_id. Use this to enrich raw device data with type label, manufacturer specs, and configuration defaults. Required when filtering or grouping staging devices by device category or type.
+
+  - name: stg_dmp_assets_stg_dmp_asset_profiles
+    models:
+      - stg_dmp_assets
+      - stg_dmp_asset_profiles
+    join_type: MANY_TO_ONE
+    condition: stg_dmp_assets.asset_profile_id = stg_dmp_asset_profiles.asset_profile_id
+    description: Joins each staging asset record to its asset profile via asset_profile_id. Use this to enrich raw asset data with asset type, classification, and usage metadata. Required when filtering staging assets by category or when performing asset-type aggregations.
+
+  # ─────────────────────────────────────────────
+  # Staging relations ↔ staging devices / assets
+  # ─────────────────────────────────────────────
+  - name: stg_dmp_relations_stg_dmp_devices
+    models:
+      - stg_dmp_relations
+      - stg_dmp_devices
+    join_type: MANY_TO_ONE
+    condition: stg_dmp_relations.from_id = stg_dmp_devices.device_id
+    description: Joins device-to-asset relation records to the source device via from_id (where from_type = DEVICE). Use this to resolve which device initiated the relation and to access device attributes such as serial number and status during the raw-layer ETL validation.
+
+  - name: stg_dmp_relations_stg_dmp_assets
+    models:
+      - stg_dmp_relations
+      - stg_dmp_assets
+    join_type: MANY_TO_ONE
+    condition: stg_dmp_relations.to_id = stg_dmp_assets.asset_id
+    description: Joins device-to-asset relation records to the target asset via to_id (where to_type = ASSET). Use this to resolve which asset is paired with the device and to access asset metadata during staging-layer validation and reconciliation.
+
+  # ─────────────────────────────────────────────
+  # Golden dimension ↔ profile
+  # ─────────────────────────────────────────────
+  - name: dim_device_dim_device_profile
+    models:
+      - dim_device
+      - dim_device_profile
+    join_type: MANY_TO_ONE
+    condition: dim_device.device_profile_id = dim_device_profile.device_profile_id
+    description: Joins the golden device dimension to the device profile dimension via device_profile_id. Use this to enrich device analytics with profile attributes such as device type name, connectivity protocol, and hardware generation. Required for any analysis that segments or filters IoT devices by their type or capability class.
+
+  - name: dim_asset_dim_asset_profile
+    models:
+      - dim_asset
+      - dim_asset_profile
+    join_type: MANY_TO_ONE
+    condition: dim_asset.asset_profile_id = dim_asset_profile.asset_profile_id
+    description: Joins the golden asset dimension to the asset profile dimension via asset_profile_id. Use this to enrich asset analytics with profile attributes such as asset type name, capacity, and operational classification. Required for asset-type segmentation, capacity planning queries, and profile-based filtering.
+
+  # ─────────────────────────────────────────────
+  # Device-asset bridge (dim)
+  # ─────────────────────────────────────────────
+  - name: dim_device_asset_dim_device
+    models:
+      - dim_device_asset
+      - dim_device
+    join_type: MANY_TO_ONE
+    condition: dim_device_asset.device_id = dim_device.device_id
+    description: Joins the device-asset bridge table to the device master dimension via device_id. Use this to navigate from a device-asset pairing to full device attributes (serial number, status, profile). Required for device-centric analysis across the bridge, such as listing all assets assigned to a given device type.
+
+  - name: dim_device_asset_dim_asset
+    models:
+      - dim_device_asset
+      - dim_asset
+    join_type: MANY_TO_ONE
+    condition: dim_device_asset.asset_id = dim_asset.asset_id
+    description: Joins the device-asset bridge table to the asset master dimension via asset_id. Use this to navigate from a device-asset pairing to full asset attributes (name, location, profile). Required for asset-centric analysis across the bridge, such as finding all devices currently installed at a given asset.
+
+  # ─────────────────────────────────────────────
+  # Device-asset snapshot (SCD type-2)
+  # ─────────────────────────────────────────────
+  - name: dim_device_asset_snapshot_dim_device
+    models:
+      - dim_device_asset_snapshot
+      - dim_device
+    join_type: MANY_TO_ONE
+    condition: dim_device_asset_snapshot.device_id = dim_device.device_id
+    description: Joins SCD-2 device-asset snapshot records to the device master dimension via device_id. Use this for point-in-time historical lookups that need full device attributes at a past effective date. Required for auditing historical device assignments and reconstructing device state at any past moment.
+
+  - name: dim_device_asset_snapshot_dim_asset
+    models:
+      - dim_device_asset_snapshot
+      - dim_asset
+    join_type: MANY_TO_ONE
+    condition: dim_device_asset_snapshot.asset_id = dim_asset.asset_id
+    description: Joins SCD-2 device-asset snapshot records to the asset master dimension via asset_id. Use this for point-in-time historical lookups that need full asset attributes at a past effective date. Required for auditing which asset a device was assigned to at any given historical moment.
+
+  # ─────────────────────────────────────────────
+  # Fact: device-asset assignment
+  # ─────────────────────────────────────────────
+  - name: fct_device_asset_assignment_dim_device
+    models:
+      - fct_device_asset_assignment
+      - dim_device
+    join_type: MANY_TO_ONE
+    condition: fct_device_asset_assignment.device_id = dim_device.device_id
+    description: Joins device assignment event records to the device master dimension via device_id. Use this to enrich assignment facts with device attributes (type, serial number, status) for operational tracking. Required for queries that analyze assignment patterns by device type, manufacturer, or operational status.
+
+  - name: fct_device_asset_assignment_dim_asset
+    models:
+      - fct_device_asset_assignment
+      - dim_asset
+    join_type: MANY_TO_ONE
+    condition: fct_device_asset_assignment.asset_id = dim_asset.asset_id
+    description: Joins device assignment event records to the asset master dimension via asset_id. Use this to enrich assignment facts with asset attributes (name, location, category) for operational tracking. Required for queries that analyze which assets receive the most device assignments or the assignment duration per asset location.
+
+  # ─────────────────────────────────────────────
+  # Parking dimensions
+  # ─────────────────────────────────────────────
+  - name: dim_parking_lot_snapshot_dim_parking_lot
+    models:
+      - dim_parking_lot_snapshot
+      - dim_parking_lot
+    join_type: MANY_TO_ONE
+    condition: dim_parking_lot_snapshot.pk_lot_id = dim_parking_lot.pk_lot_id
+    description: Joins SCD-2 parking lot snapshot records to the current parking lot master dimension via pk_lot_id. Use this to combine historical snapshot states (capacity, zone changes) with current lot metadata (name, address). Required for time-series analysis of parking lot configuration changes and historical capacity trend reporting.
+
+  # ─────────────────────────────────────────────
+  # Staging: vehicle histories ↔ golden
+  # ─────────────────────────────────────────────
+  - name: stg_vehicle_histories_dim_parking_lot
+    models:
+      - stg_vehicle_histories
+      - dim_parking_lot
+    join_type: MANY_TO_ONE
+    condition: stg_vehicle_histories.pk_lot_id = dim_parking_lot.pk_lot_id
+    description: Joins raw staging vehicle history records to the parking lot dimension via pk_lot_id. Use this to enrich staging event data with lot name, address, and capacity for preliminary lot-level analysis before promotion to the golden layer. Required for staging-layer validation and QA queries that need lot context.
+
+  - name: stg_vehicle_histories_fct_vehicle_events
+    models:
+      - stg_vehicle_histories
+      - fct_vehicle_events
+    join_type: ONE_TO_ONE
+    condition: stg_vehicle_histories.event_id = fct_vehicle_events.event_id
+    description: Maps each staging vehicle history record 1:1 to its corresponding cleaned golden fact event via event_id. Use this to compare raw versus processed event data during ETL validation, or to trace how a specific raw event was transformed before landing in fct_vehicle_events.
+
+  # ─────────────────────────────────────────────
+  # Fact: vehicle events ↔ dims
+  # ─────────────────────────────────────────────
+  - name: fct_vehicle_events_dim_parking_lot
+    models:
+      - fct_vehicle_events
+      - dim_parking_lot
+    join_type: MANY_TO_ONE
+    condition: fct_vehicle_events.parking_lot_id = dim_parking_lot.pk_lot_id
+    description: Joins vehicle entry/exit events to the parking lot dimension via parking_lot_id. Use this to enrich event facts with lot name, address, zone, and total capacity. Required for lot-level occupancy analysis, revenue reporting by location, and vehicle throughput metrics per parking facility.
+
+  - name: fct_vehicle_events_dim_date_check_in
+    models:
+      - fct_vehicle_events
+      - dim_date
+    join_type: MANY_TO_ONE
+    condition: fct_vehicle_events.check_in_date_key = dim_date.date_key
+    description: Joins vehicle events to the date dimension on the check-in date key. Use this to analyze arrival patterns by calendar attributes such as day of week, month, public holiday flag, or fiscal period. Required for time-series demand forecasting and check-in volume trend analysis.
+
+  - name: fct_vehicle_events_dim_date_check_out
+    models:
+      - fct_vehicle_events
+      - dim_date
+    join_type: MANY_TO_ONE
+    condition: fct_vehicle_events.check_out_date_key = dim_date.date_key
+    description: Joins vehicle events to the date dimension on the check-out date key. Use this to analyze departure patterns by calendar attributes and to calculate duration-based metrics that span date boundaries (e.g. overnight stays). Required for stay-duration analysis and checkout volume trend reporting.
+
+  - name: fct_vehicle_events_dim_time_check_in
+    models:
+      - fct_vehicle_events
+      - dim_time
+    join_type: MANY_TO_ONE
+    condition: fct_vehicle_events.check_in_time_key = dim_time.time_key
+    description: Joins vehicle events to the time dimension on the check-in time key. Use this to analyze arrival patterns at hour or minute granularity (e.g. peak arrival hours, rush-hour demand). Required for intraday occupancy modeling and staffing optimization based on arrival time distributions.
+
+  - name: fct_vehicle_events_dim_time_check_out
+    models:
+      - fct_vehicle_events
+      - dim_time
+    join_type: MANY_TO_ONE
+    condition: fct_vehicle_events.check_out_time_key = dim_time.time_key
+    description: Joins vehicle events to the time dimension on the check-out time key. Use this to analyze departure patterns at hour or minute granularity and compute intraday occupancy release curves. Required for real-time space availability forecasting and peak-hour exit analysis.
+
+  # ─────────────────────────────────────────────
+  # Mart: parking occupancy ↔ dims
+  # ─────────────────────────────────────────────
+  - name: fct_parking_occupancy_dim_parking_lot
+    models:
+      - fct_parking_occupancy
+      - dim_parking_lot
+    join_type: MANY_TO_ONE
+    condition: fct_parking_occupancy.parking_lot_id = dim_parking_lot.pk_lot_id
+    description: Joins pre-aggregated hourly parking occupancy records to the parking lot dimension via parking_lot_id. Use this to enrich occupancy metrics with lot name, address, zone, and total capacity for dashboard reporting. The primary join for any occupancy KPI query that needs lot context (utilization rate, available spaces).
+
+  - name: fct_parking_occupancy_dim_date
+    models:
+      - fct_parking_occupancy
+      - dim_date
+    join_type: MANY_TO_ONE
+    condition: fct_parking_occupancy.occupancy_date_key = dim_date.date_key
+    description: Joins pre-aggregated hourly occupancy records to the date dimension via occupancy_date_key. Use this to slice occupancy metrics by calendar attributes (weekday vs weekend, holiday, month, season). Required for date-level aggregation, trend reporting, and occupancy forecasting by time period.
+
+  - name: fct_parking_occupancy_dim_time
+    models:
+      - fct_parking_occupancy
+      - dim_time
+    join_type: MANY_TO_ONE
+    condition: fct_parking_occupancy.occupancy_time_key = dim_time.time_key
+    description: Joins pre-aggregated hourly occupancy records to the time dimension via occupancy_time_key. Use this to slice occupancy metrics by hour of day, shift, or time block. Required for intraday occupancy heatmaps, peak-hour utilization analysis, and time-of-day pricing strategy reporting.
+
+  # ─────────────────────────────────────────────
+  # Telemetry / status ↔ dim_device
+  # ─────────────────────────────────────────────
+  - name: stg_dmp_device_status_events_dim_device
+    models:
+      - stg_dmp_device_status_events
+      - dim_device
+    join_type: MANY_TO_ONE
+    condition: stg_dmp_device_status_events.device_id = dim_device.device_id
+    description: Joins device connectivity and status event records to the device master dimension via device_id. Use this to enrich status events with device type, profile, and location attributes. Required for device health monitoring, downtime analysis, and SLA reporting by device category or installation site.
+
+  - name: stg_dmp_evt_connectivity_dim_device
+    models:
+      - stg_dmp_evt_connectivity
+      - dim_device
+    join_type: MANY_TO_ONE
+    condition: stg_dmp_evt_connectivity.deviceid = dim_device.device_id
+    description: Joins near-realtime device connectivity telemetry events to the device master dimension via deviceid. Use this to correlate connectivity state changes (online/offline transitions) with device type and location for SLA monitoring and connectivity reliability reporting.
+
+  - name: stg_mv_dmp_tlm_camera_dim_device
+    models:
+      - stg_mv_dmp_tlm_camera
+      - dim_device
+    join_type: MANY_TO_ONE
+    condition: stg_mv_dmp_tlm_camera.deviceId = dim_device.device_id
+    description: Joins the camera telemetry materialized view to the device master dimension via deviceId. Use this to enrich real-time camera readings (detection counts, motion flags) with device metadata such as installation location and camera model type. Required for camera-specific KPI analysis and anomaly detection by device context.
+
+  - name: stg_mv_dmp_tlm_chiller_dim_device
+    models:
+      - stg_mv_dmp_tlm_chiller
+      - dim_device
+    join_type: MANY_TO_ONE
+    condition: stg_mv_dmp_tlm_chiller.deviceId = dim_device.device_id
+    description: Joins the chiller telemetry materialized view to the device master dimension via deviceId. Use this to enrich real-time chiller sensor readings (temperature, pressure, power consumption) with device attributes such as installation zone and equipment profile. Required for energy efficiency monitoring and predictive maintenance analysis.
+
+  - name: stg_mv_dmp_tlm_energy_meter_dim_device
+    models:
+      - stg_mv_dmp_tlm_energy_meter
+      - dim_device
+    join_type: MANY_TO_ONE
+    condition: stg_mv_dmp_tlm_energy_meter.deviceId = dim_device.device_id
+    description: Joins the energy meter telemetry materialized view to the device master dimension via deviceId. Use this to enrich real-time energy consumption readings (kWh, kW, power factor) with device metadata such as meter location and circuit profile. Required for facility-level energy dashboards, cost allocation by zone, and carbon footprint reporting.
+
+  - name: stg_mv_dmp_tlm_nvr_dim_device
+    models:
+      - stg_mv_dmp_tlm_nvr
+      - dim_device
+    join_type: MANY_TO_ONE
+    condition: stg_mv_dmp_tlm_nvr.deviceId = dim_device.device_id
+    description: Joins the NVR (Network Video Recorder) telemetry materialized view to the device master dimension via deviceId. Use this to enrich real-time NVR status and recording metrics with device attributes such as recorder model and storage zone. Required for video surveillance health monitoring, storage utilization tracking, and incident-response reporting.
+
+  # ─────────────────────────────────────────────
+  # Raw layer ↔ dim_device / dim_parking_lot
+  # ─────────────────────────────────────────────
+  - name: raw_dmp_evt_connectivity_dim_device
+    models:
+      - raw_dmp_evt_connectivity
+      - dim_device
+    join_type: MANY_TO_ONE
+    condition: raw_dmp_evt_connectivity.deviceId = dim_device.device_id
+    description: Joins raw connectivity events to the device master dimension via deviceId. Use this to enrich raw connectivity heartbeats (qualityScore, icmpReachable, probeFailureReason) with device metadata such as device type, name, and profile. Required for raw-layer connectivity QA and debugging that needs device context beyond just the UUID.
+
+  - name: raw_dmp_tlm_raw_dim_device
+    models:
+      - raw_dmp_tlm_raw
+      - dim_device
+    join_type: MANY_TO_ONE
+    condition: raw_dmp_tlm_raw.deviceId = dim_device.device_id
+    description: Joins raw telemetry events (all device types) to the device master dimension via deviceId. Use this to enrich raw MQTT telemetry payloads with device metadata (type, name, profile) for cross-device type analysis or debugging. Required when querying raw_dmp_tlm_raw for ad-hoc telemetry exploration on device types without a dedicated materialized view.
+
+  - name: raw_parking_db_vehicle_histories_dim_parking_lot
+    models:
+      - raw_parking_db_vehicle_histories
+      - dim_parking_lot
+    join_type: MANY_TO_ONE
+    condition: raw_parking_db_vehicle_histories.pk_lot_id = dim_parking_lot.pk_lot_id
+    description: Joins raw parking vehicle history records to the parking lot dimension via pk_lot_id. Use this to enrich raw transaction data with lot name and area metadata. Required for raw-layer parking QA and ETL validation that needs lot context when diagnosing data quality issues before staging promotion.

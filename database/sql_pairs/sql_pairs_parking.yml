@@ -1,0 +1,478 @@
+sql_pairs:
+
+  - id: SP-PRK-01
+    question: "Tổng doanh thu hôm nay là bao nhiêu?"
+    sql: >
+      SELECT SUM(amount_due) AS revenue_vnd
+      FROM sdp_golden_fct_vehicle_events
+      WHERE history_state = 'COMPLETED'
+        AND check_out_date_key = CAST(DATE_FORMAT(NOW(), '%Y%m%d') AS INT)
+
+  - id: SP-PRK-02
+    question: "Doanh thu theo từng tháng trong năm 2026"
+    sql: >
+      SELECT d.year_month,
+             SUM(e.amount_due) AS revenue_vnd,
+             COUNT(*) AS transactions
+      FROM sdp_golden_fct_vehicle_events e
+      JOIN sdp_golden_dim_date d ON e.check_out_date_key = d.date_key
+      WHERE e.history_state = 'COMPLETED'
+        AND d.year = 2026
+      GROUP BY d.year_month
+      ORDER BY d.year_month
+
+  - id: SP-PRK-03
+    question: "Bãi xe nào có doanh thu cao nhất?"
+    sql: >
+      SELECT e.parking_lot_id,
+             l.pk_lot_name,
+             l.area_id,
+             SUM(e.amount_due) AS revenue_vnd,
+             COUNT(*) AS transactions
+      FROM sdp_golden_fct_vehicle_events e
+      JOIN sdp_golden_dim_parking_lot l ON e.parking_lot_id = l.pk_lot_id
+      WHERE e.history_state = 'COMPLETED'
+      GROUP BY e.parking_lot_id, l.pk_lot_name, l.area_id
+      ORDER BY revenue_vnd DESC
+      LIMIT 5
+
+  - id: SP-PRK-04
+    question: "So sánh doanh thu theo loại xe CAR, MOTORBIKE, TRUCK, EV"
+    sql: >
+      SELECT e.vehicle_type,
+             SUM(e.amount_due) AS revenue_vnd,
+             COUNT(*) AS transactions,
+             ROUND(AVG(e.amount_due), 0) AS avg_fee_vnd
+      FROM sdp_golden_fct_vehicle_events e
+      JOIN sdp_golden_dim_date d ON e.check_out_date_key = d.date_key
+      WHERE e.history_state = 'COMPLETED'
+        AND d.year = YEAR(NOW()) AND d.month = MONTH(NOW())
+      GROUP BY e.vehicle_type
+      ORDER BY revenue_vnd DESC
+
+  - id: SP-PRK-05
+    question: "Tỉ lệ phần trăm từng phương thức thanh toán?"
+    sql: >
+      SELECT payment_type,
+             COUNT(*) AS transactions,
+             ROUND(100.0 * COUNT(*) / t.total, 2) AS pct,
+             SUM(amount_due) AS revenue_vnd
+      FROM sdp_golden_fct_vehicle_events
+      CROSS JOIN (
+        SELECT COUNT(*) AS total
+        FROM sdp_golden_fct_vehicle_events
+        WHERE history_state = 'COMPLETED'
+          AND check_out_date_key >= CAST(DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 30 DAY), '%Y%m%d') AS INT)
+      ) t
+      WHERE history_state = 'COMPLETED'
+        AND check_out_date_key >= CAST(DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 30 DAY), '%Y%m%d') AS INT)
+      GROUP BY payment_type, t.total
+      ORDER BY transactions DESC
+
+  - id: SP-PRK-06
+    question: "Hiện có bao nhiêu xe đang đỗ tại từng bãi?"
+    sql: >
+      SELECT o.parking_lot_id,
+             l.pk_lot_name,
+             l.area_id,
+             SUM(o.current_occupancy) AS vehicles_parked
+      FROM sdp_mart_fct_parking_occupancy o
+      JOIN sdp_golden_dim_parking_lot l ON o.parking_lot_id = l.pk_lot_id
+      WHERE o.occupancy_hour = (
+        SELECT MAX(occupancy_hour) FROM sdp_mart_fct_parking_occupancy
+      )
+      GROUP BY o.parking_lot_id, l.pk_lot_name, l.area_id
+      ORDER BY vehicles_parked DESC
+
+  - id: SP-PRK-07
+    question: "Giờ cao điểm đỗ xe trong ngày là mấy giờ?"
+    sql: >
+      SELECT t.hour,
+             t.hour_label,
+             SUM(o.current_occupancy) AS total_vehicles
+      FROM sdp_mart_fct_parking_occupancy o
+      JOIN sdp_golden_dim_time t ON o.occupancy_time_key = t.time_key
+      WHERE o.occupancy_date = DATE_FORMAT(NOW(), '%Y-%m-%d')
+      GROUP BY t.hour, t.hour_label
+      ORDER BY total_vehicles DESC
+      LIMIT 5
+
+  - id: SP-PRK-08
+    question: "Occupancy hiện tại theo từng khu vực (area)?"
+    sql: >
+      SELECT l.area_id,
+             SUM(o.current_occupancy) AS vehicles_parked
+      FROM sdp_mart_fct_parking_occupancy o
+      JOIN sdp_golden_dim_parking_lot l ON o.parking_lot_id = l.pk_lot_id
+      WHERE o.occupancy_hour = (
+        SELECT MAX(occupancy_hour) FROM sdp_mart_fct_parking_occupancy
+      )
+      GROUP BY l.area_id
+      ORDER BY vehicles_parked DESC
+
+  - id: SP-PRK-09
+    question: "Thời gian đỗ xe trung bình theo loại xe?"
+    sql: >
+      SELECT e.vehicle_type,
+             ROUND(AVG(e.park_duration_ms / 60000.0), 1) AS avg_minutes,
+             ROUND(MIN(e.park_duration_ms / 60000.0), 1) AS min_minutes,
+             ROUND(MAX(e.park_duration_ms / 60000.0), 1) AS max_minutes,
+             COUNT(*) AS transactions
+      FROM sdp_golden_fct_vehicle_events e
+      JOIN sdp_golden_dim_date d ON e.check_out_date_key = d.date_key
+      WHERE e.history_state = 'COMPLETED'
+        AND e.check_out_at IS NOT NULL
+        AND d.year = YEAR(NOW()) AND d.month = MONTH(NOW())
+      GROUP BY e.vehicle_type
+      ORDER BY avg_minutes DESC
+
+  - id: SP-PRK-10
+    question: "Làn vào nào bận nhất trong tuần này?"
+    sql: >
+      SELECT e.lane_in_name,
+             e.entry_point_in_name,
+             COUNT(*) AS transactions
+      FROM sdp_golden_fct_vehicle_events e
+      JOIN sdp_golden_dim_date d ON e.check_in_date_key = d.date_key
+      WHERE e.history_state = 'COMPLETED'
+        AND d.year_week = DATE_FORMAT(NOW(), '%Y-W%v')
+      GROUP BY e.lane_in_name, e.entry_point_in_name
+      ORDER BY transactions DESC
+      LIMIT 5
+
+  - id: SP-PRK-11
+    question: "So sánh doanh thu giữa các loại xe trong 30 ngày qua"
+    sql: >
+      SELECT e.vehicle_type,
+             SUM(e.amount_due) AS revenue_vnd,
+             COUNT(*) AS transactions,
+             ROUND(AVG(e.amount_due), 0) AS avg_fee_vnd,
+             ROUND(100.0 * SUM(e.amount_due) / t.total_revenue, 2) AS revenue_pct
+      FROM sdp_golden_fct_vehicle_events e
+      CROSS JOIN (
+        SELECT SUM(amount_due) AS total_revenue
+        FROM sdp_golden_fct_vehicle_events
+        WHERE history_state = 'COMPLETED'
+          AND check_out_date_key >= CAST(DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 30 DAY), '%Y%m%d') AS INT)
+      ) t
+      WHERE e.history_state = 'COMPLETED'
+        AND e.check_out_date_key >= CAST(DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 30 DAY), '%Y%m%d') AS INT)
+      GROUP BY e.vehicle_type, t.total_revenue
+      ORDER BY revenue_vnd DESC
+
+  - id: SP-PRK-12
+    question: "Doanh thu 30 ngày qua theo loại xe là bao nhiêu?"
+    sql: >
+      SELECT e.vehicle_type,
+             SUM(e.amount_due) AS revenue_vnd,
+             COUNT(*) AS transactions,
+             ROUND(AVG(e.amount_due), 0) AS avg_fee_vnd
+      FROM sdp_golden_fct_vehicle_events e
+      WHERE e.history_state = 'COMPLETED'
+        AND e.check_out_date_key >= CAST(DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 30 DAY), '%Y%m%d') AS INT)
+      GROUP BY e.vehicle_type
+      ORDER BY revenue_vnd DESC
+
+  - id: SP-PRK-13
+    question: "So sánh lượng xe đang đỗ theo từng khu vực?"
+    sql: >
+      SELECT l.area_id,
+             SUM(o.current_occupancy) AS vehicles_parked,
+             ROUND(100.0 * SUM(o.current_occupancy) / t.total, 2) AS pct
+      FROM sdp_mart_fct_parking_occupancy o
+      JOIN sdp_golden_dim_parking_lot l ON o.parking_lot_id = l.pk_lot_id
+      CROSS JOIN (
+        SELECT SUM(o2.current_occupancy) AS total
+        FROM sdp_mart_fct_parking_occupancy o2
+        WHERE o2.occupancy_hour = (SELECT MAX(occupancy_hour) FROM sdp_mart_fct_parking_occupancy)
+      ) t
+      WHERE o.occupancy_hour = (SELECT MAX(occupancy_hour) FROM sdp_mart_fct_parking_occupancy)
+      GROUP BY l.area_id, t.total
+      ORDER BY vehicles_parked DESC
+
+  # ── PAYMENT BY PARKING LOT ────────────────────────────────────
+
+  - id: SP-PRK-15
+    question: "Doanh thu theo từng bãi xe hôm nay?"
+    sql: >
+      SELECT e.parking_lot_id,
+             l.pk_lot_name,
+             l.area_id,
+             SUM(e.amount_due) AS revenue_vnd,
+             COUNT(*) AS transactions
+      FROM sdp_golden_fct_vehicle_events e
+      JOIN sdp_golden_dim_parking_lot l ON e.parking_lot_id = l.pk_lot_id
+      WHERE e.history_state = 'COMPLETED'
+        AND e.check_out_date_key = CAST(DATE_FORMAT(NOW(), '%Y%m%d') AS INT)
+      GROUP BY e.parking_lot_id, l.pk_lot_name, l.area_id
+      ORDER BY revenue_vnd DESC
+
+  - id: SP-PRK-16
+    question: "Tỉ lệ phương thức thanh toán tại từng bãi xe tháng này?"
+    sql: >
+      SELECT e.parking_lot_id,
+             l.pk_lot_name,
+             e.payment_type,
+             COUNT(*) AS transactions,
+             SUM(e.amount_due) AS revenue_vnd
+      FROM sdp_golden_fct_vehicle_events e
+      JOIN sdp_golden_dim_parking_lot l ON e.parking_lot_id = l.pk_lot_id
+      JOIN sdp_golden_dim_date d ON e.check_out_date_key = d.date_key
+      WHERE e.history_state = 'COMPLETED'
+        AND d.year = YEAR(NOW()) AND d.month = MONTH(NOW())
+      GROUP BY e.parking_lot_id, l.pk_lot_name, e.payment_type
+      ORDER BY e.parking_lot_id, transactions DESC
+
+  - id: SP-PRK-17
+    question: "Bãi xe nào có nhiều giao dịch vé tháng (MONTHLY_PASS) nhất?"
+    sql: >
+      SELECT e.parking_lot_id,
+             l.pk_lot_name,
+             l.area_id,
+             COUNT(*) AS monthly_pass_count,
+             SUM(e.amount_due) AS revenue_vnd
+      FROM sdp_golden_fct_vehicle_events e
+      JOIN sdp_golden_dim_parking_lot l ON e.parking_lot_id = l.pk_lot_id
+      JOIN sdp_golden_dim_date d ON e.check_out_date_key = d.date_key
+      WHERE e.history_state = 'COMPLETED'
+        AND e.payment_type = 'MONTHLY_PASS'
+        AND d.year = YEAR(NOW()) AND d.month = MONTH(NOW())
+      GROUP BY e.parking_lot_id, l.pk_lot_name, l.area_id
+      ORDER BY monthly_pass_count DESC
+      LIMIT 5
+
+  - id: SP-PRK-18
+    question: "Doanh thu theo phương thức thanh toán tại từng khu vực tháng này?"
+    sql: >
+      SELECT l.area_id,
+             e.payment_type,
+             SUM(e.amount_due) AS revenue_vnd,
+             COUNT(*) AS transactions
+      FROM sdp_golden_fct_vehicle_events e
+      JOIN sdp_golden_dim_parking_lot l ON e.parking_lot_id = l.pk_lot_id
+      JOIN sdp_golden_dim_date d ON e.check_out_date_key = d.date_key
+      WHERE e.history_state = 'COMPLETED'
+        AND d.year = YEAR(NOW()) AND d.month = MONTH(NOW())
+      GROUP BY l.area_id, e.payment_type
+      ORDER BY l.area_id, revenue_vnd DESC
+
+  - id: SP-PRK-19
+    question: "Xu hướng doanh thu theo phương thức thanh toán trong 3 tháng gần nhất?"
+    sql: >
+      SELECT d.year_month,
+             e.payment_type,
+             SUM(e.amount_due) AS revenue_vnd,
+             COUNT(*) AS transactions
+      FROM sdp_golden_fct_vehicle_events e
+      JOIN sdp_golden_dim_date d ON e.check_out_date_key = d.date_key
+      WHERE e.history_state = 'COMPLETED'
+        AND e.check_out_date_key >= CAST(DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 3 MONTH), '%Y%m%d') AS INT)
+      GROUP BY d.year_month, e.payment_type
+      ORDER BY d.year_month, revenue_vnd DESC
+
+  # ── VEHICLE TYPE ───────────────────────────────────────────────
+
+  - id: SP-PRK-20
+    question: "Phân bố loại xe tại từng bãi xe hôm nay?"
+    sql: >
+      SELECT e.parking_lot_id,
+             l.pk_lot_name,
+             e.vehicle_type,
+             COUNT(*) AS transactions,
+             SUM(e.amount_due) AS revenue_vnd
+      FROM sdp_golden_fct_vehicle_events e
+      JOIN sdp_golden_dim_parking_lot l ON e.parking_lot_id = l.pk_lot_id
+      WHERE e.history_state = 'COMPLETED'
+        AND e.check_out_date_key = CAST(DATE_FORMAT(NOW(), '%Y%m%d') AS INT)
+      GROUP BY e.parking_lot_id, l.pk_lot_name, e.vehicle_type
+      ORDER BY e.parking_lot_id, transactions DESC
+
+  - id: SP-PRK-21
+    question: "Tỉ lệ từng loại xe trong tổng giao dịch tháng này?"
+    sql: >
+      SELECT e.vehicle_type,
+             COUNT(*) AS transactions,
+             SUM(e.amount_due) AS revenue_vnd,
+             ROUND(100.0 * COUNT(*) / t.total, 2) AS pct
+      FROM sdp_golden_fct_vehicle_events e
+      CROSS JOIN (
+        SELECT COUNT(*) AS total
+        FROM sdp_golden_fct_vehicle_events e2
+        JOIN sdp_golden_dim_date d2 ON e2.check_out_date_key = d2.date_key
+        WHERE e2.history_state = 'COMPLETED'
+          AND d2.year = YEAR(NOW()) AND d2.month = MONTH(NOW())
+      ) t
+      JOIN sdp_golden_dim_date d ON e.check_out_date_key = d.date_key
+      WHERE e.history_state = 'COMPLETED'
+        AND d.year = YEAR(NOW()) AND d.month = MONTH(NOW())
+      GROUP BY e.vehicle_type, t.total
+      ORDER BY transactions DESC
+
+  - id: SP-PRK-22
+    question: "Phí đỗ xe trung bình theo loại xe tháng này?"
+    sql: >
+      SELECT e.vehicle_type,
+             ROUND(AVG(e.amount_due), 0) AS avg_fee_vnd,
+             ROUND(MIN(e.amount_due), 0) AS min_fee_vnd,
+             ROUND(MAX(e.amount_due), 0) AS max_fee_vnd,
+             COUNT(*) AS transactions
+      FROM sdp_golden_fct_vehicle_events e
+      JOIN sdp_golden_dim_date d ON e.check_out_date_key = d.date_key
+      WHERE e.history_state = 'COMPLETED'
+        AND d.year = YEAR(NOW()) AND d.month = MONTH(NOW())
+      GROUP BY e.vehicle_type
+      ORDER BY avg_fee_vnd DESC
+
+  - id: SP-PRK-23
+    question: "Xu hướng số lượng xe theo loại trong 3 tháng gần nhất?"
+    sql: >
+      SELECT d.year_month,
+             e.vehicle_type,
+             COUNT(*) AS transactions,
+             SUM(e.amount_due) AS revenue_vnd
+      FROM sdp_golden_fct_vehicle_events e
+      JOIN sdp_golden_dim_date d ON e.check_out_date_key = d.date_key
+      WHERE e.history_state = 'COMPLETED'
+        AND e.check_out_date_key >= CAST(DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 3 MONTH), '%Y%m%d') AS INT)
+      GROUP BY d.year_month, e.vehicle_type
+      ORDER BY d.year_month, transactions DESC
+
+  - id: SP-PRK-24
+    question: "Bãi xe nào có nhiều xe TRUCK nhất tháng này?"
+    sql: >
+      SELECT e.parking_lot_id,
+             l.pk_lot_name,
+             l.area_id,
+             COUNT(*) AS truck_count,
+             SUM(e.amount_due) AS revenue_vnd
+      FROM sdp_golden_fct_vehicle_events e
+      JOIN sdp_golden_dim_parking_lot l ON e.parking_lot_id = l.pk_lot_id
+      JOIN sdp_golden_dim_date d ON e.check_out_date_key = d.date_key
+      WHERE e.history_state = 'COMPLETED'
+        AND e.vehicle_type = 'TRUCK'
+        AND d.year = YEAR(NOW()) AND d.month = MONTH(NOW())
+      GROUP BY e.parking_lot_id, l.pk_lot_name, l.area_id
+      ORDER BY truck_count DESC
+      LIMIT 5
+
+  - id: SP-PRK-25
+    question: "Doanh thu cuối tuần cao hơn ngày thường bao nhiêu %?"
+    sql: >
+      SELECT wknd.avg_vnd AS avg_weekend_vnd,
+             wkdy.avg_vnd AS avg_weekday_vnd,
+             ROUND((wknd.avg_vnd - wkdy.avg_vnd) / wkdy.avg_vnd * 100, 2) AS pct_diff
+      FROM (
+        SELECT ROUND(AVG(daily_rev), 0) AS avg_vnd
+        FROM (
+          SELECT e.check_out_date_key,
+                 SUM(e.amount_due) AS daily_rev
+          FROM sdp_golden_fct_vehicle_events e
+          JOIN sdp_golden_dim_date d ON e.check_out_date_key = d.date_key
+          WHERE e.history_state = 'COMPLETED'
+            AND e.check_out_date_key >= CAST(DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 30 DAY), '%Y%m%d') AS INT)
+            AND DAYOFWEEK(d.full_date) IN (1, 7)
+          GROUP BY e.check_out_date_key
+        ) sub
+      ) wknd,
+      (
+        SELECT ROUND(AVG(daily_rev), 0) AS avg_vnd
+        FROM (
+          SELECT e.check_out_date_key,
+                 SUM(e.amount_due) AS daily_rev
+          FROM sdp_golden_fct_vehicle_events e
+          JOIN sdp_golden_dim_date d ON e.check_out_date_key = d.date_key
+          WHERE e.history_state = 'COMPLETED'
+            AND e.check_out_date_key >= CAST(DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 30 DAY), '%Y%m%d') AS INT)
+            AND DAYOFWEEK(d.full_date) NOT IN (1, 7)
+          GROUP BY e.check_out_date_key
+        ) sub
+      ) wkdy
+
+  - id: SP-PRK-14
+    question: "So sánh doanh thu theo từng bãi xe tháng này?"
+    sql: >
+      SELECT l.pk_lot_name,
+             l.area_id,
+             SUM(e.amount_due) AS revenue_vnd,
+             COUNT(*) AS transactions,
+             ROUND(100.0 * SUM(e.amount_due) / t.total, 2) AS revenue_pct
+      FROM sdp_golden_fct_vehicle_events e
+      JOIN sdp_golden_dim_parking_lot l ON e.parking_lot_id = l.pk_lot_id
+      CROSS JOIN (
+        SELECT SUM(e2.amount_due) AS total
+        FROM sdp_golden_fct_vehicle_events e2
+        JOIN sdp_golden_dim_date d2 ON e2.check_out_date_key = d2.date_key
+        WHERE e2.history_state = 'COMPLETED'
+          AND d2.year = YEAR(NOW()) AND d2.month = MONTH(NOW())
+      ) t
+      JOIN sdp_golden_dim_date d ON e.check_out_date_key = d.date_key
+      WHERE e.history_state = 'COMPLETED'
+        AND d.year = YEAR(NOW()) AND d.month = MONTH(NOW())
+      GROUP BY l.pk_lot_name, l.area_id, t.total
+      ORDER BY revenue_vnd DESC
+
+  - id: SP-PRK-26
+    question: "Số lượt xe vào tuần này?"
+    sql: >
+      SELECT COUNT(*) AS vehicle_entries
+      FROM sdp_golden_fct_vehicle_events e
+      JOIN sdp_golden_dim_date d ON e.check_in_date_key = d.date_key
+      WHERE YEARWEEK(d.full_date) = YEARWEEK(CURRENT_DATE)
+
+  # ── LAST MONTH REVENUE ─────────────────────────────────────────
+
+  - id: SP-PRK-27
+    question: "Doanh thu tháng trước?"
+    sql: >
+      SELECT SUM(e.amount_due) AS revenue_vnd,
+             COUNT(*) AS transactions
+      FROM sdp_golden_fct_vehicle_events e
+      WHERE e.history_state = 'COMPLETED'
+        AND e.check_out_date_key >= CAST(DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 1 MONTH), '%Y%m01') AS INT)
+        AND e.check_out_date_key < CAST(DATE_FORMAT(NOW(), '%Y%m01') AS INT)
+
+  # ── TOP PARKING LOT BY REVENUE ────────────────────────────────
+
+  - id: SP-PRK-28
+    question: "Top bãi xe có doanh thu cao nhất tháng này?"
+    sql: >
+      SELECT l.pk_lot_name,
+             l.area_id,
+             SUM(e.amount_due) AS revenue_vnd,
+             COUNT(*) AS transactions
+      FROM sdp_golden_fct_vehicle_events e
+      JOIN sdp_golden_dim_parking_lot l ON e.parking_lot_id = l.pk_lot_id
+      JOIN sdp_golden_dim_date d ON e.check_out_date_key = d.date_key
+      WHERE e.history_state = 'COMPLETED'
+        AND d.year = YEAR(NOW()) AND d.month = MONTH(NOW())
+      GROUP BY l.pk_lot_name, l.area_id
+      ORDER BY revenue_vnd DESC
+      LIMIT 5
+
+  # ── RAW PARKING DATA (QA / debugging) ────────────────────
+
+  - id: SP-PRK-29
+    question: "Có bao nhiêu giao dịch raw chưa được xử lý (history_state != COMPLETED)?"
+    sql: >
+      SELECT history_state,
+             COUNT(*) AS transaction_count,
+             MIN(check_in_at) AS earliest,
+             MAX(check_out_at) AS latest
+      FROM sdp_raw_raw_parking_db_vehicle_histories
+      WHERE history_state != 'COMPLETED'
+        AND processing_day >= DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 7 DAY), '%Y-%m-%d')
+      GROUP BY history_state
+      ORDER BY transaction_count DESC
+
+  - id: SP-PRK-30
+    question: "Dữ liệu raw bãi xe nào có nhiều giao dịch nhất hôm nay?"
+    sql: >
+      SELECT pk_lot_id,
+             pk_lot_name,
+             COUNT(*) AS raw_transactions,
+             SUM(CASE WHEN history_state = 'COMPLETED' THEN 1 ELSE 0 END) AS completed,
+             SUM(CASE WHEN history_state != 'COMPLETED' THEN 1 ELSE 0 END) AS pending_or_error
+      FROM sdp_raw_raw_parking_db_vehicle_histories
+      WHERE processing_day = DATE_FORMAT(NOW(), '%Y-%m-%d')
+      GROUP BY pk_lot_id, pk_lot_name
+      ORDER BY raw_transactions DESC

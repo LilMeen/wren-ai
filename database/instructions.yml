@@ -1,0 +1,958 @@
+
+instructions:
+
+  # ──────────────────────────────────────────────────────────────
+  # GLOBAL — luôn apply cho mọi query
+  # ──────────────────────────────────────────────────────────────
+
+  - name: preferred_golden_tables
+    isDefault: true
+    instruction: >
+      Always use golden-layer tables for analysis, not raw or staging tables.
+      Use `dim_device` instead of `stg_dmp_devices`.
+      Use `dim_asset` instead of `stg_dmp_assets`.
+      Use `dim_device_asset` instead of `stg_dmp_relations`.
+      Use `dim_device_profile` instead of `stg_dmp_device_profiles`.
+      Use `dim_asset_profile` instead of `stg_dmp_asset_profiles`.
+      Staging tables (`stg_dmp_*`) are for ETL debugging and lineage only — do not use them for business analysis.
+    questions:
+      - "Danh sách thiết bị trong hệ thống?"
+      - "Có bao nhiêu loại asset?"
+      - "Danh sách tất cả thiết bị theo profile?"
+
+  - name: domain_isolation
+    isDefault: true
+    instruction: >
+      The parking domain is completely independent from the IoT/device domain.
+      Parking tables (`fct_vehicle_events`, `fct_parking_occupancy`, `dim_parking_lot`)
+      have NO join relationship with device tables (`dim_device`, `dim_asset`, `dim_device_asset`).
+      Do not attempt to join parking tables with device or asset tables.
+    questions:
+      - "Camera nào tại bãi xe LOT_001?"
+      - "Thiết bị nào đang quản lý bãi đỗ xe?"
+
+  # ──────────────────────────────────────────────────────────────
+  # PARKING — revenue, occupancy, dwell time
+  # ──────────────────────────────────────────────────────────────
+
+  - name: revenue_filter
+    isDefault: true
+    instruction: >
+      When calculating revenue (SUM of `amount_due`), counting parking transactions,
+      or analyzing payment data from `fct_vehicle_events`:
+      1. Always add `WHERE history_state = 'COMPLETED'` — excludes incomplete or erroneous transactions.
+      2. For DATE FILTERING, always use `check_out_date_key` (NOT `check_in_date_key`).
+         Revenue is collected at checkout (when the vehicle exits and pays).
+         A vehicle may check in on day X but check out and pay on day X+1 — the revenue belongs to X+1.
+         Example — revenue on a specific date: `WHERE history_state = 'COMPLETED' AND check_out_date_key = 20260601`
+         Example — revenue today: `WHERE history_state = 'COMPLETED' AND check_out_date_key = CAST(DATE_FORMAT(NOW(), '%Y%m%d') AS INT)`
+      3. When joining with `dim_date` for month/year grouping, join on `check_out_date_key`:
+         `JOIN sdp_golden_dim_date d ON e.check_out_date_key = d.date_key`
+    questions:
+      - "Tổng doanh thu hôm nay là bao nhiêu?"
+      - "Doanh thu ngày 1/6?"
+      - "Doanh thu theo tháng?"
+      - "Bãi xe nào doanh thu cao nhất?"
+      - "Tỉ lệ thanh toán tiền mặt, thẻ, ví điện tử?"
+      - "Số lượng giao dịch hôm nay?"
+
+  - name: parking_occupancy_table
+    isDefault: true
+    instruction: >
+      For questions about current occupancy (number of vehicles currently parked),
+      peak hours, or hourly occupancy trends, always use `sdp_mart_fct_parking_occupancy`
+      — NOT `fct_vehicle_events`.
+      `fct_parking_occupancy` is pre-aggregated by hour × lot × vehicle type and is faster and more accurate.
+      To get the latest snapshot: `WHERE occupancy_hour = (SELECT MAX(occupancy_hour) FROM sdp_mart_fct_parking_occupancy)`.
+      `current_occupancy` = net vehicle count in the lot at that hour.
+    questions:
+      - "Hiện có bao nhiêu xe đang đỗ?"
+      - "Bãi nào đang có nhiều xe nhất?"
+      - "Giờ cao điểm đỗ xe là mấy giờ?"
+      - "Occupancy hiện tại theo khu vực?"
+
+  - name: dwell_time_formula
+    isDefault: true
+    instruction: >
+      Dwell time (parking duration) is stored as `park_duration_ms` in milliseconds.
+      To convert to minutes: `park_duration_ms / 60000.0`.
+      Only calculate dwell time for completed, checked-out transactions:
+      always add `WHERE history_state = 'COMPLETED' AND check_out_at IS NOT NULL`.
+      Vehicles still parked have `check_out_at = NULL` and should be excluded from duration calculations.
+    questions:
+      - "Thời gian đỗ xe trung bình?"
+      - "Xe nào đỗ lâu nhất?"
+      - "Phân bố thời gian đỗ xe theo loại xe?"
+
+  - name: vehicle_payment_enums
+    isDefault: true
+    instruction: >
+      In `fct_vehicle_events`, all enum values are case-sensitive.
+      `vehicle_type` valid values: `CAR`, `MOTORBIKE`, `TRUCK`, `EV` (all uppercase).
+      `payment_type` valid values: `CASH`, `CARD`, `E_WALLET`, `MONTHLY_PASS`.
+      `service_category` valid values: `STANDARD`, `VIP`, `STAFF`.
+      `open_mode_in` / `open_mode_out`: `AUTO`, `MANUAL`.
+      Always use exact uppercase values when filtering these columns.
+    questions:
+      - "Doanh thu theo loại xe?"
+      - "Bao nhiêu xe CAR vào hôm nay?"
+      - "Tỉ lệ xe điện (EV) trong tuần?"
+      - "Phân bố loại phương thức thanh toán?"
+
+  - name: date_key_format
+    isDefault: true
+    instruction: >
+      Date key columns (`check_in_date_key`, `check_out_date_key`, `occupancy_date_key`) are
+      integers in YYYYMMDD format (e.g., 20260601 for June 1, 2026).
+      CORRECT conversion to date_key integer: CAST(DATE_FORMAT(NOW(), '%Y%m%d') AS INT)
+      WRONG: CAST(CAST(DATE_SUB(NOW(), INTERVAL 30 DAY) AS CHAR) AS INT) — this gives 2026, not 20260513.
+      NEVER use CAST(... AS SIGNED) — DataFusion does not support the SIGNED keyword (causes "Unsupported SQL type SIGNED" error).
+      For "today": CAST(DATE_FORMAT(NOW(), '%Y%m%d') AS SIGNED)
+      For "30 ngày qua": JOIN sdp_golden_dim_date d ON e.check_out_date_key = d.date_key WHERE d.full_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+      For a specific date: check_out_date_key = 20260601
+      For month/year filter: ALWAYS join with dim_date and use dim_date.year, dim_date.month — do NOT try to convert dates to integer inline.
+      Time key columns are VARCHAR HHMM format (e.g., '0830').
+    questions:
+      - "Doanh thu hôm nay?"
+      - "Giao dịch tuần này?"
+      - "Báo cáo tháng 6 năm 2026?"
+      - "Doanh thu 30 ngày qua?"
+
+  - name: parking_lot_structure
+    isDefault: false
+    instruction: >
+      The parking system has 40 lots (`LOT_001` to `LOT_040`) across 20 areas (`AREA_01` to `AREA_20`).
+      Each area contains exactly 2 lots.
+      Use `dim_parking_lot` for lot names, area grouping, and lot metadata.
+      `dim_parking_lot.pk_lot_id` is the join key from fact tables (`parking_lot_id`).
+      Note: `dim_parking_lot` does NOT have a `total_capacity` column —
+      utilization rate (occupancy / capacity %) cannot be calculated directly.
+    questions:
+      - "Danh sách tất cả bãi xe?"
+      - "Bao nhiêu bãi trong khu vực AREA_01?"
+      - "Tỉ lệ lấp đầy bãi xe?"
+
+  - name: scd_parking_snapshot
+    isDefault: false
+    instruction: >
+      `dim_parking_lot_snapshot` is an SCD Type-2 table (slowly changing dimension).
+      It keeps historical records of parking lot name and area changes.
+      For current (active) records only, always filter: `WHERE dbt_valid_to IS NULL`.
+      For point-in-time queries (what was the lot name on date X), filter by date range on `dbt_valid_from` and `dbt_valid_to`.
+      For most analysis, use `dim_parking_lot` (current state only, no filter needed).
+    questions:
+      - "Lịch sử đổi tên bãi xe?"
+      - "Tên bãi LOT_001 vào ngày 2026-01-01 là gì?"
+
+  # ──────────────────────────────────────────────────────────────
+  # DEVICE / ASSET — golden layer, SCD, hierarchy
+  # ──────────────────────────────────────────────────────────────
+
+  - name: device_type_filter
+    isDefault: true
+    instruction: >
+      `dim_device.device_type` has 35+ distinct values (free-text from ThingsBoard).
+      Always use LIKE patterns to filter by device category — do not hardcode exact values.
+      Camera: `device_type LIKE '%Camera%'`.
+      Chiller: `device_type LIKE '%chiller%' OR device_type LIKE '%Chiller%'`.
+      NVR (Network Video Recorder): `device_type LIKE '%NVR%'`.
+      Energy meter: `device_type LIKE '%energy%' OR device_type LIKE '%Energy%' OR device_type LIKE '%meter%'`.
+      CO2 sensor: `device_type LIKE '%co2%' OR device_type LIKE '%CO2%'`.
+    questions:
+      - "Hệ thống có bao nhiêu camera?"
+      - "Đếm thiết bị theo loại?"
+      - "Danh sách chiller trong hệ thống?"
+      - "Có bao nhiêu đồng hồ điện?"
+
+  - name: device_asset_table_choice
+    isDefault: true
+    instruction: >
+      Use the correct device-asset table based on the question type:
+      - Current state (where is device X now?): use `dim_device_asset` — it's pre-filtered to active assignments, fully denormalized (no extra joins needed).
+      - Historical/point-in-time (where was device X on date Y?): use `dim_device_asset_snapshot` with `WHERE dbt_valid_from <= 'Y' AND (dbt_valid_to IS NULL OR dbt_valid_to > 'Y')`.
+      - `dim_device_asset` is denormalized: it already contains both device and asset attributes — no extra join to `dim_device` or `dim_asset` is needed.
+    questions:
+      - "Device X đang ở vị trí nào?"
+      - "Thiết bị nào đang gắn tại tòa nhà BUILDING_001?"
+      - "Device X đã ở đâu vào ngày 2026-01-01?"
+
+  - name: scd_active_filter
+    isDefault: true
+    instruction: >
+      `dim_device_asset_snapshot` is an SCD Type-2 table.
+      For current (active) records only, always add: `WHERE dbt_valid_to IS NULL`.
+      Old/expired records remain in the table with a non-null `dbt_valid_to`.
+      For current-state device-asset queries, prefer `dim_device_asset` (already current-state) over `dim_device_asset_snapshot` to avoid the SCD filter.
+    questions:
+      - "Thiết bị nào đang active?"
+      - "Lịch sử gán thiết bị cho asset?"
+
+  - name: asset_type_casing
+    isDefault: true
+    instruction: >
+      Asset type values in `dim_asset.asset_type` are all lowercase:
+      `building`, `floor`, `zone`, `parking`, `equipment`.
+      The hierarchy top-to-bottom is: building → floor → zone → parking → equipment.
+      Always use lowercase when filtering `asset_type`.
+      Example: `WHERE asset_type = 'building'` (not 'Building' or 'BUILDING').
+    questions:
+      - "Có bao nhiêu tòa nhà?"
+      - "Danh sách các tầng?"
+      - "Thiết bị theo loại asset?"
+
+  # ──────────────────────────────────────────────────────────────
+  # TELEMETRY — IoT sensor data
+  # ──────────────────────────────────────────────────────────────
+
+  - name: telemetry_join_key
+    isDefault: true
+    instruction: >
+      All telemetry tables (`sdp_near_realtime_stg_mv_dmp_tlm_camera`,
+      `sdp_near_realtime_stg_mv_dmp_tlm_chiller`,
+      `sdp_near_realtime_stg_mv_dmp_tlm_energy_meter`,
+      `sdp_near_realtime_stg_mv_dmp_tlm_nvr`)
+      use the camelCase column `deviceId` (not `device_id`) as the join key.
+      Always join to `dim_device` using: `ON telemetry.deviceId = dim_device.device_id`.
+      This camelCase naming is unique to telemetry tables — all other tables use `device_id`.
+      ALIAS RULE: Use `e` for energy_meter, `c` for camera or chiller, `n` for NVR.
+      Use `d` or `dev` ONLY for `dim_device`. NEVER alias a telemetry table as `d` —
+      that table has `deviceId` not `device_id`, so `d.device_id` will fail with schema error.
+      Correct: `FROM stg_mv_dmp_tlm_energy_meter e JOIN dim_device d ON e.deviceId = d.device_id`
+      Wrong: `FROM stg_mv_dmp_tlm_energy_meter d JOIN dim_device dev ON d.deviceId = dev.device_id`
+      (then `d.device_id` in GROUP BY/WHERE would fail — energy_meter has `deviceId` not `device_id`)
+    questions:
+      - "Tiêu thụ điện của từng thiết bị?"
+      - "Camera nào có CPU cao nhất?"
+      - "NVR nào có uptime thấp?"
+      - "Chiller nào đang fault?"
+
+  - name: telemetry_time_filter
+    isDefault: true
+    instruction: >
+      In telemetry tables, always use `tsDt` (TIMESTAMP column) for time-based filtering,
+      not `ts` (which is Unix epoch in milliseconds and harder to use).
+      Examples:
+      - Last 1 hour: `WHERE tsDt >= DATE_SUB(NOW(), INTERVAL 1 HOUR)`
+      - This month: `WHERE DATE_FORMAT(tsDt, '%Y-%m') = DATE_FORMAT(NOW(), '%Y-%m')`
+      - Date range: `WHERE tsDt BETWEEN '2026-06-01' AND '2026-06-30'`
+    questions:
+      - "Dữ liệu telemetry 1 giờ gần nhất?"
+      - "Tiêu thụ điện tháng này?"
+      - "Lỗi chiller trong 24 giờ qua?"
+
+  - name: energy_meter_formula
+    isDefault: true
+    instruction: >
+      `energy_active_kwh_total` and `water_volume_m3_total` in the energy meter telemetry table
+      are cumulative counters (total from device start) — they never reset.
+      To calculate energy consumption for a time period, use:
+      `MAX(energy_active_kwh_total) - MIN(energy_active_kwh_total)` within the GROUP BY and WHERE clause.
+      Do NOT use SUM() or AVG() on these columns for period consumption.
+      `power_active_kw` (instantaneous power) is NOT cumulative — use it directly for current power readings.
+    questions:
+      - "Tiêu thụ điện tháng này?"
+      - "Đồng hồ điện nào tiêu thụ nhiều nhất?"
+      - "Tổng điện năng tiêu thụ từ đầu năm?"
+      - "Tiêu thụ nước tháng 6?"
+
+  - name: telemetry_latest_record
+    isDefault: false
+    instruction: >
+      To get the most recent telemetry reading per device, use a subquery pattern:
+      `INNER JOIN (SELECT deviceId, MAX(tsDt) AS latest FROM <table> GROUP BY deviceId) latest
+       ON t.deviceId = latest.deviceId AND t.tsDt = latest.latest`
+      This ensures one row per device with the most recent data.
+      Alternatively, filter by a specific timestamp window when "current" is implied.
+    questions:
+      - "Trạng thái hiện tại của từng camera?"
+      - "CPU usage hiện tại của NVR?"
+      - "Chiller nào đang chạy ngay bây giờ?"
+
+  - name: chiller_boolean_filter
+    isDefault: true
+    instruction: >
+      In `stg_mv_dmp_tlm_chiller`, boolean columns (`fault`, `chiller_state`, `mode`,
+      `return_valve_open_limit`, `supply_valve_open_limit`, `supply_valve_close_limit`)
+      are stored as integers (TINYINT): `1` = true, `0` = false.
+      Always use integer comparisons: `WHERE fault = 1` (not `fault = true`).
+      Example: to find chillers with faults: `WHERE fault = 1`.
+      Example: to find running chillers: `WHERE chiller_state = 1`.
+    questions:
+      - "Chiller nào đang báo lỗi?"
+      - "Chiller nào đang hoạt động?"
+      - "Danh sách chiller fault trong 1 giờ qua?"
+
+  # ──────────────────────────────────────────────────────────────
+  # DMP — device status events
+  # ──────────────────────────────────────────────────────────────
+
+  - name: device_status_filter
+    isDefault: true
+    instruction: >
+      When counting device disconnections or status changes from `stg_dmp_device_status_events`,
+      always filter `WHERE event_type = 'STATUS_CHANGE'` to exclude periodic heartbeat events.
+      `STATUS_HEARTBEAT` events fire regularly even when status has not changed — they inflate counts.
+      Use `is_online` (boolean shortcut column) instead of `current_status = 'ONLINE'` for brevity.
+      To get the current status per device, find the latest event: use `MAX(event_time)` per `device_id`.
+      CAMERA ONLINE RATE BY BUILDING: ALWAYS use `stg_dmp_device_status_events` which has `current_status` column.
+      NEVER use `raw_dmp_evt_connectivity` for online/offline status analysis — it has `status` column but lacks `current_status` and `is_online`.
+      Join chain: stg_dmp_device_status_events → dim_device (device_id) → dim_device_asset (device_id).
+      IMPORTANT: `dim_device_asset` has NO dbt_valid_to/dbt_valid_from/dbt_scd_id. Those SCD columns only exist on `dim_device_asset_snapshot`.
+    questions:
+      - "Thiết bị nào đang OFFLINE?"
+      - "Thiết bị mất kết nối nhiều nhất hôm nay?"
+      - "Tỉ lệ thiết bị online theo loại?"
+      - "Lịch sử mất kết nối thiết bị X?"
+      - "Tỉ lệ online của camera theo từng tòa nhà?"
+      - "Tỷ lệ thiết bị đang hoạt động (uptime) toàn hệ thống?"
+
+  # ──────────────────────────────────────────────────────────────
+  # DEFAULTS — xử lý câu hỏi mơ hồ (ambiguity resolution)
+  # ──────────────────────────────────────────────────────────────
+
+  - name: parking_date_column_choice
+    isDefault: true
+    instruction: >
+      PARKING DATE COLUMN RULES — use the correct date key depending on what you are measuring:
+      - REVENUE / PAYMENT / CHECKOUT-based queries → filter on `check_out_date_key`.
+        Revenue is collected when the vehicle exits. A vehicle that checks in on day X and
+        checks out on day X+1 has revenue attributed to day X+1.
+        Examples: doanh thu ngày X, tổng doanh thu hôm nay, doanh thu tháng Y →
+          WHERE check_out_date_key = 20260601
+          JOIN dim_date ON check_out_date_key = dim_date.date_key
+      - ENTRY / VOLUME / TRAFFIC-based queries → filter on `check_in_date_key`.
+        Counts how many vehicles entered on a given day.
+        Examples: số lượt xe vào ngày X, số xe check-in hôm nay →
+          WHERE check_in_date_key = 20260601
+      - DWELL TIME queries → filter on `check_out_date_key` (only completed exits have duration).
+      Rule: when the question mentions "doanh thu", "thanh toán", "giao dịch hoàn thành" → check_out_date_key.
+      When the question mentions "lượt vào", "xe vào", "check-in" → check_in_date_key.
+    questions:
+      - "Tổng doanh thu ngày 1/6?"
+      - "Doanh thu hôm nay?"
+      - "Doanh thu theo tháng?"
+      - "Số xe vào cổng hôm nay?"
+      - "Bao nhiêu lượt xe vào ngày 1/6?"
+
+  - name: time_period_resolution
+    isDefault: true
+    instruction: >
+      TIME PERIOD MAPPING — "tháng này" ≠ "30 ngày qua":
+      "Hôm nay" → date_key = CAST(DATE_FORMAT(NOW(),'%Y%m%d') AS INT)
+      "Hôm qua" → date_key = CAST(DATE_FORMAT(DATE_SUB(NOW(),INTERVAL 1 DAY),'%Y%m%d') AS INT)
+      "Tuần này" → YEARWEEK(ts,1) = YEARWEEK(NOW(),1) [Monday-based, not rolling 7 days]
+      "7 ngày qua" → ts >= DATE_SUB(NOW(), INTERVAL 7 DAY) [rolling]
+      "Tuần trước" → YEARWEEK(ts,1) = YEARWEEK(DATE_SUB(NOW(),INTERVAL 7 DAY),1)
+      "Tháng này" → YEAR(ts)=YEAR(NOW()) AND MONTH(ts)=MONTH(NOW()) [calendar month from 1st]
+      "30 ngày qua" → ts >= DATE_SUB(NOW(), INTERVAL 30 DAY) [rolling, default for METRIC]
+      "Tháng trước" → YEAR(ts)=YEAR(DATE_SUB(NOW(),INTERVAL 1 MONTH)) AND MONTH(ts)=MONTH(DATE_SUB(NOW(),INTERVAL 1 MONTH))
+      "Năm nay" → YEAR(ts)=YEAR(NOW())
+      "Năm ngoái" → YEAR(ts)=YEAR(NOW())-1
+      For date_key: "tháng này" → check_out_date_key BETWEEN CAST(DATE_FORMAT(DATE_FORMAT(NOW(),'%Y-%m-01'),'%Y%m%d') AS INT) AND CAST(DATE_FORMAT(NOW(),'%Y%m%d') AS INT)
+    questions:
+      - "Doanh thu tháng này?"
+      - "Doanh thu tháng trước?"
+      - "Xe vào tuần này bao nhiêu?"
+      - "So sánh tháng này vs tháng trước?"
+      - "Số liệu năm nay?"
+
+  - name: default_time_scope
+    isDefault: true
+    instruction: >
+      DEFAULT TIME RULES — apply when the question does not specify a time period:
+      1. Always query at CURRENT_TIMESTAMP unless user explicitly mentions historical context
+         (e.g., "hôm qua", "tuần trước", "ngày X", "lúc 9h sáng").
+      2. When time is ambiguous → default to the last 7 days (1 tuần gần nhất).
+      3. "Mới" / "gần đây" = within the last 30 days (last_updated >= NOW() - INTERVAL 30 DAY).
+      4. "Cũ" / "lâu rồi" = more than 30 days ago (last_updated < NOW() - INTERVAL 30 DAY).
+      5. METRIC questions ("bao nhiêu", "tổng", "doanh thu", "số lượng", "tỷ lệ") →
+         default window = 30 days rolling (WHERE ts >= DATE_SUB(NOW(), INTERVAL 30 DAY)).
+      6. TREND questions ("xu hướng", "tăng giảm", "biến động", "so sánh") →
+         default window = 3 months, grain = month.
+      Do NOT apply these defaults if the user's question already contains a time reference.
+    questions:
+      - "Tiêu thụ điện khu vực A là bao nhiêu?"
+      - "Tổng doanh thu?"
+      - "Xu hướng tiêu thụ điện?"
+      - "Bao nhiêu thiết bị đang lỗi?"
+
+  - name: time_grain_rules
+    isDefault: true
+    instruction: >
+      TIME GRAIN SELECTION — when the question asks for a time series (trend/xu hướng/so sánh)
+      but does not specify how to group time:
+      - Period <= 7 days  → grain = DAY  (GROUP BY DATE(ts))
+      - Period 7-90 days  → grain = WEEK (GROUP BY YEARWEEK(ts))
+      - Period > 90 days  → grain = MONTH (GROUP BY DATE_FORMAT(ts, '%Y-%m'))
+      When the question is a METRIC (single number, not trend) and no grain is mentioned →
+      return the total aggregate (1 number), not a time series.
+    questions:
+      - "Xu hướng tiêu thụ điện tuần qua?"
+      - "Số liệu điện 3 tháng gần nhất?"
+      - "Biến động occupancy theo thời gian?"
+
+  - name: top_n_default
+    isDefault: true
+    instruction: >
+      TOP / BOTTOM DEFAULTS:
+      - When the question asks for "top" or "nhiều nhất" / "cao nhất" but does NOT specify a number →
+        default LIMIT = 5.
+      - "nhiều nhất" / "cao nhất" / "lớn nhất" → ORDER BY <metric> DESC LIMIT 5.
+      - "ít nhất" / "thấp nhất" / "nhỏ nhất" → ORDER BY <metric> ASC LIMIT 5.
+      - If the user specifies a number (e.g., "top 3", "top 10"), always use that number instead.
+    questions:
+      - "Top khu vực tiêu thụ điện nhiều nhất?"
+      - "Bãi xe nào doanh thu cao nhất?"
+      - "Camera nào có RAM usage cao nhất?"
+      - "Thiết bị nào có nhiều lỗi nhất?"
+
+  - name: device_count_vs_running
+    isDefault: true
+    instruction: >
+      DEVICE COUNT DISAMBIGUATION — "Có bao nhiêu [device_type]?" is ambiguous:
+      - "Có bao nhiêu [X] trong hệ thống?" / "Danh sách [X]?" / "Đếm [X]?" →
+        COUNT from `dim_device` with LIKE filter on `device_type`. This counts all registered devices.
+        Example: SELECT COUNT(*) FROM sdp_golden_dim_device WHERE device_type LIKE '%chiller%'
+      - "Có bao nhiêu [X] đang hoạt động?" / "đang chạy?" / "đang bật?" →
+        Use the latest telemetry record (stg_mv_dmp_tlm_*) filtered by current state.
+        Example: chiller running = chiller_state = 1 in latest telemetry row.
+      - "Có bao nhiêu [X] đang OFFLINE?" / "đang lỗi?" →
+        Use `stg_dmp_device_status_events` filtered by latest event and current_status.
+      Default to dim_device count when the question is simply "bao nhiêu [device]" with no state qualifier.
+    questions:
+      - "Hiện có bao nhiêu chiller?"
+      - "Hệ thống có bao nhiêu camera?"
+      - "Có bao nhiêu chiller đang chạy?"
+      - "Bao nhiêu NVR đang offline?"
+
+  - name: uptime_thresholds
+    isDefault: true
+    instruction: >
+      SYSTEM UPTIME = device connectivity rate from stg_dmp_device_status_events (NOT NVR uptime_seconds).
+      "Tỷ lệ hoạt động" / "uptime toàn hệ thống" → percent of devices currently ONLINE based on latest STATUS_CHANGE event.
+      CRITICAL: Do NOT use NVR telemetry uptime_seconds for system uptime — that is device-level reboot uptime, not connectivity.
+      Correct pattern:
+        SELECT ROUND(100.0 * SUM(CAST(s.is_online AS INT)) / COUNT(*), 2) AS online_pct,
+               CASE WHEN ... >= 95 THEN 'Tốt' WHEN ... >= 80 THEN 'Cần theo dõi' ELSE 'Thấp' END AS verdict
+        FROM sdp_staging_stg_dmp_device_status_events s
+        INNER JOIN (SELECT device_id, MAX(event_time) AS latest FROM sdp_staging_stg_dmp_device_status_events
+                    WHERE event_type = 'STATUS_CHANGE' GROUP BY device_id) latest_evt
+        ON s.device_id = latest_evt.device_id AND s.event_time = latest_evt.latest
+      UPTIME THRESHOLDS: >= 95% → "Tốt"; 80-95% → "Cần theo dõi"; < 80% → "Thấp".
+      DEVICE BROKEN: last_signal_ts < DATE_SUB(NOW(), INTERVAL 3 DAY).
+    questions:
+      - "Tỷ lệ thiết bị đang hoạt động (uptime) toàn hệ thống?"
+      - "Tỷ lệ uptime của hệ thống?"
+      - "Danh sách camera đang bị hỏng?"
+      - "Thiết bị nào không hoạt động?"
+      - "Thang máy nào đang bảo trì hoặc hỏng?"
+
+  - name: anomaly_definition
+    isDefault: false
+    instruction: >
+      ANOMALY DETECTION RULE — when the question asks about "bất thường" (anomaly/abnormal):
+      A value is anomalous if it deviates more than 30% from the rolling 30-day mean
+      for the same metric: anomaly = ABS(current_value - avg_30d) / avg_30d > 0.30
+      SQL pattern:
+        WITH baseline AS (
+          SELECT AVG(metric) AS avg_val FROM <table>
+          WHERE ts >= DATE_SUB(NOW(), INTERVAL 33 DAY)
+            AND ts < DATE_SUB(NOW(), INTERVAL 3 DAY)
+        )
+        SELECT ..., ABS(metric - avg_val) / avg_val > 0.30 AS is_anomaly
+        FROM <table>, baseline
+        WHERE ts >= DATE_SUB(NOW(), INTERVAL 3 DAY)
+      Apply this pattern for "tiêu thụ bất thường", "giảm bất thường", "tăng bất thường".
+    questions:
+      - "Chiller nào đang tiêu thụ điện cao bất thường?"
+      - "WATER_TANK_LEVEL có giảm bất thường không?"
+      - "Khu vực nào tiêu thụ điện bất thường?"
+
+  - name: camera_quality_thresholds
+    isDefault: true
+    instruction: >
+      CAMERA HEALTH INDICATORS (stg_mv_dmp_tlm_camera — Hikvision cameras):
+      Available quality columns: cpu_usage_pct (0-100%), memory_used_mb, memory_free_mb,
+      uptime_seconds, fan_state (1=running), heater_state (1=on), reboot_count_total.
+      IMPORTANT: camera_quality_score, snr_db, brightness_avg do NOT exist in this table.
+      For "chất lượng hình ảnh kém" / "low light" / "noise" / "nhiễu":
+        Use cpu_usage_pct > 70 OR memory_used_mb as camera health proxy.
+        Pattern: WHERE c.cpu_usage_pct > 70 ORDER BY c.cpu_usage_pct DESC
+      For "RAM cao" / "bộ nhớ cao": WHERE c.memory_used_mb > (c.memory_used_mb + c.memory_free_mb) * 0.7
+      Always get latest record per camera using INNER JOIN MAX(tsDt) subquery pattern.
+    questions:
+      - "Camera nào có chất lượng hình ảnh kém (low light hoặc noise)?"
+      - "Camera nào có chất lượng hình ảnh kém?"
+      - "Camera nào đang bị low light?"
+      - "Camera nào có RAM cao?"
+      - "Đánh giá chất lượng camera?"
+
+  - name: threshold_defaults
+    isDefault: true
+    instruction: >
+      GENERAL THRESHOLD DEFAULTS — apply when threshold is not specified:
+      - "Thấp" (low) = < 20% of maximum or capacity.
+      - "Cao" (high) = > 70% of maximum or capacity.
+      - CO2 safety threshold = 1000 ppm.
+        "Vượt ngưỡng an toàn CO2" → co2_ppm > 1000.
+      - RAM / CPU high = > 70%.
+      - Uptime low = < 80% (see uptime_thresholds instruction).
+      When returning a threshold check, always include CASE WHEN to label the verdict:
+        CASE WHEN value > threshold THEN 'Vượt ngưỡng' ELSE 'An toàn' END AS verdict
+    questions:
+      - "CO2 có vượt ngưỡng an toàn không?"
+      - "Khu vực nào có tỷ lệ lấp đầy thấp?"
+      - "Thiết bị nào có CPU cao?"
+      - "Đánh giá trạng thái hệ thống?"
+
+  # ──────────────────────────────────────────────────────────────
+  # NHÓM 2 — Parking hierarchy & vehicle state disambiguation
+  # ──────────────────────────────────────────────────────────────
+
+  - name: parking_hierarchy_terms
+    isDefault: true
+    instruction: >
+      PARKING LOCATION TERMS:
+      "Khu vực" → `area_id` in dim_parking_lot (AREA_01 to AREA_20). GROUP BY l.area_id.
+      "Bãi xe" / "Lô" → `pk_lot_id` (LOT_001 to LOT_040). Each area = 2 lots.
+      "Làn vào" / "Cổng vào" → `lane_in_name` or `entry_point_in_name` in fct_vehicle_events.
+      "Làn ra" / "Cổng ra" → `lane_out_name` or `entry_point_out_name`.
+      Join: fct_vehicle_events.parking_lot_id = dim_parking_lot.pk_lot_id.
+      "Khu vực A" without AREA_0X format → area_id LIKE '%A%'.
+      "Bãi 1" / "Lô 1" → pk_lot_id = 'LOT_001'.
+    questions:
+      - "Doanh thu theo khu vực?"
+      - "Bãi xe nào trong AREA_01?"
+      - "Làn vào nào bận nhất?"
+      - "Occupancy theo từng khu vực?"
+
+  - name: vehicle_state_disambiguation
+    isDefault: true
+    instruction: >
+      "XE ĐANG ĐỖ" vs "XE ĐÃ ĐỖ":
+      "Đang đỗ" / "Đang trong bãi" / "Hiện tại" →
+        sdp_mart_fct_parking_occupancy WHERE occupancy_hour = (SELECT MAX(occupancy_hour) FROM sdp_mart_fct_parking_occupancy).
+        Use current_occupancy. Do NOT use fct_vehicle_events WHERE check_out_at IS NULL.
+      "Đã đỗ" / "Lượt xe" / "Giao dịch" / "Xe vào hôm nay" →
+        sdp_golden_fct_vehicle_events WHERE history_state = 'COMPLETED' + date filter.
+    questions:
+      - "Hiện có bao nhiêu xe đang đỗ?"
+      - "Hôm nay bao nhiêu lượt xe vào?"
+      - "Bao nhiêu xe đang trong bãi LOT_001?"
+      - "Tổng lượt xe tháng này?"
+
+  - name: parking_capacity_limitation
+    isDefault: true
+    instruction: >
+      PARKING CAPACITY LIMITATION: dim_parking_lot has NO total_capacity column.
+      "Tỉ lệ lấp đầy" (occupancy / capacity %) CANNOT be calculated — capacity data is unavailable.
+      When asked for utilization rate or fill rate:
+      Return absolute current_occupancy from sdp_mart_fct_parking_occupancy instead.
+      Do NOT invent or estimate a capacity value.
+    questions:
+      - "Tỉ lệ lấp đầy bãi xe?"
+      - "Bãi nào đang gần đầy?"
+      - "Công suất sử dụng bãi đỗ xe?"
+
+  # ──────────────────────────────────────────────────────────────
+  # NHÓM 3 — Device active vs online, scope, telemetry ambiguity
+  # ──────────────────────────────────────────────────────────────
+
+  - name: device_active_vs_online
+    isDefault: true
+    instruction: >
+      "THIẾT BỊ HOẠT ĐỘNG" — two meanings:
+      "Hoạt động" / "Tồn tại" / "Tổng thiết bị" → dim_device WHERE is_active = 1.
+      "Đang online" / "Đang kết nối" → latest event in stg_dmp_device_status_events WHERE event_type='STATUS_CHANGE' AND is_online=1.
+      "Đang offline" / "Mất kết nối" → latest event WHERE event_type='STATUS_CHANGE' AND is_online=0.
+      Default "bao nhiêu thiết bị" (no qualifier) → COUNT from dim_device WHERE is_active = 1.
+      "Tất cả thiết bị" = is_active = 1 only — exclude decommissioned devices.
+    questions:
+      - "Hệ thống có bao nhiêu thiết bị?"
+      - "Tỉ lệ thiết bị online hiện tại?"
+      - "Bao nhiêu thiết bị đang offline?"
+      - "Tổng số thiết bị đang hoạt động?"
+
+  - name: telemetry_avg_vs_current
+    isDefault: true
+    instruction: >
+      TELEMETRY AGGREGATION RULES:
+      "Hiện tại" / "Đang" → latest record per device: INNER JOIN (SELECT deviceId, MAX(tsDt) AS latest FROM <table> GROUP BY deviceId) x ON t.deviceId=x.deviceId AND t.tsDt=x.latest
+      "Trung bình" → AVG() over a time window (default: last 30 days).
+      CUMULATIVE counters (energy_active_kwh_total, water_volume_m3_total) → use MAX()-MIN() for period consumption. NEVER SUM() or AVG().
+      NON-cumulative (power_active_kw, cpu_usage_pct, temperature_c) → use AVG(), not SUM().
+    questions:
+      - "Nhiệt độ chiller hiện tại?"
+      - "Nhiệt độ trung bình chiller tuần này?"
+      - "CPU camera trung bình?"
+      - "Công suất điện hiện tại?"
+
+  # ──────────────────────────────────────────────────────────────
+  # NHÓM 4 — Query type: pattern vs snapshot, metric vs trend
+  # ──────────────────────────────────────────────────────────────
+
+  - name: pattern_query_trigger
+    isDefault: true
+    instruction: >
+      PATTERN vs SNAPSHOT: Default = current state (snapshot).
+      Switch to PATTERN/FREQUENCY analysis ONLY when user says: "thường", "hay", "thường xuyên", "lịch sử", "pattern".
+      "Camera nào hay bị lỗi?" → pattern: COUNT errors over time per device.
+      "Camera nào đang lỗi?" → snapshot: latest record only.
+      "Giờ nào thường đông nhất?" → pattern: AVG occupancy by hour across multiple days.
+      "Giờ nào đông nhất hôm nay?" → snapshot: today only.
+    questions:
+      - "Camera nào hay bị offline?"
+      - "Giờ nào thường đông xe nhất?"
+      - "Thiết bị nào thường xuyên mất kết nối?"
+      - "Bãi xe nào thường có nhiều xe nhất?"
+
+  - name: metric_vs_trend_disambiguation
+    isDefault: true
+    instruction: >
+      METRIC vs TREND:
+      METRIC ("bao nhiêu","tổng","số lượng","tỷ lệ") → single aggregate number, no GROUP BY time.
+      TREND ("xu hướng","tăng giảm","so sánh","từng ngày/tuần/tháng") → time series, GROUP BY grain.
+      When both appear (e.g. "số liệu và xu hướng điện") → prioritize TREND (time series).
+      Aggregation default: SUM for revenue/count, AVG for rates/percentages/sensor readings.
+    questions:
+      - "Số liệu tiêu thụ điện tháng này?"
+      - "Xu hướng doanh thu 3 tháng gần nhất?"
+      - "Số liệu và xu hướng điện tháng trước?"
+      - "Tổng doanh thu hay theo ngày?"
+
+  - name: sql_clause_rules
+    isDefault: true
+    instruction: >
+      SQL CLAUSE RULES:
+      HAVING vs WHERE: use WHERE to filter raw rows before aggregation; use HAVING to filter aggregated results.
+      "Bãi xe nào có hơn 100 giao dịch" → WHERE history_state='COMPLETED' ... GROUP BY lot HAVING COUNT(*) > 100.
+      "Thiết bị nào có trung bình CPU > 80%" → GROUP BY deviceId HAVING AVG(cpu_usage_pct) > 80.
+      Never use WHERE COUNT(*) or WHERE SUM(...) — these are always wrong.
+      AGGREGATE DEFAULTS:
+      - Revenue / volume / count → SUM()
+      - Rates / percentages / sensor readings (temperature, CPU, CO2) → AVG()
+      - Cumulative counters (energy_kwh_total, water_m3_total) → MAX() - MIN()
+      - "Hiện tại" / latest value → subquery MAX(tsDt) pattern, not AVG
+      COUNT DISTINCT: use COUNT(DISTINCT col) when the question asks for unique entities
+      (e.g., "bao nhiêu bãi xe khác nhau", "bao nhiêu loại xe").
+      COALESCE: wrap nullable columns with COALESCE(col, 0) when aggregating optional metrics.
+    questions:
+      - "Bãi xe nào có hơn 100 giao dịch tháng này?"
+      - "Thiết bị nào có CPU trung bình trên 80%?"
+      - "Bao nhiêu loại xe khác nhau trong hệ thống?"
+      - "Chiller nào tiêu thụ điện trên 1000 kWh tháng này?"
+
+  - name: comparison_pattern
+    isDefault: true
+    instruction: >
+      When comparing values across categories ("so sánh", "theo từng", "loại nào", "khu vực nào"):
+      1. GROUP BY the category column.
+      2. Include both the absolute metric (SUM/COUNT/AVG) and relative share (%) using CROSS JOIN subquery.
+      3. Pattern: SELECT cat, AGG(metric) AS val, ROUND(100.0 * AGG(metric) / t.total, 2) AS pct FROM tbl CROSS JOIN (SELECT AGG(metric) AS total FROM tbl WHERE <same filters>) t WHERE <filters> GROUP BY cat, t.total ORDER BY val DESC.
+      4. Apply to any domain: vehicle_type in fct_vehicle_events, device_type in dim_device, area_id in dim_parking_lot, deviceId in telemetry tables.
+      5. Never hardcode specific category values — let GROUP BY enumerate all values naturally unless the user asks for specific ones.
+    questions:
+      - "So sánh doanh thu giữa các loại xe?"
+      - "So sánh số lượng thiết bị theo loại?"
+      - "Phân bổ xe theo khu vực?"
+      - "Tỉ lệ đóng góp của từng bãi xe?"
+
+  # ──────────────────────────────────────────────────────────────
+  # SQL TYPE / CAST RULES — DataFusion-specific constraints
+  # ──────────────────────────────────────────────────────────────
+
+  - name: cast_type_rules
+    isDefault: true
+    instruction: >
+      SQL TYPE CAST RULES — DataFusion does NOT support MySQL-style types.
+      NEVER: CAST(... AS SIGNED) or CAST(... AS UNSIGNED) → use CAST(... AS INT) or BIGINT.
+      NEVER: DATE(col) function — does not exist. Use DATE_FORMAT(col, '%Y-%m-%d') or CAST(col AS DATE).
+      NEVER: window functions (LAG, LEAD, DENSE_RANK, ROW_NUMBER) in HAVING — "HAVING clause cannot contain window function". Use plain GROUP BY + ORDER BY + LIMIT for top-N.
+      NEVER: scalar subquery in SELECT list — use CROSS JOIN subquery instead.
+      NEVER: LAST_DAY() — does not exist. For "tháng trước" use DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 1 MONTH), '%Y%m01') or join dim_date on year_month.
+      YEARWEEK(col, mode) 2-arg NOT supported → YEARWEEK(CAST(col AS DATE)) only.
+      Date key (YYYYMMDD int): CAST(DATE_FORMAT(NOW(), '%Y%m%d') AS INT).
+      tsDt is TIMESTAMP — compare directly: tsDt >= DATE_SUB(NOW(), INTERVAL N DAY).
+    questions:
+      - "Doanh thu tháng này so với tháng trước?"
+      - "So sánh doanh thu theo tháng?"
+      - "Tính ngày hôm nay dưới dạng số nguyên?"
+      - "Doanh thu tháng trước?"
+      - "Top bãi xe có doanh thu cao nhất tháng này?"
+
+  # ──────────────────────────────────────────────────────────────
+  # ENERGY METER — no LAG(), correct column join for area
+  # ──────────────────────────────────────────────────────────────
+
+  - name: energy_no_lag
+    isDefault: true
+    instruction: >
+      ENERGY METER — NEVER use LAG() or any window function for energy consumption calculations.
+      LAG() on cumulative counters creates alias errors (e_prev.energy_active_kwh_total not found).
+      ALWAYS compute period consumption with: MAX(energy_active_kwh_total) - MIN(energy_active_kwh_total)
+      grouped by device and time period.
+      Pattern for daily consumption per device:
+        SELECT deviceId, DATE(tsDt) AS day,
+               ROUND(MAX(energy_active_kwh_total) - MIN(energy_active_kwh_total), 3) AS kwh
+        FROM stg_mv_dmp_tlm_energy_meter
+        WHERE tsDt >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+        GROUP BY deviceId, DATE(tsDt)
+      Same rule applies to water_volume_m3_total — MAX()-MIN(), never SUM() or LAG().
+    questions:
+      - "Tiêu thụ điện của CHILLER trong 7 ngày qua?"
+      - "Xu hướng tiêu thụ điện của đồng hồ điện trong 3 tháng gần nhất?"
+      - "Tiêu thụ điện theo ngày?"
+
+  - name: energy_by_area_join
+    isDefault: true
+    instruction: >
+      ENERGY BY AREA/LOCATION — join chain to filter energy meters by location:
+        FROM stg_mv_dmp_tlm_energy_meter e
+        JOIN dim_device d ON e.deviceId = d.device_id
+        JOIN dim_device_asset da ON d.device_id = da.device_id
+        WHERE da.asset_name LIKE '%AREA_A%'
+      CRITICAL: dim_asset does NOT have an area_id column. Never use dim_asset.area_id.
+      For area-level grouping: GROUP BY da.asset_name.
+      Always compute consumption as MAX(energy_active_kwh_total) - MIN(energy_active_kwh_total) per group.
+      Example — top areas by electricity consumption last 30 days:
+        SELECT da.asset_name,
+               ROUND(MAX(e.energy_active_kwh_total) - MIN(e.energy_active_kwh_total), 3) AS kwh
+        FROM sdp_near_realtime_stg_mv_dmp_tlm_energy_meter e
+        JOIN sdp_golden_dim_device d ON e.deviceId = d.device_id
+        JOIN sdp_golden_dim_device_asset da ON d.device_id = da.device_id
+        WHERE e.tsDt >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+        GROUP BY da.asset_name ORDER BY kwh DESC
+    questions:
+      - "Tiêu thụ điện khu vực A là bao nhiêu?"
+      - "Top khu vực tiêu thụ điện nhiều nhất?"
+      - "Xu hướng tiêu thụ điện khu vực B trong tuần qua?"
+      - "Tiêu thụ điện tháng này tại tòa nhà BUILDING_001?"
+      - "Số liệu và xu hướng tiêu thụ điện tháng trước khu vực C?"
+
+  # ──────────────────────────────────────────────────────────────
+  # DEVICE PROFILE COLUMNS — distinguish device vs asset profile
+  # ──────────────────────────────────────────────────────────────
+
+  - name: device_profile_column_names
+    isDefault: true
+    instruction: >
+      PROFILE COLUMN NAMES — device and asset profiles are separate columns:
+      In dim_device: device_profile_name, device_profile_description (NOT asset_profile_name).
+      In dim_asset: asset_profile_name, asset_profile_description.
+      In dim_device_asset: BOTH device_profile_name AND asset_profile_name are available (denormalized join).
+      When joining telemetry → dim_device only (no dim_device_asset), use device_profile_name.
+      When grouping by building/floor/zone for device queries, JOIN dim_device_asset and use asset_profile_name.
+      Example — camera online rate by building:
+        JOIN dim_device_asset da ON d.device_id = da.device_id
+        GROUP BY da.asset_profile_name  -- use da.asset_profile_name, NOT d.asset_profile_name
+    questions:
+      - "Tỉ lệ online của camera theo từng tòa nhà?"
+      - "Camera nào thuộc tòa nhà BUILDING_001?"
+      - "Phân bổ thiết bị theo asset profile?"
+
+  # ──────────────────────────────────────────────────────────────
+  # DATE_KEY WEEK FILTER — dim_date join for weekly queries
+  # ──────────────────────────────────────────────────────────────
+
+  - name: dim_date_week_filter
+    isDefault: true
+    instruction: >
+      WEEK FILTER FOR DATE_KEY TABLES (fct_vehicle_events, fct_parking_occupancy):
+      check_in_date_key and check_out_date_key are integers — cannot do DATE_TRUNC or direct timestamp math on them.
+      DataFusion YEARWEEK() only accepts 1 argument and only accepts DATE type (not Timestamp).
+      CORRECT: YEARWEEK(d.full_date) = YEARWEEK(CURRENT_DATE)  [full_date is DATE, CURRENT_DATE is DATE]
+      WRONG: YEARWEEK(d.full_date, 1) — 2-argument form NOT supported.
+      WRONG: YEARWEEK(NOW(), 1) — NOW() returns Timestamp, YEARWEEK requires DATE type.
+      Pattern for "tuần này":
+        FROM fct_vehicle_events e
+        JOIN dim_date d ON e.check_in_date_key = d.date_key
+        WHERE YEARWEEK(d.full_date) = YEARWEEK(CURRENT_DATE)
+      Pattern for "tuần trước":
+        WHERE YEARWEEK(d.full_date) = YEARWEEK(DATE_SUB(CURRENT_DATE, INTERVAL 7 DAY))
+      NEVER use check_in_at timestamp column for week filters — use check_in_date_key + dim_date JOIN.
+      NEVER use DATE_TRUNC('week', CURRENT_TIMESTAMP) on date_key fields.
+    questions:
+      - "Làn vào nào bận nhất tuần này?"
+      - "Số lượt xe vào tuần này?"
+      - "Doanh thu tuần này?"
+      - "So sánh tuần này với tuần trước?"
+
+  # ──────────────────────────────────────────────────────────────
+  # CHILLER TELEMETRY — exact column names
+  # ──────────────────────────────────────────────────────────────
+
+  - name: chiller_telemetry_columns
+    isDefault: true
+    instruction: >
+      CHILLER TELEMETRY COLUMNS (stg_mv_dmp_tlm_chiller) — available columns ONLY:
+      Status: chiller_state (1=running, 0=stopped), fault (1=fault, 0=normal), mode.
+      Valve: return_valve_open_limit, supply_valve_open_limit, supply_valve_close_limit.
+      Time: tsDt (TIMESTAMP), ts (Unix ms), eventTime, tenantId, customerId.
+      DOES NOT HAVE: temperature columns (chilled_water_supply_temp_c, chilled_water_return_temp_c), cooling_capacity_kw, or any power/energy columns.
+      For "nhiệt độ làm lạnh" questions: NO temperature column exists — use chiller_state as proxy.
+      Generate: SELECT deviceId, ROUND(AVG(chiller_state),2) AS avg_chiller_state FROM stg_mv_dmp_tlm_chiller WHERE tsDt >= DATE_SUB(NOW(), INTERVAL 7 DAY) GROUP BY deviceId
+      For "chiller đang lỗi": fault = 1 with latest-record subquery.
+      For "chiller đang chạy": chiller_state = 1.
+      tsDt is TIMESTAMP — compare directly with DATE_SUB(NOW(), INTERVAL N DAY), no CAST needed.
+    questions:
+      - "Nhiệt độ làm lạnh trung bình của tất cả chiller trong tuần trước?"
+      - "Chiller nào đang báo lỗi?"
+      - "Chiller nào đang chạy?"
+      - "Chiller nào đang tiêu thụ điện cao bất thường?"
+
+  # ──────────────────────────────────────────────────────────────
+  # MISSING TABLES — workaround until added to Wren model
+  # ──────────────────────────────────────────────────────────────
+
+  - name: missing_tables_workaround
+    isDefault: true
+    instruction: >
+      CO2 ppm TELEMETRY TABLE does NOT exist — no stg_mv_dmp_tlm_co2_sensor in the schema. No co2_ppm column anywhere.
+      For CO2-related questions: use dim_device + dim_device_asset to list CO2 sensors and their location (asset_name).
+      Pattern: SELECT d.device_name, da.asset_name FROM sdp_golden_dim_device d JOIN sdp_golden_dim_device_asset da ON d.device_id = da.device_id WHERE d.device_type LIKE '%co2%' OR d.device_type LIKE '%CO2%'
+      CO2 region = asset_name from dim_device_asset. Do NOT query JSON fields for CO2 ppm.
+      CAMERA: camera_quality_score, snr_db, brightness_avg do NOT exist in stg_mv_dmp_tlm_camera. Use cpu_usage_pct > 70.
+      stg_dmp_device_status_events available as sdp_staging_stg_dmp_device_status_events.
+    questions:
+      - "CO2_SENSOR tại tầng 3 có vượt ngưỡng an toàn không?"
+      - "Khu vực nào có nồng độ CO2 cao nhất?"
+      - "Camera nào có chất lượng hình ảnh kém?"
+      - "Thiết bị nào đang OFFLINE hiện tại?"
+      - "Tỷ lệ thiết bị đang hoạt động (uptime) toàn hệ thống?"
+      - "Tỉ lệ online của camera theo từng tòa nhà?"
+
+  - name: proxy_metric_redirect
+    isDefault: true
+    instruction: >
+      PROXY METRICS — khi câu hỏi đề cập đến chỉ số không tồn tại trực tiếp trong schema, PHẢI sinh SQL proxy thay vì từ chối:
+      1. "chất lượng hình ảnh camera / low light / noise / hình ảnh kém":
+         Dùng cpu_usage_pct và memory_used_mb làm proxy. Lấy record mới nhất mỗi camera (INNER JOIN MAX(tsDt)).
+         WHERE c.cpu_usage_pct > 70 ORDER BY c.cpu_usage_pct DESC
+      2. "nhiệt độ làm lạnh chiller / cooling temperature":
+         Không có cột nhiệt độ. Dùng AVG(chiller_state) per deviceId làm proxy.
+         FROM stg_mv_dmp_tlm_chiller GROUP BY deviceId
+      KHÔNG BAO GIỜ trả về câu trả lời trống — luôn sinh SQL với proxy column tương ứng.
+    questions:
+      - "Camera nào có chất lượng hình ảnh kém (low light hoặc noise)?"
+      - "Camera nào hình ảnh bị nhiễu?"
+      - "Nhiệt độ làm lạnh trung bình của tất cả chiller trong tuần trước?"
+      - "Nhiệt độ làm lạnh của chiller?"
+
+  # ──────────────────────────────────────────────────────────────
+  # TABLE CONCEPT MAPS — which table for which question type
+  # ──────────────────────────────────────────────────────────────
+
+  - name: parking_table_map
+    isDefault: true
+    instruction: >
+      PARKING TABLE SELECTION GUIDE:
+      REVENUE / TRANSACTIONS (doanh thu, giao dịch, số lượt): use fct_vehicle_events.
+        - amount_due = fee per transaction; filter history_state='COMPLETED'; date via check_out_date_key.
+        - Join dim_parking_lot for lot name/area; join dim_date for month/week grouping.
+      CURRENT OCCUPANCY (xe đang đỗ, đang có mặt, tình trạng lấp đầy): use fct_parking_occupancy.
+        - current_occupancy = net vehicles in lot at occupancy_hour; get latest: WHERE occupancy_hour=(SELECT MAX...).
+        - Never use fct_vehicle_events to count currently-parked vehicles.
+      PEAK HOURS (giờ cao điểm): use fct_parking_occupancy JOIN dim_time ON occupancy_time_key=time_key.
+      LOT METADATA (tên bãi, khu vực, số lô): use dim_parking_lot.
+      HISTORICAL LOT NAME CHANGES: use dim_parking_lot_snapshot WHERE dbt_valid_to IS NULL for current.
+      CALENDAR FILTERING (tháng, tuần, quý): JOIN dim_date ON check_out_date_key=date_key.
+    questions:
+      - "Bao nhiêu xe đang đỗ hiện tại?"
+      - "Doanh thu tháng này theo bãi xe?"
+      - "Giờ nào nhiều xe nhất?"
+      - "Tỉ lệ lấp đầy bãi xe?"
+      - "Số lượt xe vào hôm nay?"
+
+  - name: device_asset_table_map
+    isDefault: true
+    instruction: >
+      DEVICE & ASSET TABLE SELECTION GUIDE:
+      dim_device — master device metadata (tên, loại, profile). Use for: device count by type, device name lookup.
+      dim_asset — location/space metadata (tòa nhà, tầng, zone). Use for: building list, floor/zone count.
+      dim_device_asset — CURRENT mapping of device→location (denormalized, no SCD columns).
+        Use for: "device X is at location Y", filter devices by building/floor/zone.
+        HAS: device_id, device_name, device_type, asset_name, asset_type, asset_profile_name.
+        DOES NOT HAVE: dbt_valid_to, dbt_valid_from, dbt_scd_id (those are only on _snapshot).
+      dim_device_asset_snapshot — HISTORICAL SCD-2 device-location history.
+        Use for: "where was device X on date Y?". Filter: dbt_valid_to IS NULL for current records.
+      stg_dmp_device_status_events — online/offline events. Use for uptime, disconnection analysis.
+        Join chain for camera-online-by-building: status_events → dim_device → dim_device_asset.
+    questions:
+      - "Thiết bị nào đang gắn tại tòa nhà BUILDING_001?"
+      - "Camera nào đang offline?"
+      - "Tỉ lệ online của camera theo tòa nhà?"
+      - "Device X hiện ở đâu?"
+      - "Lịch sử vị trí của thiết bị Y?"
+
+  - name: telemetry_table_map
+    isDefault: true
+    instruction: >
+      TELEMETRY TABLE SELECTION (sdp_near_realtime schema, join key = deviceId):
+      ENERGY/POWER/WATER → stg_mv_dmp_tlm_energy_meter. Covers all device types including chiller. Columns: energy_active_kwh_total(cumulative→MAX-MIN), power_active_kw, water_volume_m3_total.
+      CAMERA HEALTH → stg_mv_dmp_tlm_camera. Columns: cpu_usage_pct, memory_used_mb, memory_free_mb, reboot_count_total. No image quality column — use cpu_usage_pct>70 as proxy.
+      CHILLER STATE → stg_mv_dmp_tlm_chiller. Columns: chiller_state(1=on), fault(1=fault), mode, valve flags. No temperature column — use AVG(chiller_state) as proxy.
+      NVR HEALTH → stg_mv_dmp_tlm_nvr. Columns: cpu_usage_pct, memory, disk, uptime.
+      DEVICE LOCATION JOIN: telemetry.deviceId → dim_device.device_id → dim_device_asset.device_id → asset_name.
+    questions:
+      - "Tiêu thụ điện theo thiết bị?"
+      - "Camera nào có CPU cao?"
+      - "Chiller nào đang lỗi?"
+      - "NVR nào có uptime thấp?"
+      - "Điện năng của khu vực A?"
+      - "Chiller nào đang tiêu thụ nhiều điện?"
+
+  # ──────────────────────────────────────────────────────────────
+  # RAW / STAGING TABLE USAGE GUIDES
+  # ──────────────────────────────────────────────────────────────
+
+  - name: raw_layer_guide
+    isDefault: true
+    instruction: >
+      RAW LAYER — 3-tier hierarchy: RAW → STAGING → GOLDEN (preferred for analysis).
+      ALWAYS use GOLDEN tables for business questions. Use raw/staging ONLY for debugging or fields absent from golden.
+      raw_dmp_tlm_raw: ALL device telemetry as JSON blob (telemetry column). Filter by deviceType. Use ONLY when device type has no materialized view (stg_mv_dmp_tlm_*). For CAMERA/CHILLER/NVR/ENERGY prefer the typed materialized views.
+      raw_dmp_evt_connectivity: raw heartbeats (camelCase: qualityScore, icmpReachable, heartbeatLevel, probeFailureReason). Use for debugging poor signal. Prefer stg_dmp_device_status_events for status analysis.
+      raw_parking_db_vehicle_histories: raw parking rows with timestamps as strings and extra fields (face_id_in, feature_vector_in). Use ONLY when face recognition fields are needed. Prefer fct_vehicle_events for all revenue/count analysis.
+    questions:
+      - "Xem raw telemetry của thiết bị không có materialized view?"
+      - "Kiểm tra probeFailureReason của thiết bị?"
+      - "Dữ liệu raw bãi xe nào có nhiều giao dịch nhất hôm nay?"
+      - "Có bao nhiêu giao dịch raw chưa được xử lý?"
+
+  - name: staging_vehicle_avoid
+    isDefault: true
+    instruction: >
+      stg_vehicle_histories vs fct_vehicle_events — ALWAYS prefer fct_vehicle_events for analysis.
+      fct_vehicle_events: GOLDEN, has integer date keys (check_in_date_key, check_out_date_key in YYYYMMDD) for dim_date joins, amount_due column, fully clean. Use for: revenue, transaction count, dwell time, lane analysis.
+      stg_vehicle_histories: STAGING, timestamps are parsed datetimes (no date_key columns), no dim_date join possible. Use ONLY for fields missing from fct_vehicle_events: lpn_camera_in, lpn_in_edited, lpn_camera_out, lpn_out_edited.
+      NEVER use stg_vehicle_histories for revenue or aggregation — use fct_vehicle_events.
+    questions:
+      - "Biển số camera chụp được tại cổng vào?"
+      - "So sánh biển số gốc và biển số đã chỉnh sửa?"
+      - "Doanh thu hôm nay?"
+
+  - name: device_assignment_table_choice
+    isDefault: true
+    instruction: >
+      fct_device_asset_assignment vs dim_device_asset — both link devices to assets, different purpose:
+      dim_device_asset: CURRENT-STATE snapshot, fully denormalized (device_name, device_type, asset_name all in one row). Use for: "thiết bị nào đang ở tòa nhà X?", "asset nào device Y đang gắn?". No extra joins to dim_device or dim_asset needed.
+      fct_device_asset_assignment: EVENT LOG from DMP relation graph. Each row = one CONTAINS relation record. Use for: counting assignment events, auditing relation history, tracing device lineage. Must JOIN dim_device + dim_asset to get names.
+      NEVER use fct_device_asset_assignment to answer "current location" questions — use dim_device_asset.
+    questions:
+      - "Thiết bị X hiện đang gắn vào asset nào?"
+      - "Bao nhiêu device được gán vào BUILDING_001?"
+      - "Lịch sử gán thiết bị X?"
+      - "Asset nào có nhiều thiết bị nhất?"
+
+  - name: connectivity_table_choice
+    isDefault: true
+    instruction: >
+      CONNECTIVITY TABLE HIERARCHY — 3 tables, different granularity:
+      stg_dmp_device_status_events (PREFERRED): clean status events with is_online boolean, event_type (STATUS_CHANGE / STATUS_HEARTBEAT), device_type, device_code. Filter event_type='STATUS_CHANGE' for real transitions. Join key: device_id (UUID).
+      stg_dmp_evt_connectivity (RAW HEARTBEAT): lowercase cols (deviceid, qualityscore, icmpreachable, offlinereason). Use ONLY when you need: qualityscore (<50=poor), icmpreachable, offlinereason not available in status_events. Join key: deviceid (lowercase).
+      raw_dmp_evt_connectivity (RAWEST): camelCase cols (qualityScore, icmpReachable, heartbeatLevel, probeFailureReason, active). Use for debugging signal probe failures only.
+    questions:
+      - "Thiết bị nào đang OFFLINE?"
+      - "Lý do offline phổ biến nhất?"
+      - "Thiết bị nào có qualityScore kết nối thấp?"
+      - "Thiết bị nào mất kết nối nhiều lần nhất?"

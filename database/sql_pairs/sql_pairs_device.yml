@@ -1,0 +1,142 @@
+sql_pairs:
+
+  - id: SP-DEV-01
+    question: "Hệ thống có bao nhiêu camera?"
+    sql: >
+      SELECT COUNT(*) AS camera_count
+      FROM sdp_golden_dim_device
+      WHERE device_type LIKE '%Camera%'
+
+  - id: SP-DEV-02
+    question: "Đếm tất cả thiết bị theo loại"
+    sql: >
+      SELECT device_type,
+             COUNT(*) AS total
+      FROM sdp_golden_dim_device
+      GROUP BY device_type
+      ORDER BY total DESC
+
+  - id: SP-DEV-03
+    question: "Thiết bị nào đang được gắn tại tòa nhà BUILDING_001?"
+    sql: >
+      SELECT device_name,
+             device_type,
+             asset_name,
+             asset_type
+      FROM sdp_golden_dim_device_asset
+      WHERE asset_name = 'BUILDING_001'
+      ORDER BY device_type, device_name
+
+  - id: SP-DEV-04
+    question: "Device X đang ở vị trí (asset) nào hiện tại?"
+    sql: >
+      SELECT device_name,
+             device_type,
+             asset_name,
+             asset_type,
+             asset_profile_name
+      FROM sdp_golden_dim_device_asset
+      WHERE device_name = 'BMS_CO2_SENSOR_01061'
+
+  - id: SP-DEV-05
+    question: "Số thiết bị theo loại asset (building, floor, zone, parking, equipment)?"
+    sql: >
+      SELECT asset_type,
+             COUNT(DISTINCT device_id) AS device_count
+      FROM sdp_golden_dim_device_asset
+      GROUP BY asset_type
+      ORDER BY device_count DESC
+
+  - id: SP-DEV-06
+    question: "So sánh số lượng thiết bị theo từng loại (device_type)?"
+    sql: >
+      SELECT d.device_type,
+             COUNT(*) AS device_count,
+             ROUND(100.0 * COUNT(*) / t.total, 2) AS pct
+      FROM sdp_golden_dim_device d
+      CROSS JOIN (SELECT COUNT(*) AS total FROM sdp_golden_dim_device) t
+      GROUP BY d.device_type, t.total
+      ORDER BY device_count DESC
+
+  # ── DEVICE AT ASSET LOCATION ───────────────────────────────────
+
+  - id: SP-DEV-08
+    question: "Thiết bị nào đang gắn tại vị trí (asset_name) cụ thể?"
+    sql: >
+      SELECT da.device_name,
+             da.device_type,
+             da.asset_name,
+             da.asset_type,
+             da.asset_profile_name
+      FROM sdp_golden_dim_device_asset da
+      WHERE da.asset_name = 'FLOOR_B1'
+      ORDER BY da.device_type, da.device_name
+
+  - id: SP-DEV-09
+    question: "Vị trí (asset_name) nào có nhiều thiết bị nhất?"
+    sql: >
+      SELECT da.asset_name,
+             da.asset_type,
+             da.asset_profile_name,
+             COUNT(DISTINCT da.device_id) AS device_count
+      FROM sdp_golden_dim_device_asset da
+      GROUP BY da.asset_name, da.asset_type, da.asset_profile_name
+      ORDER BY device_count DESC
+      LIMIT 10
+
+  - id: SP-DEV-10
+    question: "Camera nào đang đặt tại zone hoặc vị trí có tên chứa 'PARKING'?"
+    sql: >
+      SELECT da.device_name,
+             da.device_type,
+             da.asset_name,
+             da.asset_type,
+             da.asset_profile_name
+      FROM sdp_golden_dim_device_asset da
+      WHERE da.device_type LIKE '%Camera%'
+        AND da.asset_name LIKE '%PARKING%'
+      ORDER BY da.asset_name, da.device_name
+
+  - id: SP-DEV-11
+    question: "Số lượng thiết bị theo từng loại (device_type) tại từng loại vị trí (asset_type)?"
+    sql: >
+      SELECT da.asset_type,
+             da.device_type,
+             COUNT(DISTINCT da.device_id) AS device_count
+      FROM sdp_golden_dim_device_asset da
+      GROUP BY da.asset_type, da.device_type
+      ORDER BY da.asset_type, device_count DESC
+
+  - id: SP-DEV-12
+    question: "Danh sách tất cả vị trí (asset_name) và số thiết bị tại mỗi vị trí?"
+    sql: >
+      SELECT da.asset_name,
+             da.asset_type,
+             da.asset_profile_name,
+             COUNT(DISTINCT da.device_id) AS device_count,
+             COUNT(DISTINCT da.device_type) AS device_type_count
+      FROM sdp_golden_dim_device_asset da
+      GROUP BY da.asset_name, da.asset_type, da.asset_profile_name
+      ORDER BY device_count DESC
+
+  - id: SP-DEV-13
+    question: "Danh sách các thang máy đang bảo trì hoặc hỏng?"
+    sql: >
+      SELECT d.device_name,
+             d.device_type,
+             s.current_status,
+             s.event_time AS last_status_time
+      FROM sdp_golden_dim_device d
+      LEFT JOIN sdp_staging_stg_dmp_device_status_events s ON d.device_id = s.device_id
+      LEFT JOIN (
+        SELECT device_id, MAX(event_time) AS max_evt
+        FROM sdp_staging_stg_dmp_device_status_events
+        WHERE event_type = 'STATUS_CHANGE'
+        GROUP BY device_id
+      ) latest_evt ON s.device_id = latest_evt.device_id AND s.event_time = latest_evt.max_evt
+      WHERE (d.device_type LIKE '%elevator%' OR d.device_type LIKE '%Elevator%'
+          OR d.device_type LIKE '%thang%' OR d.device_type LIKE '%lift%')
+        AND (s.current_status IN ('OFFLINE', 'MAINTENANCE') OR s.device_id IS NULL)
+      GROUP BY d.device_name, d.device_type, s.current_status, s.event_time
+      ORDER BY last_status_time ASC
+

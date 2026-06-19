@@ -1,0 +1,44 @@
+sql_pairs:
+
+  - id: SP-ASS-01
+    question: "Hệ thống có bao nhiêu tòa nhà?"
+    sql: >
+      SELECT COUNT(*) AS building_count
+      FROM sdp_golden_dim_asset
+      WHERE asset_type = 'building'
+
+  - id: SP-ASS-02
+    question: "Liệt kê các loại asset và số lượng trong hệ thống"
+    sql: >
+      SELECT asset_type,
+             COUNT(*) AS total
+      FROM sdp_golden_dim_asset
+      GROUP BY asset_type
+      ORDER BY total DESC
+
+  - id: SP-ASS-03
+    question: "Danh sách tất cả tòa nhà trong hệ thống?"
+    sql: >
+      SELECT asset_name,
+             asset_label,
+             asset_profile_name
+      FROM sdp_golden_dim_asset
+      WHERE asset_type = 'building'
+      ORDER BY asset_name
+
+  - id: SP-ASS-04
+    question: "Có bao nhiêu tòa nhà trong hệ thống?"
+    sql: >
+      SELECT COUNT(*) AS building_count
+      FROM sdp_golden_dim_asset
+      WHERE asset_type = 'building'
+
+  - id: SP-ASS-05
+    question: "Số lượng tòa nhà, tầng và zone trong hệ thống?"
+    sql: >
+      SELECT asset_type,
+             COUNT(*) AS total
+      FROM sdp_golden_dim_asset
+      WHERE asset_type IN ('building', 'floor', 'zone', 'parking', 'equipment')
+      GROUP BY asset_type
+      ORDER BY FIELD(asset_type, 'building', 'floor', 'zone', 'parking', 'equipment')

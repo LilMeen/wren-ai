@@ -5,7 +5,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from datetime import date,datetime,timedelta
 from pathlib import Path
-ROOT=Path(__file__).resolve().parents[1]; DATA=ROOT/'data'; SCHEMA=ROOT/'starrock_schema.json'; RAW_DEV=DATA/'raw_dmp_public_device.csv'; CONFIG_DIR=ROOT/'configs'
+ROOT=Path(__file__).resolve().parents[1]; DATA=ROOT/'data'; SCHEMA=ROOT/'docs'/'starrock_schema.json'; RAW_DEV=DATA/'raw_dmp_public_device.csv'; CONFIG_DIR=ROOT/'configs'
 def su(s): return str(uuid.UUID(hashlib.md5(str(s).encode()).hexdigest()))
 def sk(s,p='sk'): return f"{p}_{hashlib.sha1(str(s).encode()).hexdigest()[:16]}"
 def js(o): return json.dumps(o,ensure_ascii=False,separators=(',',':'))
@@ -31,6 +31,8 @@ def schema_cols():
     return out
 def read_raw_devices(n):
     with RAW_DEV.open(newline='',encoding='utf-8-sig') as f: rows=list(csv.DictReader(f))
+    if str(n).strip().lower()=='max': return rows
+    n=int(n)
     if len(rows)<n: raise SystemExit(f'Need {n} raw devices, got {len(rows)}')
     if n==len(rows): return rows
     step=(len(rows)-1)/max(n-1,1)
@@ -40,6 +42,16 @@ def write(t,rows,cols):
     with (DATA/f'{t}.csv').open('w',newline='',encoding='utf-8') as f:
         w=csv.DictWriter(f,fieldnames=cols[t],extrasaction='ignore'); w.writeheader()
         for r in rows: w.writerow({c:r.get(c,'') for c in cols[t]})
+_TLM_TARGETS=['stg_mv_dmp_tlm_camera','stg_mv_dmp_tlm_chiller','stg_mv_dmp_tlm_energy_meter','stg_mv_dmp_tlm_nvr']
+_TLM_TYPES   =['Camera','Chiller','Energy Meter','NVR']
+def _device_target(d,i):
+    t=(d.get('type') or '').lower()
+    if 'chiller' in t: return 0,_TLM_TARGETS[1],_TLM_TYPES[1]
+    if 'meter' in t or 'energy' in t: return 0,_TLM_TARGETS[2],_TLM_TYPES[2]
+    if 'nvr' in t: return 0,_TLM_TARGETS[3],_TLM_TYPES[3]
+    if 'camera' in t or 'hikvision' in t or 'anpr' in t: return 0,_TLM_TARGETS[0],_TLM_TYPES[0]
+    idx=i%4; return idx,_TLM_TARGETS[idx],_TLM_TYPES[idx]
+
 def build(devs,cfg):
     prof={}
     for d in devs:
@@ -57,7 +69,9 @@ def build(devs,cfg):
       for m in range(0,60,cfg.time_grain_minutes):
         per='night' if h<6 else 'morning' if h<12 else 'afternoon' if h<18 else 'evening'
         times.append({'time_key':f'{h:02d}{m:02d}','time_of_day':f'{h:02d}:{m:02d}:00','hour':h,'minute':m,'time_label':f'{h:02d}:{m:02d}','hour_label':f'{h:02d}:00','period':per,'time_of_day_label':f'{h:02d}:{m:02d}','minutes_since_midnight':h*60+m})
-    return {'devs':devs,'dps':list(prof.values()),'aps':aps,'assets':assets,'lots':lots,'dates':dates,'times':times}
+    # Pre-compute telemetry target per device so dim_device.device_type is consistent
+    targets={d['id']:_device_target(d,i) for i,d in enumerate(devs)}
+    return {'devs':devs,'dps':list(prof.values()),'aps':aps,'assets':assets,'lots':lots,'dates':dates,'times':times,'targets':targets}
 
 def gen_profiles(reg,cfg):
     raw=[]; stg=[]; dim=[]; n=now()
@@ -74,7 +88,8 @@ def gen_devices(reg,cfg):
         ca=from_ms(d.get('created_time',''),datetime.combine(cfg.start_date,datetime.min.time())); p=pmap.get(d.get('device_profile_id')) or reg['dps'][0]
         ai=d.get('additional_info') or js({'site':'demo','source':'raw_dmp_public_device'}); dd=d.get('device_data') or js({'configuration':{'pollingIntervalSec':60}})
         stg.append({**d,'device_id':d['id'],'additional_info':ai,'device_data':dd,'created_at':ca.isoformat(sep=' '),'_dbt_loaded_at':n})
-        dim.append({'device_sk':sk(d['id'],'dsk'),'device_id':d['id'],'device_name':d.get('name',''),'device_label':d.get('label') or d.get('name',''),'device_type':d.get('type',''),'additional_info':ai,'device_data':dd,'customer_id':d.get('customer_id',''),'tenant_id':d.get('tenant_id',''),'firmware_id':d.get('firmware_id',''),'software_id':d.get('software_id',''),'external_id':d.get('external_id',''),'device_profile_id':d.get('device_profile_id',''),'device_profile_name':p['name'],'device_profile_description':f'Synthetic profile for {p["name"]}','transport_type':'MQTT','provision_type':'DISABLED','device_profile_is_default':False,'created_at':ca.isoformat(sep=' '),'_dbt_loaded_at':n})
+        _,_,dtype=reg['targets'][d['id']]
+        dim.append({'device_sk':sk(d['id'],'dsk'),'device_id':d['id'],'device_name':d.get('name',''),'device_label':d.get('label') or d.get('name',''),'device_type':dtype,'additional_info':ai,'device_data':dd,'customer_id':d.get('customer_id',''),'tenant_id':d.get('tenant_id',''),'firmware_id':d.get('firmware_id',''),'software_id':d.get('software_id',''),'external_id':d.get('external_id',''),'device_profile_id':d.get('device_profile_id',''),'device_profile_name':p['name'],'device_profile_description':f'Synthetic profile for {p["name"]}','transport_type':'MQTT','provision_type':'DISABLED','device_profile_is_default':False,'created_at':ca.isoformat(sep=' '),'_dbt_loaded_at':n})
     return stg,dim
 
 def gen_assets(reg,cfg):
@@ -95,7 +110,7 @@ def gen_assets(reg,cfg):
 def gen_dates_times(reg):
     dd=[]
     for d in reg['dates']:
-        dd.append({'date_key':d.strftime('%Y%m%d'),'date_day':d.isoformat(),'day_of_week':d.isoweekday(),'day_name':d.strftime('%A'),'day_of_month':d.day,'day_of_year':d.timetuple().tm_yday,'week_of_year':int(d.strftime('%V')),'month_number':d.month,'month_name':d.strftime('%B'),'quarter_number':(d.month-1)//3+1,'year_number':d.year,'is_weekend':d.weekday()>=5,'is_weekday':d.weekday()<5})
+        dd.append({'date_key':int(d.strftime('%Y%m%d')),'full_date':d.isoformat(),'year':d.year,'quarter':(d.month-1)//3+1,'month':d.month,'day':d.day,'year_month':d.strftime('%Y-%m'),'year_week':d.strftime('%G-W%V'),'day_of_year':d.timetuple().tm_yday,'day_of_week':d.isoweekday(),'day_name':d.strftime('%A'),'day_name_short':d.strftime('%a'),'is_weekend':d.weekday()>=5,'month_name':d.strftime('%B'),'month_name_short':d.strftime('%b')})
     return dd,reg['times']
 
 def gen_rel(reg):
@@ -109,10 +124,9 @@ def gen_rel(reg):
     return rr,sr,br,sn,fa
 
 def gen_dev_events(reg,cfg,rng):
-    rc=[]; sc=[]; se=[]; rt=[]; mv={k:[] for k in ['stg_mv_dmp_tlm_camera','stg_mv_dmp_tlm_chiller','stg_mv_dmp_tlm_energy_meter','stg_mv_dmp_tlm_nvr']}; n=now()
+    rc=[]; sc=[]; se=[]; rt=[]; mv={k:[] for k in _TLM_TARGETS}; n=now()
     for i,d in enumerate(reg['devs']):
-        typ=(d.get('type') or '').lower()
-        target='stg_mv_dmp_tlm_chiller' if 'chiller' in typ else 'stg_mv_dmp_tlm_energy_meter' if ('meter' in typ or 'energy' in typ) else 'stg_mv_dmp_tlm_nvr' if 'nvr' in typ else ['stg_mv_dmp_tlm_camera','stg_mv_dmp_tlm_chiller','stg_mv_dmp_tlm_energy_meter','stg_mv_dmp_tlm_nvr'][i%4]
+        _,target,_=reg['targets'][d['id']]
         for j in range(cfg.connectivity_events_per_device):
             t=datetime.combine(cfg.start_date,datetime.min.time())+timedelta(hours=j*3,minutes=i%60); on=rng.random()>0.08
             r={'deviceId':d['id'],'tenantId':d.get('tenant_id',''),'ts':ms(t),'tsDt':t.isoformat(sep=' '),'msgType':'CONNECTIVITY','customerId':d.get('customer_id',''),'deviceCode':d.get('name',''),'status':'ONLINE' if on else 'OFFLINE','active':on,'heartbeatLevel':rng.choice(['GOOD','NORMAL','WARN']),'probeFailureReason':'' if on else 'TIMEOUT','offlineReason':'' if on else 'NO_HEARTBEAT','qualityScore':rng.randint(70,100) if on else rng.randint(10,55),'icmpReachable':on}
@@ -140,7 +154,7 @@ def gen_parking(reg,cfg,rng):
         eid+=1; lot=rng.choice(reg['lots']); vt=rng.choice(vtypes); im=rng.randint(360,1320); dur=rng.randint(20,480)
         ci=datetime.combine(d,datetime.min.time())+timedelta(minutes=im); co=ci+timedelta(minutes=dur); fee=0 if rng.random()<.15 else rng.choice([5000,10000,15000,20000,30000,50000]); id=su(f'parking-{eid}')
         b={'id':id,'event_id':id,'card_number':f'CARD{rng.randint(100000,999999)}','lpn':f'{rng.randint(10,99)}A-{rng.randint(10000,99999)}','lpn_cmp':'MATCH','lpn_camera_in':'','lpn_in_edited':'','lpn_camera_out':'','lpn_out_edited':'','service_id':f'SVC_{rng.randint(1,5):02d}','service_name':rng.choice(['Hourly Parking','Monthly Parking','Visitor Parking']),'service_category':rng.choice(['STANDARD','VIP','STAFF']),'owner_customer_id':su('parking-customer'),'org_unit_code':f'OU_{rng.randint(1,4):02d}','org_unit_name':'Demo Org Unit','pk_lot_id':lot['pk_lot_id'],'pk_lot_name':lot['pk_lot_name'],'area_id':lot['area_id'],'entry_point_in_id':'','entry_point_in_name':f'Gate In {rng.randint(1,3)}','lane_in_id':'','lane_in_name':f'Lane IN {rng.randint(1,6)}','entry_point_out_id':'','entry_point_out_name':f'Gate Out {rng.randint(1,3)}','lane_out_id':'','lane_out_name':f'Lane OUT {rng.randint(1,6)}','direction_type':'IN_OUT','check_in_at':ci.isoformat(sep=' '),'check_out_at':co.isoformat(sep=' '),'payment_type':rng.choice(pays),'use_voucher':rng.random()<.1,'wallet_balance_before':rng.randint(0,500000),'wallet_balance_after':rng.randint(0,500000),'total_topup':rng.choice([0,0,50000,100000]),'bank_transfer':fee if rng.random()<.3 else 0,'parking_fee':fee,'lost_card_fee':0 if rng.random()>.01 else 200000,'promotion_amount':rng.choice([0,0,5000,10000]),'promotion_vinfast_amount':0,'amount_due':max(fee-rng.choice([0,5000]),0),'used_change':0,'open_mode_in':rng.choice(['AUTO','MANUAL']),'open_mode_out':rng.choice(['AUTO','MANUAL']),'history_state':'COMPLETED','description':'','vehicle_type':vt,'park_duration':dur*60000,'park_duration_ms':dur*60000,'has_manual_edits':False,'check_in_note':'','check_out_note':'','is_exception':False,'created_by_user_id':'','created_by_username':'','last_modified_by_user_id':'','last_modified_by_username':'','checkin_customer_id':su('checkin-customer'),'checkout_customer_id':su('checkout-customer'),'created_at':ci.isoformat(sep=' '),'last_modified_at':co.isoformat(sep=' '),'processing_day':d.isoformat(),'_dbt_loaded_at':n}
-        raw.append(b); stg.append(b); facts.append({**b,'parking_lot_id':lot['pk_lot_id'],'event_date':d.isoformat(),'check_in_timestamp':ms(ci),'check_out_timestamp':ms(co),'check_in_date_key':d.strftime('%Y%m%d'),'check_out_date_key':co.date().strftime('%Y%m%d'),'check_in_time_key':f'{ci.hour:02d}{(ci.minute//cfg.time_grain_minutes)*cfg.time_grain_minutes:02d}','check_out_time_key':f'{co.hour:02d}{(co.minute//cfg.time_grain_minutes)*cfg.time_grain_minutes:02d}'})
+        raw.append(b); stg.append(b); facts.append({**b,'parking_lot_id':lot['pk_lot_id'],'event_date':d.isoformat(),'check_in_timestamp':ms(ci),'check_out_timestamp':ms(co),'check_in_date_key':int(d.strftime('%Y%m%d')),'check_out_date_key':int(co.date().strftime('%Y%m%d')),'check_in_time_key':f'{ci.hour:02d}{(ci.minute//cfg.time_grain_minutes)*cfg.time_grain_minutes:02d}','check_out_time_key':f'{co.hour:02d}{(co.minute//cfg.time_grain_minutes)*cfg.time_grain_minutes:02d}'})
     return raw,stg,reg['lots'],snaps,facts
 
 def gen_occ(facts):
@@ -150,7 +164,7 @@ def gen_occ(facts):
     run=defaultdict(int); rows=[]; n=now()
     for k,v in sorted(g.items()):
         lot,vt,dk,tk=k; run[(lot,vt)]+=v['in']-v['out']
-        rows.append({'parking_lot_id':lot,'vehicle_type':vt,'occupancy_hour':int(tk[:2]),'occupancy_date':f'{dk[:4]}-{dk[4:6]}-{dk[6:]}','occupancy_date_key':dk,'occupancy_time_key':tk,'vehicles_in':v['in'],'vehicles_out':v['out'],'current_occupancy':max(run[(lot,vt)],0),'_dbt_loaded_at':n})
+        dks=str(dk); rows.append({'parking_lot_id':lot,'vehicle_type':vt,'occupancy_hour':f'{dks[:4]}-{dks[4:6]}-{dks[6:]} {tk[:2]}:{tk[2:]}:00','occupancy_date':f'{dks[:4]}-{dks[4:6]}-{dks[6:]}','occupancy_date_key':dk,'occupancy_time_key':tk,'vehicles_in':v['in'],'vehicles_out':v['out'],'current_occupancy':max(run[(lot,vt)],0),'_dbt_loaded_at':n})
     return rows
 
 def validate(o):

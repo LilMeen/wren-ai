@@ -1,0 +1,582 @@
+sql_pairs:
+
+  - id: SP-TLM-01
+    question: "Tiêu thụ điện tháng này của từng đồng hồ điện?"
+    sql: >
+      SELECT e.deviceId,
+             d.device_name,
+             ROUND(MAX(e.energy_active_kwh_total) - MIN(e.energy_active_kwh_total), 3) AS consumption_kwh
+      FROM sdp_near_realtime_stg_mv_dmp_tlm_energy_meter e
+      JOIN sdp_golden_dim_device d ON e.deviceId = d.device_id
+      WHERE DATE_FORMAT(e.tsDt, '%Y-%m') = DATE_FORMAT(NOW(), '%Y-%m')
+      GROUP BY e.deviceId, d.device_name
+      ORDER BY consumption_kwh DESC
+
+  - id: SP-TLM-02
+    question: "Đồng hồ điện nào tiêu thụ nhiều nhất tháng này?"
+    sql: >
+      SELECT e.deviceId,
+             d.device_name,
+             ROUND(MAX(e.energy_active_kwh_total) - MIN(e.energy_active_kwh_total), 3) AS consumption_kwh
+      FROM sdp_near_realtime_stg_mv_dmp_tlm_energy_meter e
+      JOIN sdp_golden_dim_device d ON e.deviceId = d.device_id
+      WHERE DATE_FORMAT(e.tsDt, '%Y-%m') = DATE_FORMAT(NOW(), '%Y-%m')
+      GROUP BY e.deviceId, d.device_name
+      ORDER BY consumption_kwh DESC
+      LIMIT 1
+
+  - id: SP-TLM-03
+    question: "Chiller nào đang báo lỗi (fault) trong 1 giờ gần nhất?"
+    sql: >
+      SELECT c.deviceId,
+             d.device_name,
+             c.fault,
+             c.chiller_state,
+             c.eventTime
+      FROM sdp_near_realtime_stg_mv_dmp_tlm_chiller c
+      JOIN sdp_golden_dim_device d ON c.deviceId = d.device_id
+      WHERE c.fault = 1
+        AND c.tsDt >= DATE_SUB(NOW(), INTERVAL 1 HOUR)
+      ORDER BY c.eventTime DESC
+
+  - id: SP-TLM-04
+    question: "Camera nào có CPU usage cao nhất hiện tại?"
+    sql: >
+      SELECT c.deviceId,
+             d.device_name,
+             c.cpu_usage_pct,
+             c.memory_used_mb,
+             c.eventTime
+      FROM sdp_near_realtime_stg_mv_dmp_tlm_camera c
+      JOIN sdp_golden_dim_device d ON c.deviceId = d.device_id
+      INNER JOIN (
+        SELECT deviceId, MAX(tsDt) AS latest
+        FROM sdp_near_realtime_stg_mv_dmp_tlm_camera
+        GROUP BY deviceId
+      ) latest ON c.deviceId = latest.deviceId AND c.tsDt = latest.latest
+      ORDER BY c.cpu_usage_pct DESC
+      LIMIT 10
+
+  - id: SP-TLM-05
+    question: "NVR nào có uptime thấp nhất hiện tại?"
+    sql: >
+      SELECT n.deviceId,
+             d.device_name,
+             n.uptime_seconds,
+             ROUND(n.uptime_seconds / 3600.0, 1) AS uptime_hours,
+             n.eventTime
+      FROM sdp_near_realtime_stg_mv_dmp_tlm_nvr n
+      JOIN sdp_golden_dim_device d ON n.deviceId = d.device_id
+      INNER JOIN (
+        SELECT deviceId, MAX(tsDt) AS latest
+        FROM sdp_near_realtime_stg_mv_dmp_tlm_nvr
+        GROUP BY deviceId
+      ) latest ON n.deviceId = latest.deviceId AND n.tsDt = latest.latest
+      ORDER BY n.uptime_seconds ASC
+      LIMIT 10
+
+  # ── TOTAL ENERGY ──────────────────────────────────────────────
+
+  - id: SP-TLM-06
+    question: "Tổng tiêu thụ điện toàn hệ thống tháng này?"
+    sql: >
+      SELECT ROUND(SUM(period_kwh), 3) AS total_system_kwh
+      FROM (
+        SELECT deviceId,
+               MAX(energy_active_kwh_total) - MIN(energy_active_kwh_total) AS period_kwh
+        FROM sdp_near_realtime_stg_mv_dmp_tlm_energy_meter
+        WHERE DATE_FORMAT(tsDt, '%Y-%m') = DATE_FORMAT(NOW(), '%Y-%m')
+        GROUP BY deviceId
+      ) sub
+
+  - id: SP-TLM-07
+    question: "Xu hướng tiêu thụ điện theo ngày trong tuần này?"
+    sql: >
+      SELECT sub.day,
+             ROUND(SUM(sub.daily_kwh), 3) AS consumption_kwh
+      FROM (
+        SELECT deviceId,
+               DATE_FORMAT(tsDt, '%Y-%m-%d') AS day,
+               MAX(energy_active_kwh_total) - MIN(energy_active_kwh_total) AS daily_kwh
+        FROM sdp_near_realtime_stg_mv_dmp_tlm_energy_meter
+        WHERE YEARWEEK(CAST(tsDt AS DATE)) = YEARWEEK(CURRENT_DATE)
+        GROUP BY deviceId, DATE_FORMAT(tsDt, '%Y-%m-%d')
+      ) sub
+      GROUP BY sub.day
+      ORDER BY sub.day
+
+  - id: SP-TLM-08
+    question: "So sánh tiêu thụ điện tháng này so với tháng trước?"
+    sql: >
+      SELECT month_key AS month,
+             ROUND(SUM(period_kwh), 3) AS consumption_kwh
+      FROM (
+        SELECT deviceId,
+               DATE_FORMAT(tsDt, '%Y-%m') AS month_key,
+               MAX(energy_active_kwh_total) - MIN(energy_active_kwh_total) AS period_kwh
+        FROM sdp_near_realtime_stg_mv_dmp_tlm_energy_meter
+        WHERE tsDt >= DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 1 MONTH), '%Y-%m-01')
+        GROUP BY deviceId, DATE_FORMAT(tsDt, '%Y-%m')
+      ) sub
+      GROUP BY month_key
+      ORDER BY month_key
+
+  - id: SP-TLM-09
+    question: "Top 5 đồng hồ điện tiêu thụ nhiều nhất 30 ngày qua?"
+    sql: >
+      SELECT e.deviceId,
+             d.device_name,
+             ROUND(MAX(e.energy_active_kwh_total) - MIN(e.energy_active_kwh_total), 3) AS consumption_kwh
+      FROM sdp_near_realtime_stg_mv_dmp_tlm_energy_meter e
+      JOIN sdp_golden_dim_device d ON e.deviceId = d.device_id
+      WHERE e.tsDt >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+      GROUP BY e.deviceId, d.device_name
+      ORDER BY consumption_kwh DESC
+      LIMIT 5
+
+  - id: SP-TLM-10
+    question: "Công suất điện hiện tại (kW) của từng đồng hồ?"
+    sql: >
+      SELECT e.deviceId,
+             d.device_name,
+             e.power_active_kw,
+             e.eventTime
+      FROM sdp_near_realtime_stg_mv_dmp_tlm_energy_meter e
+      JOIN sdp_golden_dim_device d ON e.deviceId = d.device_id
+      INNER JOIN (
+        SELECT deviceId, MAX(tsDt) AS latest
+        FROM sdp_near_realtime_stg_mv_dmp_tlm_energy_meter
+        GROUP BY deviceId
+      ) latest ON e.deviceId = latest.deviceId AND e.tsDt = latest.latest
+      ORDER BY e.power_active_kw DESC
+
+  # ── WATER & ELECTRICITY CONSUMPTION ───────────────────────────
+
+  - id: SP-TLM-11
+    question: "Tổng tiêu thụ nước toàn hệ thống tháng này?"
+    sql: >
+      SELECT ROUND(SUM(period_m3), 3) AS total_water_m3
+      FROM (
+        SELECT deviceId,
+               MAX(water_volume_m3_total) - MIN(water_volume_m3_total) AS period_m3
+        FROM sdp_near_realtime_stg_mv_dmp_tlm_energy_meter
+        WHERE DATE_FORMAT(tsDt, '%Y-%m') = DATE_FORMAT(NOW(), '%Y-%m')
+        GROUP BY deviceId
+      ) sub
+
+  - id: SP-TLM-12
+    question: "Thiết bị nào tiêu thụ nước nhiều nhất tháng này?"
+    sql: >
+      SELECT e.deviceId,
+             d.device_name,
+             ROUND(MAX(e.water_volume_m3_total) - MIN(e.water_volume_m3_total), 3) AS water_m3
+      FROM sdp_near_realtime_stg_mv_dmp_tlm_energy_meter e
+      JOIN sdp_golden_dim_device d ON e.deviceId = d.device_id
+      WHERE DATE_FORMAT(e.tsDt, '%Y-%m') = DATE_FORMAT(NOW(), '%Y-%m')
+      GROUP BY e.deviceId, d.device_name
+      ORDER BY water_m3 DESC
+      LIMIT 5
+
+  - id: SP-TLM-13
+    question: "So sánh tiêu thụ nước và điện theo thiết bị tháng này?"
+    sql: >
+      SELECT e.deviceId,
+             d.device_name,
+             ROUND(MAX(e.energy_active_kwh_total) - MIN(e.energy_active_kwh_total), 3) AS electricity_kwh,
+             ROUND(MAX(e.water_volume_m3_total) - MIN(e.water_volume_m3_total), 3) AS water_m3
+      FROM sdp_near_realtime_stg_mv_dmp_tlm_energy_meter e
+      JOIN sdp_golden_dim_device d ON e.deviceId = d.device_id
+      WHERE DATE_FORMAT(e.tsDt, '%Y-%m') = DATE_FORMAT(NOW(), '%Y-%m')
+      GROUP BY e.deviceId, d.device_name
+      ORDER BY electricity_kwh DESC
+
+  - id: SP-TLM-14
+    question: "Xu hướng tiêu thụ nước theo ngày trong tháng này?"
+    sql: >
+      SELECT sub.day,
+             ROUND(SUM(sub.daily_m3), 3) AS water_m3
+      FROM (
+        SELECT deviceId,
+               DATE_FORMAT(tsDt, '%Y-%m-%d') AS day,
+               MAX(water_volume_m3_total) - MIN(water_volume_m3_total) AS daily_m3
+        FROM sdp_near_realtime_stg_mv_dmp_tlm_energy_meter
+        WHERE DATE_FORMAT(tsDt, '%Y-%m') = DATE_FORMAT(NOW(), '%Y-%m')
+        GROUP BY deviceId, DATE_FORMAT(tsDt, '%Y-%m-%d')
+      ) sub
+      GROUP BY sub.day
+      ORDER BY sub.day
+
+  - id: SP-TLM-15
+    question: "Tổng tiêu thụ điện và nước theo từng tháng trong năm nay?"
+    sql: >
+      SELECT month_key AS month,
+             ROUND(SUM(elec_kwh), 3) AS electricity_kwh,
+             ROUND(SUM(water_m3), 3) AS water_m3
+      FROM (
+        SELECT deviceId,
+               DATE_FORMAT(tsDt, '%Y-%m') AS month_key,
+               MAX(energy_active_kwh_total) - MIN(energy_active_kwh_total) AS elec_kwh,
+               MAX(water_volume_m3_total) - MIN(water_volume_m3_total) AS water_m3
+        FROM sdp_near_realtime_stg_mv_dmp_tlm_energy_meter
+        WHERE YEAR(tsDt) = YEAR(NOW())
+        GROUP BY deviceId, DATE_FORMAT(tsDt, '%Y-%m')
+      ) sub
+      GROUP BY month_key
+      ORDER BY month_key
+
+  # ── CHILLER & CAMERA STATUS ────────────────────────────────────
+
+  - id: SP-TLM-16
+    question: "Bao nhiêu chiller đang chạy (chiller_state=1) hiện tại?"
+    sql: >
+      SELECT COUNT(DISTINCT c.deviceId) AS running_chillers
+      FROM sdp_near_realtime_stg_mv_dmp_tlm_chiller c
+      INNER JOIN (
+        SELECT deviceId, MAX(tsDt) AS latest
+        FROM sdp_near_realtime_stg_mv_dmp_tlm_chiller
+        GROUP BY deviceId
+      ) latest ON c.deviceId = latest.deviceId AND c.tsDt = latest.latest
+      WHERE c.chiller_state = 1
+
+  - id: SP-TLM-17
+    question: "Chiller nào đang chạy nhưng đồng thời báo fault?"
+    sql: >
+      SELECT c.deviceId,
+             d.device_name,
+             c.fault,
+             c.chiller_state,
+             c.eventTime
+      FROM sdp_near_realtime_stg_mv_dmp_tlm_chiller c
+      JOIN sdp_golden_dim_device d ON c.deviceId = d.device_id
+      INNER JOIN (
+        SELECT deviceId, MAX(tsDt) AS latest
+        FROM sdp_near_realtime_stg_mv_dmp_tlm_chiller
+        GROUP BY deviceId
+      ) latest ON c.deviceId = latest.deviceId AND c.tsDt = latest.latest
+      WHERE c.chiller_state = 1
+        AND c.fault = 1
+
+  - id: SP-TLM-18
+    question: "Chiller nào không gửi dữ liệu trong 3 giờ qua?"
+    sql: >
+      SELECT c.deviceId,
+             d.device_name,
+             MAX(c.tsDt) AS last_seen
+      FROM sdp_near_realtime_stg_mv_dmp_tlm_chiller c
+      JOIN sdp_golden_dim_device d ON c.deviceId = d.device_id
+      GROUP BY c.deviceId, d.device_name
+      HAVING MAX(c.tsDt) < DATE_SUB(NOW(), INTERVAL 3 HOUR)
+      ORDER BY last_seen ASC
+
+  - id: SP-TLM-19
+    question: "Camera nào không gửi dữ liệu trong 1 giờ qua?"
+    sql: >
+      SELECT c.deviceId,
+             d.device_name,
+             MAX(c.tsDt) AS last_seen
+      FROM sdp_near_realtime_stg_mv_dmp_tlm_camera c
+      JOIN sdp_golden_dim_device d ON c.deviceId = d.device_id
+      GROUP BY c.deviceId, d.device_name
+      HAVING MAX(c.tsDt) < DATE_SUB(NOW(), INTERVAL 1 HOUR)
+      ORDER BY last_seen ASC
+
+  - id: SP-TLM-20
+    question: "Camera nào có CPU usage vượt 80% hiện tại?"
+    sql: >
+      SELECT c.deviceId,
+             d.device_name,
+             c.cpu_usage_pct,
+             c.memory_used_mb,
+             c.eventTime
+      FROM sdp_near_realtime_stg_mv_dmp_tlm_camera c
+      JOIN sdp_golden_dim_device d ON c.deviceId = d.device_id
+      INNER JOIN (
+        SELECT deviceId, MAX(tsDt) AS latest
+        FROM sdp_near_realtime_stg_mv_dmp_tlm_camera
+        GROUP BY deviceId
+      ) latest ON c.deviceId = latest.deviceId AND c.tsDt = latest.latest
+      WHERE c.cpu_usage_pct > 80
+      ORDER BY c.cpu_usage_pct DESC
+
+  # ── CAMERA QUALITY / STAGE ─────────────────────────────────────
+
+  - id: SP-TLM-21
+    question: "Camera nào có CPU và RAM cao nhất hiện tại?"
+    sql: >
+      SELECT c.deviceId,
+             d.device_name,
+             c.cpu_usage_pct,
+             c.memory_used_mb,
+             c.eventTime
+      FROM sdp_near_realtime_stg_mv_dmp_tlm_camera c
+      JOIN sdp_golden_dim_device d ON c.deviceId = d.device_id
+      INNER JOIN (
+        SELECT deviceId, MAX(tsDt) AS latest
+        FROM sdp_near_realtime_stg_mv_dmp_tlm_camera
+        GROUP BY deviceId
+      ) latest ON c.deviceId = latest.deviceId AND c.tsDt = latest.latest
+      ORDER BY c.cpu_usage_pct DESC, c.memory_used_mb DESC
+      LIMIT 10
+
+  - id: SP-TLM-22
+    question: "Camera nào không gửi dữ liệu trong 24 giờ qua (có thể offline)?"
+    sql: >
+      SELECT c.deviceId,
+             d.device_name,
+             MAX(c.tsDt) AS last_seen
+      FROM sdp_near_realtime_stg_mv_dmp_tlm_camera c
+      JOIN sdp_golden_dim_device d ON c.deviceId = d.device_id
+      GROUP BY c.deviceId, d.device_name
+      HAVING MAX(c.tsDt) < DATE_SUB(NOW(), INTERVAL 24 HOUR)
+      ORDER BY last_seen ASC
+
+  - id: SP-TLM-23
+    question: "Top 5 camera có memory usage cao nhất hiện tại?"
+    sql: >
+      SELECT c.deviceId,
+             d.device_name,
+             c.memory_used_mb,
+             c.cpu_usage_pct,
+             c.eventTime
+      FROM sdp_near_realtime_stg_mv_dmp_tlm_camera c
+      JOIN sdp_golden_dim_device d ON c.deviceId = d.device_id
+      INNER JOIN (
+        SELECT deviceId, MAX(tsDt) AS latest
+        FROM sdp_near_realtime_stg_mv_dmp_tlm_camera
+        GROUP BY deviceId
+      ) latest ON c.deviceId = latest.deviceId AND c.tsDt = latest.latest
+      ORDER BY c.memory_used_mb DESC
+      LIMIT 5
+
+  - id: SP-TLM-24
+    question: "Bao nhiêu camera đang hoạt động (gửi dữ liệu trong 1 giờ qua)?"
+    sql: >
+      SELECT COUNT(DISTINCT deviceId) AS active_cameras
+      FROM sdp_near_realtime_stg_mv_dmp_tlm_camera
+      WHERE tsDt >= DATE_SUB(NOW(), INTERVAL 1 HOUR)
+
+  - id: SP-TLM-25
+    question: "Xu hướng CPU và RAM trung bình của camera theo ngày tuần này?"
+    sql: >
+      SELECT DATE_FORMAT(tsDt, '%Y-%m-%d') AS day,
+             ROUND(AVG(cpu_usage_pct), 1) AS avg_cpu_pct,
+             ROUND(AVG(memory_used_mb), 1) AS avg_memory_mb,
+             COUNT(DISTINCT deviceId) AS camera_count
+      FROM sdp_near_realtime_stg_mv_dmp_tlm_camera
+      WHERE YEARWEEK(CAST(tsDt AS DATE)) = YEARWEEK(CURRENT_DATE)
+      GROUP BY DATE_FORMAT(tsDt, '%Y-%m-%d')
+      ORDER BY day
+
+  # ── 3-MONTH ENERGY TREND — no dim_date join to avoid alias conflict ────
+
+  - id: SP-TLM-26
+    question: "Xu hướng tiêu thụ điện của đồng hồ điện trong 3 tháng gần nhất?"
+    sql: >
+      SELECT DATE_FORMAT(e.tsDt, '%Y-%m') AS year_month,
+             ROUND(MAX(e.energy_active_kwh_total) - MIN(e.energy_active_kwh_total), 3) AS consumption_kwh
+      FROM sdp_near_realtime_stg_mv_dmp_tlm_energy_meter e
+      WHERE e.tsDt >= DATE_SUB(NOW(), INTERVAL 3 MONTH)
+      GROUP BY DATE_FORMAT(e.tsDt, '%Y-%m')
+      ORDER BY year_month
+
+  - id: SP-TLM-27
+    question: "Top khu vực tiêu thụ điện nhiều nhất?"
+    sql: >
+      SELECT asset_loc.asset_name,
+             ROUND(MAX(e.energy_active_kwh_total) - MIN(e.energy_active_kwh_total), 3) AS consumption_kwh
+      FROM sdp_near_realtime_stg_mv_dmp_tlm_energy_meter e
+      JOIN sdp_golden_dim_device dev ON e.deviceId = dev.device_id
+      JOIN sdp_golden_dim_device_asset asset_loc ON dev.device_id = asset_loc.device_id
+      WHERE e.tsDt >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+      GROUP BY asset_loc.asset_name
+      ORDER BY consumption_kwh DESC
+      LIMIT 5
+
+  - id: SP-TLM-28
+    question: "Tổng tiêu thụ điện toàn hệ thống tháng này?"
+    sql: >
+      SELECT ROUND(SUM(period_kwh), 3) AS total_kwh
+      FROM (
+        SELECT deviceId,
+               MAX(energy_active_kwh_total) - MIN(energy_active_kwh_total) AS period_kwh
+        FROM sdp_near_realtime_stg_mv_dmp_tlm_energy_meter
+        WHERE DATE_FORMAT(tsDt, '%Y-%m') = DATE_FORMAT(NOW(), '%Y-%m')
+        GROUP BY deviceId
+      ) sub
+
+  - id: SP-TLM-29
+    question: "Tiêu thụ điện của CHILLER trong 7 ngày qua?"
+    sql: >
+      SELECT dev.device_name,
+             ROUND(MAX(e.energy_active_kwh_total) - MIN(e.energy_active_kwh_total), 3) AS consumption_kwh
+      FROM sdp_near_realtime_stg_mv_dmp_tlm_energy_meter e
+      JOIN sdp_golden_dim_device dev ON e.deviceId = dev.device_id
+      WHERE e.tsDt >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+        AND (dev.device_type LIKE '%chiller%' OR dev.device_type LIKE '%Chiller%')
+      GROUP BY e.deviceId, dev.device_name
+      ORDER BY consumption_kwh DESC
+
+  - id: SP-TLM-30
+    question: "Số liệu và xu hướng tiêu thụ điện tháng trước khu vực C?"
+    sql: >
+      SELECT DATE_FORMAT(e.tsDt, '%Y-%m-%d') AS day,
+             ROUND(MAX(e.energy_active_kwh_total) - MIN(e.energy_active_kwh_total), 3) AS consumption_kwh
+      FROM sdp_near_realtime_stg_mv_dmp_tlm_energy_meter e
+      JOIN sdp_golden_dim_device dev ON e.deviceId = dev.device_id
+      JOIN sdp_golden_dim_device_asset asset_loc ON dev.device_id = asset_loc.device_id
+      WHERE DATE_FORMAT(e.tsDt, '%Y-%m') = DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 1 MONTH), '%Y-%m')
+        AND asset_loc.asset_name LIKE '%C%'
+      GROUP BY DATE_FORMAT(e.tsDt, '%Y-%m-%d')
+      ORDER BY day
+
+  - id: SP-TLM-31
+    question: "Danh sách camera đang bị hỏng hoặc offline (không gửi dữ liệu trong 24 giờ)?"
+    sql: >
+      SELECT dev.device_name,
+             dev.device_type,
+             MAX(c.tsDt) AS last_seen
+      FROM sdp_golden_dim_device dev
+      LEFT JOIN sdp_near_realtime_stg_mv_dmp_tlm_camera c ON dev.device_id = c.deviceId
+      WHERE dev.device_type LIKE '%Camera%'
+      GROUP BY dev.device_id, dev.device_name, dev.device_type
+      HAVING MAX(c.tsDt) < DATE_SUB(NOW(), INTERVAL 24 HOUR)
+          OR MAX(c.tsDt) IS NULL
+      ORDER BY last_seen ASC
+
+  - id: SP-TLM-32
+    question: "Chiller nào đang tiêu thụ điện cao bất thường?"
+    sql: >
+      SELECT dev.device_name,
+             ROUND(MAX(e.energy_active_kwh_total) - MIN(e.energy_active_kwh_total), 3) AS today_kwh,
+             ROUND(baseline.avg_daily_kwh, 3) AS avg_daily_kwh,
+             ROUND(100.0 * (MAX(e.energy_active_kwh_total) - MIN(e.energy_active_kwh_total)
+                   - baseline.avg_daily_kwh) / baseline.avg_daily_kwh, 1) AS deviation_pct
+      FROM sdp_near_realtime_stg_mv_dmp_tlm_energy_meter e
+      JOIN sdp_golden_dim_device dev ON e.deviceId = dev.device_id
+      JOIN (
+        SELECT sub.deviceId,
+               AVG(sub.daily_kwh) AS avg_daily_kwh
+        FROM (
+          SELECT deviceId,
+                 DATE_FORMAT(tsDt, '%Y-%m-%d') AS day,
+                 MAX(energy_active_kwh_total) - MIN(energy_active_kwh_total) AS daily_kwh
+          FROM sdp_near_realtime_stg_mv_dmp_tlm_energy_meter
+          WHERE tsDt >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+          GROUP BY deviceId, DATE_FORMAT(tsDt, '%Y-%m-%d')
+        ) sub
+        GROUP BY sub.deviceId
+      ) baseline ON e.deviceId = baseline.deviceId
+      WHERE DATE_FORMAT(e.tsDt, '%Y-%m-%d') = DATE_FORMAT(NOW(), '%Y-%m-%d')
+        AND (dev.device_type LIKE '%Chiller%' OR dev.device_type LIKE '%chiller%')
+      GROUP BY dev.device_id, dev.device_name, baseline.avg_daily_kwh
+      HAVING ABS(MAX(e.energy_active_kwh_total) - MIN(e.energy_active_kwh_total) - baseline.avg_daily_kwh)
+             / baseline.avg_daily_kwh > 0.30
+      ORDER BY deviation_pct DESC
+
+  - id: SP-TLM-33
+    question: "Xu hướng và số liệu tiêu thụ điện tháng trước khu vực C?"
+    sql: >
+      SELECT DATE_FORMAT(e.tsDt, '%Y-%m-%d') AS day,
+             ROUND(MAX(e.energy_active_kwh_total) - MIN(e.energy_active_kwh_total), 3) AS consumption_kwh
+      FROM sdp_near_realtime_stg_mv_dmp_tlm_energy_meter e
+      JOIN sdp_golden_dim_device dev ON e.deviceId = dev.device_id
+      JOIN sdp_golden_dim_device_asset asset_loc ON dev.device_id = asset_loc.device_id
+      WHERE DATE_FORMAT(e.tsDt, '%Y-%m') = DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 1 MONTH), '%Y-%m')
+        AND asset_loc.asset_name LIKE '%C%'
+      GROUP BY DATE_FORMAT(e.tsDt, '%Y-%m-%d')
+      ORDER BY day
+
+  - id: SP-TLM-34
+    question: "Xu hướng tiêu thụ điện khu vực B trong tuần qua?"
+    sql: >
+      SELECT DATE_FORMAT(e.tsDt, '%Y-%m-%d') AS day,
+             ROUND(MAX(e.energy_active_kwh_total) - MIN(e.energy_active_kwh_total), 3) AS consumption_kwh
+      FROM sdp_near_realtime_stg_mv_dmp_tlm_energy_meter e
+      JOIN sdp_golden_dim_device dev ON e.deviceId = dev.device_id
+      JOIN sdp_golden_dim_device_asset asset_loc ON dev.device_id = asset_loc.device_id
+      WHERE e.tsDt >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+        AND asset_loc.asset_name LIKE '%B%'
+      GROUP BY DATE_FORMAT(e.tsDt, '%Y-%m-%d')
+      ORDER BY day
+
+  # ── CO2 SENSOR — device info via dim_device_asset (no CO2 ppm telemetry) ──────
+
+  - id: SP-TLM-35
+    question: "Khu vực nào có nhiều CO2 sensor nhất trong hệ thống?"
+    sql: >
+      SELECT da.asset_name,
+             COUNT(DISTINCT d.device_id) AS co2_sensor_count
+      FROM sdp_golden_dim_device d
+      JOIN sdp_golden_dim_device_asset da ON d.device_id = da.device_id
+      WHERE d.device_type LIKE '%co2%' OR d.device_type LIKE '%CO2%'
+      GROUP BY da.asset_name
+      ORDER BY co2_sensor_count DESC
+      LIMIT 5
+
+  - id: SP-TLM-36
+    question: "Liệt kê các CO2 sensor được lắp tại tầng 3 tòa nhà A?"
+    sql: >
+      SELECT d.device_name,
+             d.device_type,
+             da.asset_name
+      FROM sdp_golden_dim_device d
+      JOIN sdp_golden_dim_device_asset da ON d.device_id = da.device_id
+      WHERE (d.device_type LIKE '%co2%' OR d.device_type LIKE '%CO2%')
+        AND da.asset_name LIKE '%FLOOR%3%'
+      ORDER BY da.asset_name, d.device_name
+
+  - id: SP-TLM-37
+    question: "Danh sách CO2 sensor và vị trí gắn trong hệ thống?"
+    sql: >
+      SELECT d.device_name,
+             d.device_type,
+             da.asset_name,
+             da.asset_type
+      FROM sdp_golden_dim_device d
+      JOIN sdp_golden_dim_device_asset da ON d.device_id = da.device_id
+      WHERE d.device_type LIKE '%co2%' OR d.device_type LIKE '%CO2%'
+      ORDER BY da.asset_name, d.device_name
+
+  # ── ENERGY BY BUILDING NAME ────────────────────────────────────
+
+  - id: SP-TLM-38
+    question: "Tiêu thụ điện tháng này tại tòa nhà BUILDING_001?"
+    sql: >
+      SELECT da.asset_name,
+             ROUND(MAX(e.energy_active_kwh_total) - MIN(e.energy_active_kwh_total), 3) AS consumption_kwh
+      FROM sdp_near_realtime_stg_mv_dmp_tlm_energy_meter e
+      JOIN sdp_golden_dim_device d ON e.deviceId = d.device_id
+      JOIN sdp_golden_dim_device_asset da ON d.device_id = da.device_id
+      WHERE da.asset_name = 'BUILDING_001'
+        AND DATE_FORMAT(e.tsDt, '%Y-%m') = DATE_FORMAT(NOW(), '%Y-%m')
+      GROUP BY da.asset_name
+
+  # ── CAMERA QUALITY PROXY ───────────────────────────────────────
+
+  - id: SP-TLM-39
+    question: "Camera nào có chất lượng hình ảnh kém (low light hoặc noise)?"
+    sql: >
+      SELECT d.device_name,
+             c.cpu_usage_pct,
+             c.memory_used_mb,
+             c.memory_free_mb
+      FROM sdp_near_realtime_stg_mv_dmp_tlm_camera c
+      JOIN sdp_golden_dim_device d ON c.deviceId = d.device_id
+      INNER JOIN (
+        SELECT deviceId, MAX(tsDt) AS latest
+        FROM sdp_near_realtime_stg_mv_dmp_tlm_camera
+        GROUP BY deviceId
+      ) x ON c.deviceId = x.deviceId AND c.tsDt = x.latest
+      WHERE c.cpu_usage_pct > 70
+      ORDER BY c.cpu_usage_pct DESC
+
+  # ── CHILLER STATE AS TEMPERATURE PROXY ────────────────────────
+
+  - id: SP-TLM-40
+    question: "Nhiệt độ làm lạnh trung bình của tất cả chiller trong tuần trước?"
+    sql: >
+      SELECT c.deviceId,
+             ROUND(AVG(c.chiller_state), 2) AS avg_chiller_state
+      FROM sdp_near_realtime_stg_mv_dmp_tlm_chiller c
+      WHERE c.tsDt >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+      GROUP BY c.deviceId

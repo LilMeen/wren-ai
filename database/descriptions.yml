@@ -1,0 +1,738 @@
+
+# ============================================================
+# Wren AI — Model & Column Descriptions
+# ============================================================
+# Các descriptions này được inject vào MDL manifest (docker/data/mdl/sample.json)
+# bởi generate_wren_relationship_manifest.py khi chạy.
+#
+# Mục đích: giúp LLM chọn đúng bảng và cột khi sinh SQL.
+# Hướng dẫn viết:
+#   - Mô tả rõ layer (staging / golden dim / golden fact / mart)
+#   - Ghi chú bảng nào dùng cho loại query nào (tránh nhầm lẫn)
+#   - Dùng tiếng Anh để LLM xử lý tốt hơn
+# ============================================================
+
+models:
+
+  # ──────────────────────────────────────────────────────────
+  # GOLDEN DIMENSIONS — device / asset
+  # ──────────────────────────────────────────────────────────
+
+  dim_device:
+    description: >
+      Golden dimension for IoT devices. One row per unique device registered in the DMP (ThingsBoard).
+      Use this table for any device-level analysis: count devices, filter by type, join to telemetry.
+      Denormalized to include device_profile fields directly — no extra join needed for profile name/type.
+    columns:
+      device_sk: Surrogate key (SHA-1 hash) uniquely identifying the device row.
+      device_id: UUID of the device in ThingsBoard DMP. Use this column to join with telemetry and staging tables.
+      device_name: Human-readable name of the device (e.g. BMS_CO2_SENSOR_01061).
+      device_label: Display label for the device; may differ from name.
+      device_type: Device category (e.g. CAMERA, NVR, bms-co2-sensor, siemens-chiller). Use for filtering by sensor type.
+      additional_info: JSON blob with extra metadata (site, source, custom fields).
+      device_data: JSON blob with device configuration (polling interval, etc.).
+      customer_id: UUID of the customer who owns this device.
+      tenant_id: UUID of the ThingsBoard tenant.
+      firmware_id: UUID of the firmware version assigned to this device.
+      software_id: UUID of the software version assigned to this device.
+      external_id: External system identifier for this device.
+      device_profile_id: UUID of the device profile (FK to dim_device_profile).
+      device_profile_name: Name of the device profile (denormalized from dim_device_profile).
+      device_profile_description: Description of the device profile (denormalized).
+      transport_type: Communication protocol (MQTT, HTTP, etc.).
+      provision_type: How the device was provisioned (DISABLED, ALLOW_CREATE_NEW_DEVICES, etc.).
+      device_profile_is_default: True if the device profile is the tenant default.
+      created_at: Timestamp when the device was first registered in DMP.
+      _dbt_loaded_at: Timestamp when this row was last loaded by dbt.
+
+  dim_device_profile:
+    description: >
+      Golden dimension for device profiles. Each profile defines a type/class of IoT device:
+      its transport protocol, provisioning rules, firmware configuration, and associated dashboards.
+      Join to dim_device via device_profile_id when you need profile-level metadata not already
+      denormalized in dim_device.
+    columns:
+      device_profile_sk: Surrogate key for the device profile row.
+      device_profile_id: UUID of the device profile in ThingsBoard DMP.
+      device_profile_name: Name of the device profile (e.g. bms-co2-sensor, CAMERA).
+      profile_type: Device category label mirroring device_profile_name.
+      transport_type: Communication protocol used by devices of this profile (MQTT, HTTP, CoAP).
+      provision_type: Provisioning strategy for devices of this profile.
+      profile_data: JSON blob with advanced profile configuration.
+      device_profile_description: Human-readable description of what this profile represents.
+      is_default: True if this profile is the default for its tenant.
+      tenant_id: UUID of the ThingsBoard tenant that owns this profile.
+      firmware_id: Default firmware UUID assigned to devices of this profile.
+      software_id: Default software UUID assigned to devices of this profile.
+      default_rule_chain_id: UUID of the default rule chain for event processing.
+      default_dashboard_id: UUID of the default dashboard for visualization.
+      default_queue_name: Message queue name for telemetry routing (e.g. Main).
+      default_edge_rule_chain_id: Rule chain used on edge devices.
+      provision_device_key: Key used during device provisioning.
+      image: URL or reference to the profile icon image.
+      created_at: Timestamp when the profile was created.
+      _dbt_loaded_at: Timestamp when this row was last loaded by dbt.
+
+  dim_asset:
+    description: >
+      Golden dimension for assets (physical locations or equipment that devices are attached to).
+      Examples: building floors, zones, parking lots, HVAC equipment.
+      Each asset can have one or more devices assigned via dim_device_asset or fct_device_asset_assignment.
+      Denormalized to include asset_profile fields directly.
+    columns:
+      asset_sk: Surrogate key uniquely identifying the asset row.
+      asset_id: UUID of the asset in ThingsBoard DMP. Use this to join with device-asset bridge tables.
+      asset_name: Human-readable name of the asset (e.g. BUILDING_001, FLOOR_002).
+      asset_label: Display label for the asset.
+      asset_type: Category of the asset (building, floor, zone, parking, equipment).
+      additional_info: JSON blob with extra metadata.
+      customer_id: UUID of the customer who owns this asset.
+      tenant_id: UUID of the ThingsBoard tenant.
+      external_id: External system identifier for this asset.
+      asset_profile_id: UUID of the asset profile (FK to dim_asset_profile).
+      asset_profile_name: Name of the asset profile (denormalized).
+      asset_profile_description: Description of the asset profile (denormalized).
+      asset_profile_is_default: True if the asset profile is the tenant default.
+      default_rule_chain_id: Default rule chain UUID for this asset's profile.
+      default_dashboard_id: Default dashboard UUID for this asset's profile.
+      default_queue_name: Message queue name.
+      default_edge_rule_chain_id: Edge rule chain UUID.
+      created_at: Timestamp when the asset was first created in DMP.
+      _dbt_loaded_at: Timestamp when this row was last loaded by dbt.
+
+  dim_asset_profile:
+    description: >
+      Golden dimension for asset profiles. Defines categories of assets such as Building, Floor, Zone,
+      Parking, and Equipment. Each profile sets default rule chains and dashboards for its assets.
+    columns:
+      asset_profile_sk: Surrogate key for the asset profile row.
+      asset_profile_id: UUID of the asset profile in ThingsBoard DMP.
+      asset_profile_name: Name of the asset profile (e.g. Building, Floor, Zone, Parking, Equipment).
+      asset_profile_description: Human-readable description of the asset category.
+      is_default: True if this profile is the tenant default.
+      tenant_id: UUID of the ThingsBoard tenant.
+      default_rule_chain_id: Default rule chain UUID for assets of this profile.
+      default_dashboard_id: Default dashboard UUID for assets of this profile.
+      default_queue_name: Message queue routing name.
+      default_edge_rule_chain_id: Edge rule chain UUID.
+      image: URL or reference to the profile icon.
+      created_at: Timestamp when the profile was created.
+      _dbt_loaded_at: Timestamp when this row was last loaded by dbt.
+
+  # ──────────────────────────────────────────────────────────
+  # GOLDEN DIMENSIONS — device-asset bridge
+  # ──────────────────────────────────────────────────────────
+
+  dim_device_asset:
+    description: >
+      Current-state bridge table linking devices to the assets they are currently assigned to.
+      One row per active device–asset pair. Use this to answer "which devices are in building X?"
+      or "which assets does device Y monitor?". For historical assignments use dim_device_asset_snapshot.
+      This table is denormalized: it contains full device and asset attributes, avoiding extra joins.
+    columns:
+      device_sk: Surrogate key of the device.
+      asset_sk: Surrogate key of the asset.
+      device_id: UUID of the device. Use to join with dim_device or telemetry tables.
+      device_name: Name of the device.
+      device_label: Label of the device.
+      device_type: Type/category of the device.
+      device_additional_info: JSON metadata for the device.
+      device_data: JSON configuration data for the device.
+      device_customer_id: Customer UUID of the device.
+      device_tenant_id: Tenant UUID of the device.
+      firmware_id: Firmware UUID of the device.
+      software_id: Software UUID of the device.
+      device_external_id: External system ID of the device.
+      device_profile_name: Profile name of the device.
+      device_profile_description: Profile description of the device.
+      transport_type: Communication protocol of the device.
+      provision_type: Provisioning strategy of the device.
+      device_profile_is_default: Whether the device profile is the default.
+      device_created_at: When the device was created.
+      asset_id: UUID of the asset. Use to join with dim_asset.
+      asset_name: Name of the asset.
+      asset_label: Label of the asset.
+      asset_type: Type/category of the asset.
+      asset_additional_info: JSON metadata for the asset.
+      asset_customer_id: Customer UUID of the asset.
+      asset_tenant_id: Tenant UUID of the asset.
+      asset_external_id: External system ID of the asset.
+      asset_profile_name: Profile name of the asset.
+      asset_profile_description: Profile description of the asset.
+      asset_profile_is_default: Whether the asset profile is the default.
+      default_rule_chain_id: Default rule chain UUID for the asset.
+      default_dashboard_id: Default dashboard UUID for the asset.
+      default_queue_name: Message queue routing name.
+      default_edge_rule_chain_id: Edge rule chain UUID.
+      asset_created_at: When the asset was created.
+      _dbt_loaded_at: Timestamp when this row was last loaded by dbt.
+
+  dim_device_asset_snapshot:
+    description: >
+      SCD Type-2 snapshot of the device–asset bridge. Tracks historical assignments: when a device was
+      moved from one asset to another. Use this table for point-in-time analysis
+      (e.g. "which asset was device X assigned to on 2026-01-15?").
+      Use dim_device_asset instead for current-state queries.
+      Filter by dbt_valid_to IS NULL (or empty) to get current records.
+    columns:
+      device_asset_sk: Surrogate key for this specific snapshot record.
+      device_sk: Surrogate key of the device.
+      asset_sk: Surrogate key of the asset.
+      device_id: UUID of the device.
+      asset_id: UUID of the asset.
+      device_name: Name of the device at the time of this record.
+      device_type: Type of the device.
+      device_tenant_id: Tenant UUID of the device.
+      asset_name: Name of the asset at the time of this record.
+      asset_type: Type of the asset.
+      asset_tenant_id: Tenant UUID of the asset.
+      dbt_scd_id: Internal dbt SCD record identifier.
+      dbt_updated_at: When this SCD record was last updated.
+      dbt_valid_from: Start of the validity window for this device–asset assignment.
+      dbt_valid_to: End of the validity window (NULL or empty = currently active record).
+      _dbt_loaded_at: Timestamp when this row was last loaded by dbt.
+
+  # ──────────────────────────────────────────────────────────
+  # GOLDEN DIMENSIONS — date / time
+  # ──────────────────────────────────────────────────────────
+
+  dim_date:
+    description: >
+      Date dimension covering the data generation window. Each row is one calendar day.
+      Join using integer date keys in format YYYYMMDD (e.g. 20260601).
+      Use for date-level filtering (by year, month, quarter, day_name) and grouping.
+    columns:
+      date_key: Integer date key in YYYYMMDD format (e.g. 20260601). Use this to join with fact tables.
+      full_date: Calendar date as ISO string (e.g. 2026-06-01).
+      year: Calendar year (e.g. 2026).
+      quarter: Quarter number 1–4.
+      month: Month number 1–12.
+      day: Day of month 1–31.
+      year_month: Year-month label (e.g. 2026-06). Use for monthly grouping.
+      year_week: ISO year-week label (e.g. 2026-W23). Use for weekly grouping.
+      day_of_year: Day number within the year (1–366).
+      day_of_week: ISO weekday number (1=Monday … 7=Sunday).
+      day_name: Full weekday name (Monday, Tuesday, …).
+      day_name_short: Abbreviated weekday name (Mon, Tue, …).
+      is_weekend: True for Saturday and Sunday.
+      month_name: Full month name (January, February, …).
+      month_name_short: Abbreviated month name (Jan, Feb, …).
+
+  dim_time:
+    description: >
+      Time dimension with one row per time slot at 15-minute granularity (96 rows covering 00:00–23:45).
+      Time keys are 4-character strings in HHMM format (e.g. '0930' for 09:30).
+      Use for time-of-day analysis: peak hours, period breakdowns (morning/afternoon/evening/night).
+    columns:
+      time_key: 4-character string time key in HHMM format (e.g. '0930'). Use to join with fact tables.
+      time_of_day: Full time string (e.g. '09:30:00').
+      hour: Hour of day 0–23.
+      minute: Minute within the hour (0, 15, 30, or 45 for 15-min granularity).
+      time_label: Short label 'HH:MM' (e.g. '09:30').
+      hour_label: Hour-level label 'HH:00' (e.g. '09:00'). Use for hourly grouping.
+      period: Time-of-day period — night (00–05), morning (06–11), afternoon (12–17), evening (18–23).
+      time_of_day_label: Same as time_label; human-readable display value.
+      minutes_since_midnight: Total minutes since midnight (e.g. 570 for 09:30). Use for numeric range filters.
+
+  # ──────────────────────────────────────────────────────────
+  # GOLDEN DIMENSIONS — parking lot
+  # ──────────────────────────────────────────────────────────
+
+  dim_parking_lot:
+    description: >
+      Current-state dimension for parking lots. One row per lot. Contains lot name and area grouping.
+      Use for parking-domain queries: join to fct_vehicle_events or fct_parking_occupancy via parking_lot_id = pk_lot_id.
+    columns:
+      pk_lot_id: Primary key of the parking lot (e.g. LOT_001). Use this to join with fact tables.
+      pk_lot_name: Human-readable name of the parking lot.
+      area_id: Area/zone grouping identifier (e.g. AREA_01). Multiple lots can share an area.
+
+  dim_parking_lot_snapshot:
+    description: >
+      SCD Type-2 snapshot of parking lot dimension. Tracks historical changes to lot name or area.
+      Use for point-in-time parking lot lookups. Filter dbt_valid_to IS NULL for current records.
+      Use dim_parking_lot instead for current-state queries.
+    columns:
+      pk_lot_id: Parking lot identifier.
+      pk_lot_name: Parking lot name at the time of this snapshot.
+      area_id: Area grouping at the time of this snapshot.
+      dbt_scd_id: Internal dbt SCD record identifier.
+      dbt_updated_at: When this SCD record was last updated.
+      dbt_valid_from: Start of the validity window.
+      dbt_valid_to: End of the validity window (NULL or empty = currently active).
+
+  # ──────────────────────────────────────────────────────────
+  # GOLDEN FACTS
+  # ──────────────────────────────────────────────────────────
+
+  fct_device_asset_assignment:
+    description: >
+      Fact table recording device–asset assignment relationships sourced from the DMP relation graph.
+      Each row is one CONTAINS relationship: a device assigned to an asset.
+      Use to count assignments, trace lineage, or audit relation history.
+    columns:
+      device_sk: Surrogate key of the assigned device.
+      asset_sk: Surrogate key of the target asset.
+      device_id: UUID of the device being assigned.
+      device_tenant_id: Tenant UUID of the device.
+      asset_id: UUID of the asset receiving the device.
+      asset_tenant_id: Tenant UUID of the asset.
+      relation_type_group: Relation group in ThingsBoard (typically COMMON).
+      relation_type: Relation type label (typically Contains).
+      relation_additional_info: JSON metadata on the relation.
+      relation_version: Version counter for this relation record.
+      _dbt_loaded_at: Timestamp when this row was last loaded by dbt.
+
+  fct_vehicle_events:
+    description: >
+      Golden fact table for individual vehicle entry/exit events (one row per transaction).
+      Contains full event detail: timestamps, fees, lane info, LPN, payment.
+      Use for transaction-level analysis: revenue, dwell time, LPN lookups, lane utilization.
+      For pre-aggregated hourly occupancy counts use fct_parking_occupancy — it is faster and
+      avoids expensive aggregation over this large table.
+      Includes integer date keys (check_in_date_key, check_out_date_key) and HHMM time keys
+      (check_in_time_key, check_out_time_key) for joins to dim_date and dim_time.
+    columns:
+      event_id: UUID uniquely identifying this vehicle transaction.
+      check_in_at: Datetime when the vehicle entered the parking lot.
+      check_out_at: Datetime when the vehicle exited the parking lot.
+      event_date: Calendar date of the event (ISO date string).
+      check_in_timestamp: Unix epoch milliseconds for check-in time.
+      check_out_timestamp: Unix epoch milliseconds for check-out time.
+      parking_lot_id: Parking lot identifier. Join to dim_parking_lot.pk_lot_id.
+      vehicle_type: Type of vehicle (CAR, MOTORBIKE, TRUCK, EV).
+      direction_type: Direction of the event (IN_OUT for a complete transaction).
+      history_state: Processing state of the event (e.g. COMPLETED).
+      payment_type: Payment method used (CASH, CARD, E_WALLET, MONTHLY_PASS).
+      lpn: License plate number of the vehicle.
+      lpn_cmp: LPN comparison result (MATCH / MISMATCH).
+      service_id: Identifier of the parking service plan.
+      service_name: Name of the parking service (e.g. Hourly Parking, Monthly Parking).
+      service_category: Service tier (STANDARD, VIP, STAFF).
+      owner_customer_id: UUID of the parking operator customer.
+      card_number: Physical card number used for entry/exit.
+      use_voucher: True if a voucher was applied to this transaction.
+      wallet_balance_before: Wallet balance before transaction (VND).
+      wallet_balance_after: Wallet balance after transaction (VND).
+      total_topup: Amount topped up to wallet during this transaction (VND).
+      bank_transfer: Amount paid via bank transfer (VND).
+      parking_fee: Base parking fee charged (VND).
+      lost_card_fee: Lost card penalty charged (VND, 0 if no lost card).
+      promotion_amount: Discount applied (VND).
+      promotion_vinfast_amount: VinFast-specific discount applied (VND).
+      amount_due: Net amount owed after discounts (VND).
+      used_change: Change given back to the customer (VND).
+      park_duration_ms: Total parking duration in milliseconds.
+      org_unit_code: Organizational unit code of the parking operator.
+      org_unit_name: Organizational unit name.
+      checkin_customer_id: UUID of the customer recorded at check-in.
+      checkout_customer_id: UUID of the customer recorded at check-out.
+      entry_point_in_name: Name of the entry gate used for check-in.
+      lane_in_name: Name of the lane used for check-in.
+      entry_point_out_name: Name of the exit gate used for check-out.
+      lane_out_name: Name of the lane used for check-out.
+      open_mode_in: Gate open mode at check-in (AUTO or MANUAL).
+      open_mode_out: Gate open mode at check-out (AUTO or MANUAL).
+      check_in_date_key: Integer date key (YYYYMMDD) of the check-in date. Join to dim_date.date_key.
+      check_in_time_key: 4-char HHMM time key of the check-in time. Join to dim_time.time_key.
+      check_out_date_key: Integer date key (YYYYMMDD) of the check-out date. Join to dim_date.date_key.
+      check_out_time_key: 4-char HHMM time key of the check-out time. Join to dim_time.time_key.
+      created_at: When this event record was first created.
+      last_modified_at: When this event record was last modified.
+      _dbt_loaded_at: Timestamp when this row was last loaded by dbt.
+
+  # ──────────────────────────────────────────────────────────
+  # MART
+  # ──────────────────────────────────────────────────────────
+
+  fct_parking_occupancy:
+    description: >
+      Pre-aggregated mart table: hourly parking occupancy by lot and vehicle type.
+      One row per (parking_lot_id, vehicle_type, occupancy_date_key, occupancy_time_key) combination.
+      ALWAYS use this table for occupancy queries (how many vehicles are parked, peak hours, lot utilization).
+      Do NOT compute occupancy from fct_vehicle_events — fct_parking_occupancy is pre-aggregated and faster.
+      Joins: parking_lot_id → dim_parking_lot.pk_lot_id,
+             occupancy_date_key → dim_date.date_key,
+             occupancy_time_key → dim_time.time_key.
+    columns:
+      parking_lot_id: Parking lot identifier. Join to dim_parking_lot.pk_lot_id.
+      vehicle_type: Type of vehicle counted (CAR, MOTORBIKE, TRUCK, EV).
+      occupancy_hour: Full datetime of the occupancy slot (e.g. 2026-06-01 17:00:00).
+      occupancy_date: Calendar date of the occupancy slot (ISO date string).
+      occupancy_date_key: Integer date key (YYYYMMDD). Join to dim_date.date_key.
+      occupancy_time_key: 4-char HHMM time key of the slot (e.g. '1700'). Join to dim_time.time_key.
+      vehicles_in: Number of vehicles that entered during this time slot.
+      vehicles_out: Number of vehicles that exited during this time slot.
+      current_occupancy: Running count of vehicles currently parked at end of this slot (vehicles_in − vehicles_out accumulated).
+
+  # ──────────────────────────────────────────────────────────
+  # STAGING — device / asset (raw layer, use golden for analysis)
+  # ──────────────────────────────────────────────────────────
+
+  stg_dmp_devices:
+    description: >
+      Staging layer for devices sourced from the ThingsBoard DMP public.device table.
+      Lightly transformed: UUID renamed from id→device_id, timestamps normalized.
+      For analysis prefer dim_device (golden) which is cleaner and denormalized.
+      Use stg_dmp_devices for raw-level debugging or lineage tracing.
+    columns:
+      device_id: UUID of the device (renamed from id in raw source).
+      additional_info: JSON blob with site and source metadata.
+      customer_id: UUID of the customer who owns this device.
+      device_profile_id: UUID of the device profile.
+      device_data: JSON blob with device configuration.
+      type: Raw device type string from ThingsBoard.
+      name: Device name.
+      label: Device label.
+      tenant_id: Tenant UUID.
+      firmware_id: Firmware UUID.
+      software_id: Software UUID.
+      external_id: External system ID.
+      version: Record version counter from ThingsBoard.
+      processing_day: Partition date when this record was extracted.
+      created_at: Device creation timestamp.
+      _dbt_loaded_at: Timestamp when this row was last loaded by dbt.
+
+  stg_dmp_device_profiles:
+    description: >
+      Staging layer for device profiles from ThingsBoard DMP.
+      For analysis prefer dim_device_profile (golden).
+    columns:
+      device_profile_id: UUID of the device profile (renamed from id).
+      name: Profile name.
+      type: Profile type.
+      image: Profile icon reference.
+      transport_type: Communication protocol (MQTT, HTTP, etc.).
+      provision_type: Provisioning strategy.
+      profile_data: JSON profile configuration.
+      description: Human-readable profile description.
+      is_default: True if this is the tenant default profile.
+      tenant_id: Tenant UUID.
+      firmware_id: Default firmware UUID for devices of this profile.
+      software_id: Default software UUID.
+      default_rule_chain_id: Default rule chain UUID.
+      default_dashboard_id: Default dashboard UUID.
+      default_queue_name: Message queue name.
+      provision_device_key: Provisioning key.
+      default_edge_rule_chain_id: Edge rule chain UUID.
+      external_id: External system ID.
+      version: Record version counter.
+      processing_day: Partition date when this record was extracted.
+      created_at: Profile creation timestamp.
+      _dbt_loaded_at: Timestamp when this row was last loaded by dbt.
+
+  stg_dmp_assets:
+    description: >
+      Staging layer for assets from ThingsBoard DMP public.asset table.
+      For analysis prefer dim_asset (golden) which is cleaner and denormalized.
+    columns:
+      asset_id: UUID of the asset (renamed from id).
+      additional_info: JSON blob with metadata.
+      customer_id: Customer UUID.
+      asset_profile_id: Asset profile UUID.
+      name: Asset name.
+      label: Asset label.
+      tenant_id: Tenant UUID.
+      type: Raw asset type string.
+      external_id: External system ID.
+      version: Record version counter.
+      processing_day: Partition date.
+      created_at: Asset creation timestamp.
+      _dbt_loaded_at: dbt load timestamp.
+
+  stg_dmp_asset_profiles:
+    description: >
+      Staging layer for asset profiles from ThingsBoard DMP.
+      For analysis prefer dim_asset_profile (golden).
+    columns:
+      asset_profile_id: UUID of the asset profile (renamed from id).
+      name: Profile name (Building, Floor, Zone, Parking, Equipment).
+      image: Profile icon reference.
+      description: Human-readable profile description.
+      is_default: True if tenant default profile.
+      tenant_id: Tenant UUID.
+      default_rule_chain_id: Default rule chain UUID.
+      default_dashboard_id: Default dashboard UUID.
+      default_queue_name: Message queue name.
+      default_edge_rule_chain_id: Edge rule chain UUID.
+      external_id: External system ID.
+      version: Record version counter.
+      processing_day: Partition date.
+      created_at: Profile creation timestamp.
+      _dbt_loaded_at: dbt load timestamp.
+
+  stg_dmp_relations:
+    description: >
+      Staging layer for device–asset relationships from ThingsBoard DMP public.relation table.
+      Each row is a directed relation: from_id → to_id with a relation_type (e.g. Contains).
+      from_type and to_type indicate whether from_id/to_id is a DEVICE or ASSET.
+      This table feeds dim_device_asset and fct_device_asset_assignment.
+      For analysis of current device–asset links use dim_device_asset or fct_device_asset_assignment instead.
+    columns:
+      from_id: UUID of the source entity (device or asset). When from_type=DEVICE this equals device_id.
+      from_type: Entity type of the source (DEVICE or ASSET).
+      to_id: UUID of the target entity. When to_type=ASSET this equals asset_id.
+      to_type: Entity type of the target (DEVICE or ASSET).
+      relation_type_group: Relation category (typically COMMON).
+      relation_type: Relation label (typically Contains).
+      additional_info: JSON metadata on the relation.
+      version: Record version counter.
+      processing_day: Partition date.
+      _dbt_loaded_at: dbt load timestamp.
+
+  # ──────────────────────────────────────────────────────────
+  # STAGING — device events
+  # ──────────────────────────────────────────────────────────
+
+  stg_dmp_device_status_events:
+    description: >
+      Staging table for device status change events (ONLINE, OFFLINE, MAINTENANCE).
+      One row per status event per device. Use to analyze device uptime, downtime periods,
+      and status transition frequency. Partitioned by event_date and device_type.
+      Join to dim_device via device_id for enriched device metadata.
+    columns:
+      event_id: UUID uniquely identifying this status event.
+      device_id: UUID of the device. Join to dim_device.device_id.
+      tenant_id: Tenant UUID.
+      event_type: STATUS_CHANGE (status changed) or STATUS_HEARTBEAT (periodic confirmation).
+      source_system: System that generated this event (DMP).
+      device_code: Human-readable device code name.
+      device_type: Device category (e.g. CAMERA, bms-co2-sensor).
+      ip_address: IP address of the device at event time.
+      current_status: Device status after this event (ONLINE, OFFLINE, MAINTENANCE).
+      previous_status: Device status before this event.
+      status_change_reason: Description of why the status changed.
+      event_time: Exact datetime of the status event.
+      event_date: Calendar date of the event (partition key).
+      event_hour: Hour within the day when the event occurred.
+      processing_day: Partition date for data loading.
+      is_online: Boolean shortcut — True if current_status = ONLINE.
+      is_status_change_event: True if this is a STATUS_CHANGE (not just a heartbeat).
+      _dbt_loaded_at: dbt load timestamp.
+
+  stg_dmp_evt_connectivity:
+    description: >
+      Staging table for raw device connectivity telemetry events sourced from DMP.
+      Contains heartbeat-level connectivity data including signal quality and offline reasons.
+      Lower-level than stg_dmp_device_status_events — use status_events for status analysis
+      and this table for raw connectivity quality metrics (qualityscore, icmpreachable).
+      Note: column names are lowercase in this table (deviceid, tenantid, etc.) unlike other tables.
+    columns:
+      msgtype: Message type (CONNECTIVITY).
+      deviceid: UUID of the device (lowercase). Join to dim_device.device_id.
+      tenantid: Tenant UUID (lowercase).
+      customerid: Customer UUID (lowercase).
+      devicecode: Human-readable device code name.
+      status: Connectivity status (ONLINE or OFFLINE).
+      offlinereason: Reason the device went offline (e.g. NO_HEARTBEAT, TIMEOUT).
+      qualityscore: Signal/connectivity quality score (0–100). Higher is better.
+      icmpreachable: True if the device responded to ICMP ping.
+      ts: Event timestamp in Unix epoch milliseconds.
+      processing_day: Partition date.
+
+  # ──────────────────────────────────────────────────────────
+  # STAGING — parking
+  # ──────────────────────────────────────────────────────────
+
+  stg_vehicle_histories:
+    description: >
+      Staging layer for vehicle parking transactions from the parking couchbase source.
+      Lightly cleaned version of raw_parking_db_vehicle_histories: timestamps parsed to datetime,
+      monetary fields cast to float where needed. One row per vehicle entry/exit transaction.
+      For analysis prefer fct_vehicle_events (golden) which is further cleaned and has date/time keys.
+      Use stg_vehicle_histories for raw-level debugging, data quality checks, or fields not in fct_vehicle_events.
+    columns:
+      event_id: UUID of the parking transaction.
+      card_number: Physical card used for entry/exit.
+      lpn: License plate number.
+      lpn_cmp: LPN comparison result between camera captures.
+      lpn_camera_in: LPN captured by entry lane camera.
+      lpn_in_edited: Manually corrected LPN at entry.
+      lpn_camera_out: LPN captured by exit lane camera.
+      lpn_out_edited: Manually corrected LPN at exit.
+      service_id: Parking service plan ID.
+      service_name: Parking service plan name.
+      owner_customer_id: Operator customer UUID.
+      org_unit_code: Organizational unit code.
+      org_unit_name: Organizational unit name.
+      pk_lot_id: Parking lot ID. Join to dim_parking_lot.pk_lot_id.
+      pk_lot_name: Parking lot name.
+      direction_type: Transaction direction (IN_OUT for a complete event).
+      check_in_at_raw: Raw check-in timestamp string from source.
+      check_out_at_raw: Raw check-out timestamp string from source.
+      check_in_at: Parsed check-in datetime.
+      check_out_at: Parsed check-out datetime.
+      payment_type: Payment method.
+      vehicle_type: Vehicle category (CAR, MOTORBIKE, TRUCK, EV).
+      park_duration_ms: Total duration in milliseconds.
+      history_state: Processing state of the event.
+      service_category: Service tier (STANDARD, VIP, STAFF).
+      event_date: Calendar date of the event (partition key).
+      _dbt_loaded_at: dbt load timestamp.
+
+  # ──────────────────────────────────────────────────────────
+  # NEAR-REALTIME — telemetry materialized views
+  # ──────────────────────────────────────────────────────────
+
+  stg_mv_dmp_tlm_camera:
+    description: >
+      Materialized view of camera device telemetry. Filters raw_dmp_tlm_raw for deviceType=CAMERA
+      and extracts typed telemetry fields. One row per camera per telemetry event.
+      Refreshed asynchronously from the raw telemetry stream.
+      Join to dim_device via deviceId=device_id for device metadata.
+      Use for: CPU/memory monitoring, reboot counts, fan/heater state analysis, and camera image quality proxy (chat luong hinh anh camera - use cpu_usage_pct > 70 as proxy for low light/noise/poor image quality).
+    columns:
+      deviceId: UUID of the camera device. Join to dim_device.device_id.
+      ts: Event timestamp in Unix epoch milliseconds.
+      eventTime: Datetime of the telemetry event.
+      tenantId: Tenant UUID.
+      customerId: Customer UUID.
+      cpu_usage_pct: "CPU utilization percentage (0-100). IMAGE QUALITY PROXY: use cpu_usage_pct > 70 to identify cameras with poor image quality (chat luong hinh anh kem), low light (thieu sang), or noise (nhieu). No dedicated image quality column exists."
+      memory_free_mb: Available free memory in MB.
+      memory_used_mb: Memory currently in use in MB.
+      fan_state: Fan operational state (True=running, False=off).
+      heater_state: Heater operational state (True=on, False=off).
+      reboot_count_total: Cumulative reboot count since device reset.
+      uptime_seconds: Seconds since last device reboot.
+      tsDt: Datetime version of the ts epoch timestamp.
+
+  stg_mv_dmp_tlm_chiller:
+    description: >
+      Materialized view of chiller (HVAC) device telemetry. Filters raw_dmp_tlm_raw for
+      deviceType=CHILLER and extracts typed telemetry fields. One row per chiller per event.
+      Join to dim_device via deviceId=device_id.
+      Use for: chiller on/off state monitoring, fault detection, valve position analysis.
+    columns:
+      deviceId: UUID of the chiller device. Join to dim_device.device_id.
+      ts: Event timestamp in Unix epoch milliseconds.
+      eventTime: Datetime of the telemetry event.
+      tenantId: Tenant UUID.
+      customerId: Customer UUID.
+      chiller_state: "Operational state of the chiller (True=running). TEMPERATURE PROXY: no actual temperature column exists. Use AVG(chiller_state) as proxy for cooling temperature (nhiet do lam lanh). Higher average means more active cooling."
+      fault: True if a fault condition is active.
+      mode: Operating mode flag.
+      return_valve_open_limit: Return valve open limit position flag.
+      supply_valve_open_limit: Supply valve open limit position flag.
+      supply_valve_close_limit: Supply valve close limit position flag.
+      tsDt: Datetime version of the ts epoch timestamp.
+
+  stg_mv_dmp_tlm_energy_meter:
+    description: >
+      Materialized view of energy meter telemetry. Filters raw_dmp_tlm_raw for
+      deviceType=ENERGY_METER and extracts typed fields. One row per meter per event.
+      Join to dim_device via deviceId=device_id.
+      Use for: power consumption analysis, energy totals, power factor monitoring, water metering.
+    columns:
+      deviceId: UUID of the energy meter device. Join to dim_device.device_id.
+      ts: Event timestamp in Unix epoch milliseconds.
+      eventTime: Datetime of the telemetry event.
+      tenantId: Tenant UUID.
+      customerId: Customer UUID.
+      current_a: Electrical current in amperes.
+      energy_active_kwh_total: Cumulative active energy consumption in kWh.
+      energy_reactive_kvarh_total: Cumulative reactive energy in kVarh.
+      frequency_hz: Grid frequency in Hz (nominal 50 Hz).
+      power_active_kw: Instantaneous active power in kW.
+      power_factor: Power factor ratio (0–1, higher is more efficient).
+      voltage_l1_v: Phase L1 voltage in volts.
+      voltage_l2_v: Phase L2 voltage in volts.
+      voltage_l3_v: Phase L3 voltage in volts.
+      water_volume_m3_total: Cumulative water volume in m³ (if water meter attached).
+      tsDt: Datetime version of the ts epoch timestamp.
+
+  stg_mv_dmp_tlm_nvr:
+    description: >
+      Materialized view of NVR (Network Video Recorder) device telemetry. Filters raw_dmp_tlm_raw
+      for deviceType=NVR and extracts system health fields. One row per NVR per event.
+      Join to dim_device via deviceId=device_id.
+      Use for: NVR health monitoring, CPU/memory tracking, uptime analysis.
+    columns:
+      deviceId: UUID of the NVR device. Join to dim_device.device_id.
+      ts: Event timestamp in Unix epoch milliseconds.
+      eventTime: Datetime of the telemetry event.
+      tenantId: Tenant UUID.
+      customerId: Customer UUID.
+      cpu_usage_pct: CPU utilization percentage (0-100).
+      memory_free_mb: Available free memory in MB.
+      memory_used_mb: Memory currently in use in MB.
+      uptime_seconds: Seconds since last device reboot.
+      tsDt: Datetime version of the ts epoch timestamp.
+
+  # ──────────────────────────────────────────────────────────
+  # RAW LAYER — unprocessed source tables
+  # ──────────────────────────────────────────────────────────
+
+  raw_dmp_evt_connectivity:
+    description: >
+      Raw near-realtime connectivity events for all IoT devices sourced directly from DMP,
+      before any staging transformation. One row per connectivity heartbeat/event.
+      Contains richer fields than stg_dmp_evt_connectivity: qualityScore, icmpReachable,
+      heartbeatLevel, probeFailureReason. Column names are camelCase (deviceId, qualityScore).
+      Use for: raw connectivity QA, debugging missing events, probeFailureReason analysis.
+      For analysis prefer stg_dmp_evt_connectivity (staged, lowercase columns) or stg_dmp_device_status_events.
+    columns:
+      deviceId: UUID of the device (camelCase). Join to dim_device.device_id.
+      tenantId: Tenant UUID.
+      ts: Event timestamp in Unix epoch milliseconds.
+      tsDt: Datetime version of the ts epoch timestamp.
+      msgType: Message type (e.g. CONNECTIVITY).
+      customerId: Customer UUID.
+      deviceCode: Human-readable device code name.
+      status: Connectivity status (ONLINE or OFFLINE).
+      active: True if device is currently active/connected.
+      heartbeatLevel: Heartbeat quality level (LOW, NORMAL, HIGH).
+      probeFailureReason: Reason for probe failure if device unreachable.
+      offlineReason: Reason the device went offline (e.g. NO_HEARTBEAT, TIMEOUT).
+      qualityScore: Signal/connectivity quality score (0-100). Higher is better.
+      icmpReachable: True if the device responded to ICMP ping.
+
+  raw_dmp_tlm_raw:
+    description: >
+      Raw telemetry table containing ALL IoT device telemetry events before type-specific extraction.
+      One row per telemetry event from any device type (CAMERA, NVR, CHILLER, ENERGY_METER, etc.).
+      The telemetry column is a JSON blob with the actual sensor readings.
+      For typed analysis use materialized views: stg_mv_dmp_tlm_camera, stg_mv_dmp_tlm_chiller,
+      stg_mv_dmp_tlm_energy_meter, stg_mv_dmp_tlm_nvr. Use this table for:
+      ad-hoc queries on device types without dedicated views, raw telemetry debugging, MQTT topic analysis.
+      Filter by deviceType to query a specific device category.
+    columns:
+      deviceId: UUID of the device. Join to dim_device.device_id.
+      tenantId: Tenant UUID.
+      ts: Event timestamp in Unix epoch milliseconds.
+      tsDt: Datetime of the telemetry event.
+      source: Source system identifier.
+      customerId: Customer UUID.
+      deviceType: Device category (CAMERA, NVR, CHILLER, ENERGY_METER, etc.). Always filter this column to avoid full-table scans.
+      mqttTopic: MQTT topic the message was published on. Useful for routing and debugging.
+      telemetry: JSON blob containing raw sensor readings. Use JSON_EXTRACT() to access specific fields.
+      eventTime: Datetime of the event as reported by the device.
+
+  raw_parking_db_vehicle_histories:
+    description: >
+      Raw parking vehicle transaction data sourced from parking Couchbase database via Hive/S3.
+      Contains all parking entry/exit events with the most complete field set including face recognition
+      IDs (face_id_in, face_id_out), feature vectors, computer IDs, and unprocessed timestamps as strings.
+      One row per vehicle transaction. Timestamps (check_in_at, check_out_at) are stored as strings.
+      For analysis prefer fct_vehicle_events (golden, date/time keys) or stg_vehicle_histories (parsed timestamps).
+      Use this table for: raw data QA, face_id/feature_vector fields not in staging, debugging ETL issues.
+    columns:
+      id: Raw event UUID. Equivalent to event_id in staging and golden tables.
+      card_number: Physical parking card used for entry/exit.
+      lpn: License plate number of the vehicle.
+      lpn_cmp: LPN comparison result between entry and exit camera captures.
+      pk_lot_id: Parking lot identifier. Join to dim_parking_lot.pk_lot_id.
+      pk_lot_name: Parking lot name (denormalized from source).
+      direction_type: Transaction direction (IN_OUT = complete entry+exit trip).
+      check_in_at: Check-in timestamp as raw string (not yet parsed to datetime).
+      check_out_at: Check-out timestamp as raw string.
+      payment_type: Payment method (CASH, CARD, E_WALLET, MONTHLY_PASS).
+      vehicle_type: Vehicle category (CAR, MOTORBIKE, TRUCK, EV).
+      history_state: Processing state of the event (COMPLETED, PENDING, ERROR).
+      amount_due: Net amount owed after discounts (VND).
+      parking_fee: Base parking fee (VND).
+      promotion_amount: Discount applied (VND).
+      face_id_in: Face recognition ID captured at entry lane camera.
+      face_id_out: Face recognition ID captured at exit lane camera.
+      feature_vector_in: Face feature vector at entry (for face recognition matching).
+      feature_vector_out: Face feature vector at exit.
+      processing_day: Partition date in YYYY-MM-DD string format.
