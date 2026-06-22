@@ -33,6 +33,10 @@ import {
   AskFeedbackInput,
   AskFeedbackResult,
   AskFeedbackStatus,
+  RelationshipRecommendationInput,
+  RelationshipRecommendationResult,
+  OntologyRecommendationInput,
+  OntologyRecommendationResult,
 } from '@server/models/adaptor';
 import { getLogger } from '@server/utils';
 import * as Errors from '@server/utils/error';
@@ -44,9 +48,17 @@ logger.level = 'debug';
 
 const getAIServiceError = (error: any) => {
   const { data } = error.response || {};
-  return data?.detail
-    ? `${error.message}, detail: ${data.detail}`
-    : error.message;
+  if (data?.detail) {
+    // FastAPI 422 returns detail as an array of validation error objects
+    const detail =
+      typeof data.detail === 'string'
+        ? data.detail
+        : JSON.stringify(data.detail);
+    return `${error.message}, detail: ${detail}`;
+  }
+  return typeof error.message === 'string'
+    ? error.message
+    : JSON.stringify(error.message);
 };
 
 export interface IWrenAIAdaptor {
@@ -129,6 +141,26 @@ export interface IWrenAIAdaptor {
   createAskFeedback(input: AskFeedbackInput): Promise<AsyncQueryResponse>;
   getAskFeedbackResult(queryId: string): Promise<AskFeedbackResult>;
   cancelAskFeedback(queryId: string): Promise<void>;
+
+  /**
+   * Relationship recommendation APIs
+   */
+  generateRelationshipRecommendations(
+    input: RelationshipRecommendationInput,
+  ): Promise<AsyncQueryResponse>;
+  getRelationshipRecommendationResult(
+    queryId: string,
+  ): Promise<RelationshipRecommendationResult>;
+
+  /**
+   * Ontology recommendation APIs
+   */
+  generateOntologyRecommendations(
+    input: OntologyRecommendationInput,
+  ): Promise<AsyncQueryResponse>;
+  getOntologyRecommendationResult(
+    queryId: string,
+  ): Promise<OntologyRecommendationResult>;
 }
 
 export class WrenAIAdaptor implements IWrenAIAdaptor {
@@ -239,6 +271,8 @@ export class WrenAIAdaptor implements IWrenAIAdaptor {
         id: input.deployId,
         histories: this.transformHistoryInput(input.histories),
         configurations: input.configurations,
+        project_id: input.projectId,
+        ontology: input.ontology ?? null,
       });
       return { queryId: res.data.query_id };
     } catch (err: any) {
@@ -333,13 +367,14 @@ export class WrenAIAdaptor implements IWrenAIAdaptor {
   }
 
   public async deploy(deployData: DeployData): Promise<WrenAIDeployResponse> {
-    const { manifest, hash } = deployData;
+    const { manifest, hash, projectId } = deployData;
     try {
       const res = await axios.post(
         `${this.wrenAIBaseEndpoint}/v1/semantics-preparations`,
         {
           mdl: JSON.stringify(manifest),
           id: hash,
+          project_id: projectId,
         },
       );
       const deployId = res.data.id;
@@ -376,6 +411,7 @@ export class WrenAIAdaptor implements IWrenAIAdaptor {
       max_questions: input.maxQuestions,
       max_categories: input.maxCategories,
       configuration: input.configuration,
+      project_id: input.projectId,
     };
     logger.info(`Wren AI: Generating recommendation questions`);
     try {
@@ -771,8 +807,10 @@ export class WrenAIAdaptor implements IWrenAIAdaptor {
 
   private async waitDeployFinished(deployId: string): Promise<boolean> {
     let deploySuccess = false;
-    // timeout after 30 seconds
-    for (let waitTime = 1; waitTime <= 7; waitTime++) {
+    // poll every 5s, timeout after 120s
+    const maxRetries = 24;
+    const intervalMs = 5000;
+    for (let i = 0; i < maxRetries; i++) {
       try {
         const status = await this.getDeployStatus(deployId);
         logger.debug(`Wren AI: Deploy status: ${status}`);
@@ -790,7 +828,7 @@ export class WrenAIAdaptor implements IWrenAIAdaptor {
       } catch (err: any) {
         throw err;
       }
-      await new Promise((resolve) => setTimeout(resolve, waitTime * 1000));
+      await new Promise((resolve) => setTimeout(resolve, intervalMs));
     }
     return deploySuccess;
   }
@@ -933,5 +971,99 @@ export class WrenAIAdaptor implements IWrenAIAdaptor {
       sql: history.sql,
       question: history.question,
     }));
+  }
+
+  public async generateRelationshipRecommendations(
+    input: RelationshipRecommendationInput,
+  ): Promise<AsyncQueryResponse> {
+    const body = {
+      mdl: JSON.stringify(input.manifest),
+      project_id: input.projectId,
+      configurations: input.configuration,
+    };
+    logger.info(`Wren AI: Generating relationship recommendations`);
+    try {
+      const res = await axios.post(
+        `${this.wrenAIBaseEndpoint}/v1/relationship-recommendations`,
+        body,
+      );
+      logger.info(
+        `Wren AI: Generating relationship recommendations, queryId: ${res.data.id}`,
+      );
+      return { queryId: res.data.id };
+    } catch (err: any) {
+      logger.debug(
+        `Got error when generating relationship recommendations: ${getAIServiceError(err)}`,
+      );
+      throw err;
+    }
+  }
+
+  public async getRelationshipRecommendationResult(
+    queryId: string,
+  ): Promise<RelationshipRecommendationResult> {
+    try {
+      const res = await axios.get(
+        `${this.wrenAIBaseEndpoint}/v1/relationship-recommendations/${queryId}`,
+      );
+      const body = res.data;
+      return {
+        status: body.status,
+        response: body.response,
+        error: body.error,
+      };
+    } catch (err: any) {
+      logger.debug(
+        `Got error when getting relationship recommendation result: ${getAIServiceError(err)}`,
+      );
+      throw err;
+    }
+  }
+
+  public async generateOntologyRecommendations(
+    input: OntologyRecommendationInput,
+  ): Promise<AsyncQueryResponse> {
+    const body = {
+      mdl: JSON.stringify(input.manifest),
+      project_id: input.projectId,
+      configurations: input.configuration,
+    };
+    logger.info(`Wren AI: Generating ontology recommendations`);
+    try {
+      const res = await axios.post(
+        `${this.wrenAIBaseEndpoint}/v1/ontology-recommendations`,
+        body,
+      );
+      logger.info(
+        `Wren AI: Generating ontology recommendations, queryId: ${res.data.id}`,
+      );
+      return { queryId: res.data.id };
+    } catch (err: any) {
+      logger.debug(
+        `Got error when generating ontology recommendations: ${getAIServiceError(err)}`,
+      );
+      throw err;
+    }
+  }
+
+  public async getOntologyRecommendationResult(
+    queryId: string,
+  ): Promise<OntologyRecommendationResult> {
+    try {
+      const res = await axios.get(
+        `${this.wrenAIBaseEndpoint}/v1/ontology-recommendations/${queryId}`,
+      );
+      const body = res.data;
+      return {
+        status: body.status,
+        response: body.response,
+        error: body.error,
+      };
+    } catch (err: any) {
+      logger.debug(
+        `Got error when getting ontology recommendation result: ${getAIServiceError(err)}`,
+      );
+      throw err;
+    }
   }
 }

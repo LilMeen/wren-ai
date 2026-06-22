@@ -47,6 +47,7 @@ export type ApiHistoryFilterInput = {
   startDate?: InputMaybe<Scalars['String']>;
   statusCode?: InputMaybe<Scalars['Int']>;
   threadId?: InputMaybe<Scalars['String']>;
+  userId?: InputMaybe<Scalars['Int']>;
 };
 
 export type ApiHistoryPaginatedResponse = {
@@ -73,6 +74,8 @@ export type ApiHistoryResponse = {
   responsePayload?: Maybe<Scalars['JSON']>;
   statusCode?: Maybe<Scalars['Int']>;
   threadId?: Maybe<Scalars['String']>;
+  userId?: Maybe<Scalars['Int']>;
+  userEmail?: Maybe<Scalars['String']>;
   updatedAt: Scalars['String'];
 };
 
@@ -92,7 +95,16 @@ export enum ApiType {
   STREAM_ASK = 'STREAM_ASK',
   STREAM_GENERATE_SQL = 'STREAM_GENERATE_SQL',
   UPDATE_INSTRUCTION = 'UPDATE_INSTRUCTION',
-  UPDATE_SQL_PAIR = 'UPDATE_SQL_PAIR'
+  UPDATE_SQL_PAIR = 'UPDATE_SQL_PAIR',
+  CHAT_ASK = 'CHAT_ASK',
+  CHAT_TASK_RESULT = 'CHAT_TASK_RESULT',
+  CHAT_CREATE_THREAD = 'CHAT_CREATE_THREAD',
+  CHAT_THREAD_RESPONSE = 'CHAT_THREAD_RESPONSE',
+  CHAT_PREVIEW_DATA = 'CHAT_PREVIEW_DATA',
+  CHAT_ADJUST = 'CHAT_ADJUST',
+  CHAT_ADJUSTMENT_RESULT = 'CHAT_ADJUSTMENT_RESULT',
+  CHAT_BREAKDOWN = 'CHAT_BREAKDOWN',
+  CHAT_ANSWER = 'CHAT_ANSWER',
 }
 
 export type AskingTask = {
@@ -1174,6 +1186,7 @@ export type Query = {
 
 export type QueryAdjustmentTaskArgs = {
   taskId: Scalars['String'];
+  threadId?: InputMaybe<Scalars['String']>;
 };
 
 
@@ -1185,6 +1198,7 @@ export type QueryApiHistoryArgs = {
 
 export type QueryAskingTaskArgs = {
   taskId: Scalars['String'];
+  threadId?: InputMaybe<Scalars['String']>;
 };
 
 

@@ -80,6 +80,7 @@ from .ask_feedback import AskFeedbackService  # noqa: E402
 from .chart import ChartService  # noqa: E402
 from .chart_adjustment import ChartAdjustmentService  # noqa: E402
 from .instructions import InstructionsService  # noqa: E402
+from .ontology_recommendation import OntologyRecommendation  # noqa: E402
 from .question_recommendation import QuestionRecommendation  # noqa: E402
 from .relationship_recommendation import RelationshipRecommendation  # noqa: E402
 from .semantics_description import SemanticsDescription  # noqa: E402

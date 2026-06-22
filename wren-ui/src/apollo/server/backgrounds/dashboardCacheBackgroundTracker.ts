@@ -101,8 +101,13 @@ export class DashboardCacheBackgroundTracker {
         dashboardId: dashboard.id,
       });
 
-      // Get project and deployment info
-      const project = await this.projectService.getCurrentProject();
+      // Get project and deployment info — resolve the project that OWNS this
+      // dashboard. This runs outside the request's auth context (setInterval),
+      // so getCurrentProject() would fall back to the first project and run the
+      // item SQL against the wrong project's MDL/connection.
+      const project = await this.projectService.getProjectById(
+        dashboard.projectId,
+      );
       const deployment = await this.deployService.getLastDeployment(project.id);
       const mdl = deployment.manifest;
       const hash = uuidv4();

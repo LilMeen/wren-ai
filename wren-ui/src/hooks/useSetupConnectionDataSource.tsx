@@ -44,7 +44,7 @@ export default function useSetupConnectionDataSource() {
 
   const completedDataSourceSave = useCallback(async () => {
     router.push(Path.OnboardingModels);
-  }, [selected, router]);
+  }, [router]);
 
   return {
     loading,

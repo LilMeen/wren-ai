@@ -24,6 +24,7 @@ export type SuggestedQuestionsQuery = { __typename?: 'Query', suggestedQuestions
 
 export type AskingTaskQueryVariables = Types.Exact<{
   taskId: Types.Scalars['String'];
+  threadId?: Types.InputMaybe<Types.Scalars['String']>;
 }>;
 
 
@@ -198,6 +199,7 @@ export type AdjustThreadResponseChartMutation = { __typename?: 'Mutation', adjus
 
 export type AdjustmentTaskQueryVariables = Types.Exact<{
   taskId: Types.Scalars['String'];
+  threadId?: Types.InputMaybe<Types.Scalars['String']>;
 }>;
 
 
@@ -391,8 +393,8 @@ export type SuggestedQuestionsQueryHookResult = ReturnType<typeof useSuggestedQu
 export type SuggestedQuestionsLazyQueryHookResult = ReturnType<typeof useSuggestedQuestionsLazyQuery>;
 export type SuggestedQuestionsQueryResult = Apollo.QueryResult<SuggestedQuestionsQuery, SuggestedQuestionsQueryVariables>;
 export const AskingTaskDocument = gql`
-    query AskingTask($taskId: String!) {
-  askingTask(taskId: $taskId) {
+    query AskingTask($taskId: String!, $threadId: String) {
+  askingTask(taskId: $taskId, threadId: $threadId) {
     ...CommonAskingTask
   }
 }
@@ -1225,8 +1227,8 @@ export type AdjustThreadResponseChartMutationHookResult = ReturnType<typeof useA
 export type AdjustThreadResponseChartMutationResult = Apollo.MutationResult<AdjustThreadResponseChartMutation>;
 export type AdjustThreadResponseChartMutationOptions = Apollo.BaseMutationOptions<AdjustThreadResponseChartMutation, AdjustThreadResponseChartMutationVariables>;
 export const AdjustmentTaskDocument = gql`
-    query AdjustmentTask($taskId: String!) {
-  adjustmentTask(taskId: $taskId) {
+    query AdjustmentTask($taskId: String!, $threadId: String) {
+  adjustmentTask(taskId: $taskId, threadId: $threadId) {
     queryId
     status
     error {

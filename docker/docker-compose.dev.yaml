@@ -54,8 +54,10 @@ services:
       - ${PROJECT_DIR}/data:/app/data:ro
     networks:
       - wren
+    restart: on-failure
     depends_on:
-      - qdrant
+      qdrant:
+        condition: service_healthy
 
   ibis-server:
     image: wren-engine-ibis:local
@@ -87,8 +89,9 @@ services:
     ports:
       - ${HOST_PORT}:3000
     environment:
-      DB_TYPE: sqlite
-      SQLITE_FILE: /app/data/db.sqlite3
+      DB_TYPE: ${DB_TYPE}
+      PG_URL: ${PG_URL}
+      PG_SSL_REJECT_UNAUTHORIZED: ${PG_SSL_REJECT_UNAUTHORIZED:-true}
       WREN_ENGINE_ENDPOINT: http://wren-engine:${WREN_ENGINE_PORT}
       WREN_AI_ENDPOINT: http://wren-ai-service:${WREN_AI_SERVICE_PORT}
       IBIS_SERVER_ENDPOINT: http://ibis-server:${IBIS_SERVER_PORT}
@@ -119,9 +122,18 @@ services:
   qdrant:
     image: qdrant/qdrant:v1.15.0
     pull_policy: always
+    restart: on-failure
     ports:
       - 6333:6333
       - 6334:6334
+    volumes:
+      - data:/qdrant/storage
+    healthcheck:
+      test: ["CMD", "bash", "-c", "timeout 2 bash -c '</dev/tcp/127.0.0.1/6333'"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
     networks:
       - wren
 

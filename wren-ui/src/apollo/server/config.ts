@@ -46,6 +46,20 @@ export interface IConfig {
   projectRecommendationQuestionsMaxQuestions?: number;
   threadRecommendationQuestionMaxCategories?: number;
   threadRecommendationQuestionsMaxQuestions?: number;
+  // master switch for recommendation question generation. Disabled by default
+  // in this fork to save AI tokens; set ENABLE_RECOMMENDATION_QUESTIONS=true to
+  // re-enable.
+  recommendationQuestionsEnabled?: boolean;
+
+  // authentication
+  authEnabled: boolean;
+  authCookieSecure: boolean;
+
+  // OpenMetadata integration (infra-level, admin set). When either value is
+  // missing, all OpenMetadata features are disabled and the wizard behaves as
+  // before.
+  openMetadataUrl?: string | null;
+  openMetadataToken?: string | null;
 }
 
 const defaultConfig = {
@@ -77,6 +91,12 @@ const defaultConfig = {
   // encryption
   encryptionPassword: 'sementic',
   encryptionSalt: 'layer',
+
+  // authentication
+  // evaluated here (not in the env-pickBy block below) because pickBy drops
+  // falsy values, which would make it impossible to turn the flags off/on
+  authEnabled: process.env.WREN_AUTH_ENABLED !== 'false',
+  authCookieSecure: process.env.WREN_AUTH_COOKIE_SECURE === 'true',
 };
 
 const config = {
@@ -148,6 +168,13 @@ const config = {
     .THREAD_RECOMMENDATION_QUESTIONS_MAX_QUESTIONS
     ? parseInt(process.env.THREAD_RECOMMENDATION_QUESTIONS_MAX_QUESTIONS)
     : 1,
+  // off by default to save tokens; opt-in via env
+  recommendationQuestionsEnabled:
+    process.env.ENABLE_RECOMMENDATION_QUESTIONS === 'true',
+
+  // OpenMetadata integration
+  openMetadataUrl: process.env.OPENMETADATA_URL || null,
+  openMetadataToken: process.env.OPENMETADATA_TOKEN || null,
 };
 
 export function getConfig(): IConfig {

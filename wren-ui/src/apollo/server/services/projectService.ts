@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import * as fs from 'fs';
 import path from 'path';
 import { getLogger } from '@server/utils';
+import { getAuthUser } from '@server/utils/authStorage';
 import { IProjectRepository, WREN_AI_CONNECTION_INFO } from '../repositories';
 import { Project } from '../repositories';
 import {
@@ -132,6 +133,15 @@ export class ProjectService implements IProjectService {
   }
 
   public async generateProjectRecommendationQuestions(): Promise<void> {
+    // Recommendation questions are disabled by default in this fork to save AI
+    // tokens (each run fans out into many concurrent SQL generations). Opt back
+    // in with ENABLE_RECOMMENDATION_QUESTIONS=true.
+    if (!config.recommendationQuestionsEnabled) {
+      logger.debug(
+        'Recommendation questions are disabled, skip project recommendation generation',
+      );
+      return;
+    }
     const project = await this.getCurrentProject();
     if (!project) {
       throw new Error(`Project not found`);
@@ -140,6 +150,7 @@ export class ProjectService implements IProjectService {
     const recommendQuestionResult =
       await this.wrenAIAdaptor.generateRecommendationQuestions({
         manifest,
+        projectId: project.id.toString(),
         ...this.getProjectRecommendationQuestionsConfig(project),
       });
 
@@ -219,6 +230,8 @@ export class ProjectService implements IProjectService {
       type: projectData.type,
       catalog: 'wrenai',
       schema: 'public',
+      // the dev creating the project becomes its owner
+      ownerId: getAuthUser()?.id,
       connectionInfo: encryptConnectionInfo(
         projectData.type,
         projectData.connectionInfo,

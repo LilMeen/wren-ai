@@ -6,6 +6,7 @@ from src.web.v1.routers import (
     chart,
     chart_adjustment,
     instructions,
+    ontology_recommendation,
     question_recommendation,
     relationship_recommendation,
     semantics_description,
@@ -21,6 +22,7 @@ router.include_router(ask.router)
 router.include_router(ask_feedbacks.router)
 router.include_router(question_recommendation.router)
 router.include_router(relationship_recommendation.router)
+router.include_router(ontology_recommendation.router)
 router.include_router(semantics_description.router)
 router.include_router(semantics_preparation.router)
 router.include_router(sql_answers.router)

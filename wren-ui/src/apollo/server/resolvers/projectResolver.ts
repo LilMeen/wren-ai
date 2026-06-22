@@ -35,7 +35,11 @@ import DataSourceSchemaDetector, {
   SchemaChangeType,
 } from '@server/managers/dataSourceSchemaDetector';
 import { encryptConnectionInfo } from '../dataSource';
+import { OMGlossaryTerm } from '@server/adaptors';
+import { InstructionInput } from '@server/models';
 import { TelemetryEvent } from '../telemetry/telemetry';
+import { setSelectedProjectId } from '@server/utils/authStorage';
+import { setSelectedProjectCookie } from '@server/utils/authCookies';
 
 const logger = getLogger('DataSourceResolver');
 logger.level = 'debug';
@@ -65,6 +69,134 @@ export class ProjectResolver {
     this.getSchemaChange = this.getSchemaChange.bind(this);
     this.getProjectRecommendationQuestions =
       this.getProjectRecommendationQuestions.bind(this);
+    this.generateRelationshipRecommendations =
+      this.generateRelationshipRecommendations.bind(this);
+    this.getRelationshipRecommendationTask =
+      this.getRelationshipRecommendationTask.bind(this);
+    this.listOpenMetadataServices = this.listOpenMetadataServices.bind(this);
+    this.listOpenMetadataGlossaries =
+      this.listOpenMetadataGlossaries.bind(this);
+    this.saveOpenMetadataConfig = this.saveOpenMetadataConfig.bind(this);
+    this.importOpenMetadataGlossary =
+      this.importOpenMetadataGlossary.bind(this);
+    this.resyncOpenMetadataDescriptions =
+      this.resyncOpenMetadataDescriptions.bind(this);
+  }
+
+  public async listOpenMetadataServices(_root: any, _arg: any, ctx: IContext) {
+    // No adaptor means OpenMetadata is not configured on this server.
+    if (!ctx.openMetadataAdaptor) {
+      return [];
+    }
+    return ctx.openMetadataAdaptor.listDatabaseServices();
+  }
+
+  public async listOpenMetadataGlossaries(
+    _root: any,
+    _arg: any,
+    ctx: IContext,
+  ) {
+    if (!ctx.openMetadataAdaptor) {
+      return [];
+    }
+    return ctx.openMetadataAdaptor.listGlossaries();
+  }
+
+  public async saveOpenMetadataConfig(
+    _root: any,
+    arg: { data: { serviceName?: string | null; enabled: boolean } },
+    ctx: IContext,
+  ) {
+    const project = await ctx.projectService.getCurrentProject();
+    const updatedOmConfig = {
+      serviceName: arg.data.serviceName ?? null,
+      enabled: arg.data.enabled,
+    };
+    await ctx.projectRepository.updateOne(project.id, {
+      omConfig: updatedOmConfig,
+    });
+
+    // When OM is being enabled, immediately sync descriptions from OM into
+    // existing model/column properties so the modeling page shows them without
+    // requiring the user to re-import tables.
+    if (arg.data.enabled && ctx.openMetadataAdaptor) {
+      const projectWithNewConfig = { ...project, omConfig: updatedOmConfig };
+      const models = await ctx.modelRepository.findAllBy({
+        projectId: project.id,
+      });
+      const modelIds = models.map((m) => m.id);
+      const columns =
+        await ctx.modelColumnRepository.findColumnsByModelIds(modelIds);
+      await this.syncOMDescriptionsToModels(
+        projectWithNewConfig,
+        models,
+        columns,
+        ctx,
+      );
+    }
+
+    return true;
+  }
+
+  public async importOpenMetadataGlossary(
+    _root: any,
+    arg: { glossaryNames: string[] },
+    ctx: IContext,
+  ) {
+    if (!ctx.openMetadataAdaptor) {
+      throw new Error('OpenMetadata is not configured on this server');
+    }
+    const project = await ctx.projectService.getCurrentProject();
+    const terms = await ctx.openMetadataAdaptor.getGlossaryTerms(
+      arg.glossaryNames,
+    );
+    const inputs: InstructionInput[] = terms
+      .filter((t) => t.description?.trim())
+      .map((t) => ({
+        projectId: project.id,
+        instruction: this.buildOMInstructionText(t),
+        questions: [t.name, t.displayName, ...(t.synonyms || [])].filter(
+          Boolean,
+        ),
+        isDefault: false,
+      }));
+    if (!inputs.length) {
+      return [];
+    }
+    return ctx.instructionService.createInstructions(inputs);
+  }
+
+  public async resyncOpenMetadataDescriptions(
+    _root: any,
+    _arg: any,
+    ctx: IContext,
+  ) {
+    if (!ctx.openMetadataAdaptor) {
+      throw new Error('OpenMetadata is not configured on this server');
+    }
+    const project = await ctx.projectService.getCurrentProject();
+    if (!project.omConfig?.enabled) {
+      throw new Error(
+        'OpenMetadata is not enabled for this project. Call saveOpenMetadataConfig first.',
+      );
+    }
+    const models = await ctx.modelRepository.findAllBy({
+      projectId: project.id,
+    });
+    if (!models.length) return 0;
+    const modelIds = models.map((m) => m.id);
+    const columns =
+      await ctx.modelColumnRepository.findColumnsByModelIds(modelIds);
+    await this.syncOMDescriptionsToModels(project, models, columns, ctx);
+    return models.length;
+  }
+
+  private buildOMInstructionText(term: OMGlossaryTerm): string {
+    let text = `${term.displayName || term.name}: ${term.description}`;
+    if (term.relatedTerms?.length) {
+      text += ` Related: ${term.relatedTerms.join(', ')}.`;
+    }
+    return text.substring(0, 1000);
   }
 
   public async getSettings(_root: any, _arg: any, ctx: IContext) {
@@ -93,6 +225,91 @@ export class ProjectResolver {
     ctx: IContext,
   ) {
     return ctx.projectService.getProjectRecommendationQuestions();
+  }
+
+  public async generateRelationshipRecommendations(
+    _root: any,
+    _arg: any,
+    ctx: IContext,
+  ) {
+    const project = await ctx.projectService.getCurrentProject();
+    const { manifest } = await ctx.mdlService.makeCurrentModelMDL();
+    const { queryId } =
+      await ctx.wrenAIAdaptor.generateRelationshipRecommendations({
+        manifest,
+        projectId: String(project.id),
+        configuration: { language: project.language },
+      });
+    return { id: queryId };
+  }
+
+  public async getRelationshipRecommendationTask(
+    _root: any,
+    arg: { taskId: string },
+    ctx: IContext,
+  ) {
+    const { taskId } = arg;
+    const result =
+      await ctx.wrenAIAdaptor.getRelationshipRecommendationResult(taskId);
+
+    if (result.status !== 'finished' || !result.response?.relationships) {
+      return {
+        status: result.status,
+        relationships: null,
+        error: result.error || null,
+      };
+    }
+
+    const project = await ctx.projectService.getCurrentProject();
+    const models = await ctx.modelRepository.findAllBy({
+      projectId: project.id,
+    });
+    const modelIds = models.map((m) => m.id);
+    const columns =
+      await ctx.modelColumnRepository.findColumnsByModelIds(modelIds);
+
+    // Map AI relationship output back to resolved model/column ids
+    const resolvedRelationships = result.response.relationships
+      .map((rel) => {
+        const fromModel = models.find((m) => m.referenceName === rel.fromModel);
+        const toModel = models.find((m) => m.referenceName === rel.toModel);
+        if (!fromModel || !toModel || fromModel.id === toModel.id) return null;
+
+        const fromColumn = columns.find(
+          (c) =>
+            c.modelId === fromModel.id && c.referenceName === rel.fromColumn,
+        );
+        const toColumn = columns.find(
+          (c) => c.modelId === toModel.id && c.referenceName === rel.toColumn,
+        );
+        if (!fromColumn || !toColumn) return null;
+
+        return {
+          name: rel.name,
+          fromModel: rel.fromModel,
+          fromColumn: rel.fromColumn,
+          type: rel.type,
+          toModel: rel.toModel,
+          toColumn: rel.toColumn,
+          reason: rel.reason,
+          // resolved ids for the save step
+          fromModelId: fromModel.id,
+          fromModelReferenceName: fromModel.referenceName,
+          fromColumnId: fromColumn.id,
+          fromColumnReferenceName: fromColumn.referenceName,
+          toModelId: toModel.id,
+          toModelReferenceName: toModel.referenceName,
+          toColumnId: toColumn.id,
+          toColumnReferenceName: toColumn.referenceName,
+        };
+      })
+      .filter(Boolean);
+
+    return {
+      status: result.status,
+      relationships: resolvedRelationships,
+      error: null,
+    };
   }
 
   public async updateCurrentProject(
@@ -263,8 +480,6 @@ export class ProjectResolver {
     ctx: IContext,
   ) {
     const { type, properties } = args.data;
-    // Currently only can create one project
-    await this.resetCurrentProject(_root, args, ctx);
 
     const { displayName, ...connectionInfo } = properties;
     const project = await ctx.projectService.createProject({
@@ -273,6 +488,16 @@ export class ProjectResolver {
       connectionInfo,
     } as ProjectData);
     logger.debug(`Project created.`);
+
+    // Make the freshly created project the current one. Without this the rest
+    // of the onboarding flow (dashboard init below + the follow-up requests:
+    // listDataSourceTables / saveTables / deploy) would keep targeting whatever
+    // project the request originally carried. Update the in-request context and
+    // persist the selection in a cookie so subsequent requests follow suit.
+    setSelectedProjectId(project.id);
+    if (ctx.res) {
+      setSelectedProjectCookie(ctx.res, project.id);
+    }
 
     // init dashboard
     logger.debug('Dashboard init...');
@@ -403,6 +628,14 @@ export class ProjectResolver {
         ctx,
         project,
       );
+
+      // When the project uses OpenMetadata enrichment, persist OM table/column
+      // descriptions onto the newly created model records so that AI
+      // relationship and ontology generation can use them as context.
+      if (project.omConfig?.enabled && ctx.openMetadataAdaptor) {
+        await this.syncOMDescriptionsToModels(project, models, columns, ctx);
+      }
+
       // telemetry
       ctx.telemetry.sendEvent(eventName, {
         dataSourceType: project.type,
@@ -688,6 +921,47 @@ export class ProjectResolver {
       } as RelationData;
     });
     return relationInput;
+  }
+
+  private async syncOMDescriptionsToModels(
+    project: Project,
+    models: Model[],
+    columns: ModelColumn[],
+    ctx: IContext,
+  ) {
+    try {
+      // getProjectDataSourceTables calls metadataService.listTables() which
+      // merges OM descriptions into CompactTable when omConfig.enabled=true.
+      const tables =
+        await ctx.projectService.getProjectDataSourceTables(project);
+      const tableMap = new Map(tables.map((t) => [t.name, t]));
+
+      for (const model of models) {
+        const table = tableMap.get(model.sourceTableName);
+        if (!table?.description) continue;
+        const props = model.properties ? JSON.parse(model.properties) : {};
+        props.description = table.description;
+        await ctx.modelRepository.updateOne(model.id, {
+          properties: JSON.stringify(props),
+        });
+        for (const col of columns.filter((c) => c.modelId === model.id)) {
+          const compactCol = table.columns?.find(
+            (c) => c.name === col.sourceColumnName,
+          );
+          if (!compactCol?.description) continue;
+          const cProps = col.properties ? JSON.parse(col.properties) : {};
+          cProps.description = compactCol.description;
+          await ctx.modelColumnRepository.updateOne(col.id, {
+            properties: JSON.stringify(cProps),
+          });
+        }
+      }
+      logger.debug(
+        `Synced OM descriptions to models for project ${project.id}`,
+      );
+    } catch (e) {
+      logger.warn(`OM description sync skipped: ${(e as Error).message}`);
+    }
   }
 
   private async overwriteModelsAndColumns(

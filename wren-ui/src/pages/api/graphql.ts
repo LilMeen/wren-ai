@@ -5,6 +5,13 @@ import { ApolloServerPluginLandingPageLocalDefault } from 'apollo-server-core';
 import { typeDefs } from '@server';
 import resolvers from '@server/resolvers';
 import { IContext } from '@server/types';
+import { applyAuthGuard } from '@server/utils/authGuard';
+import { runWithAuthContext } from '@server/utils/authStorage';
+import {
+  getSessionTokenFromRequest,
+  getSelectedProjectIdFromRequest,
+} from '@server/utils/authCookies';
+import { User } from '@server/repositories';
 import { GraphQLError } from 'graphql';
 import { getLogger } from '@server/utils';
 import { getConfig } from '@server/config';
@@ -47,11 +54,14 @@ const bootstrapServer = async () => {
     sqlPairRepository,
     instructionRepository,
     apiHistoryRepository,
+    userRepository,
     dashboardItemRefreshJobRepository,
+    ontologyRepository,
     // adaptors
     wrenEngineAdaptor,
     ibisAdaptor,
     wrenAIAdaptor,
+    openMetadataAdaptor,
 
     // services
     projectService,
@@ -63,6 +73,7 @@ const bootstrapServer = async () => {
     sqlPairService,
 
     instructionService,
+    ontologyService,
     // background trackers
     projectRecommendQuestionBackgroundTracker,
     threadRecommendQuestionBackgroundTracker,
@@ -89,7 +100,7 @@ const bootstrapServer = async () => {
 
   const apolloServer: ApolloServer = new ApolloServer({
     typeDefs,
-    resolvers,
+    resolvers: applyAuthGuard(resolvers),
     formatError: (error: GraphQLError) => {
       // stop print error stacktrace of dry run error
       if (error.extensions?.code === GeneralErrorCodes.DRY_RUN_ERROR) {
@@ -131,13 +142,16 @@ const bootstrapServer = async () => {
         embed: true,
       }),
     ],
-    context: (): IContext => ({
+    context: ({ req, res }): IContext => ({
       config: serverConfig,
       telemetry,
+      currentUser: (req as any)?.currentUser || null,
+      res,
       // adaptor
       wrenEngineAdaptor,
       ibisServerAdaptor: ibisAdaptor,
       wrenAIAdaptor,
+      openMetadataAdaptor,
       // services
       projectService,
       modelService,
@@ -148,6 +162,7 @@ const bootstrapServer = async () => {
       dashboardService,
       sqlPairService,
       instructionService,
+      ontologyService,
       // repository
       projectRepository,
       modelRepository,
@@ -163,7 +178,9 @@ const bootstrapServer = async () => {
       sqlPairRepository,
       instructionRepository,
       apiHistoryRepository,
+      userRepository,
       dashboardItemRefreshJobRepository,
+      ontologyRepository,
       // background trackers
       projectRecommendQuestionBackgroundTracker,
       threadRecommendQuestionBackgroundTracker,
@@ -178,9 +195,36 @@ const startServer = bootstrapServer();
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const apolloServer = await startServer;
-  await apolloServer.createHandler({
-    path: '/api/graphql',
-  })(req, res);
+
+  // resolve the authenticated user and the selected project from cookies,
+  // then run the request inside the auth context so services/repositories
+  // can access them without changing their signatures
+  let currentUser: User | null = null;
+  // Always read the project cookie so project switching works even when auth
+  // is disabled (e.g. development / SIT environments).
+  const selectedProjectId = getSelectedProjectIdFromRequest(req);
+  if (serverConfig.authEnabled) {
+    const sessionToken = getSessionTokenFromRequest(req);
+    if (sessionToken) {
+      try {
+        currentUser =
+          await components.authService.validateSessionToken(sessionToken);
+      } catch (err) {
+        // DB connection drop — log and fall through as unauthenticated so the
+        // request gets a proper 401 rather than a 500
+        logger.error('Session validation failed (DB error):', err);
+      }
+    }
+  }
+  (req as any).currentUser = currentUser;
+
+  await runWithAuthContext(
+    { user: currentUser || undefined, selectedProjectId },
+    async () =>
+      apolloServer.createHandler({
+        path: '/api/graphql',
+      })(req, res),
+  );
 };
 
 export default cors((req: NextApiRequest, res: NextApiResponse) =>

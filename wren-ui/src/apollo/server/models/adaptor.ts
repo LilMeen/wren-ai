@@ -1,6 +1,7 @@
 import * as Errors from '@server/utils/error';
 import { Manifest } from '@server/mdl/type';
 import { ThreadResponse } from '../repositories';
+import { OntologyDefinition } from '../repositories/ontologyRepository';
 
 // Add branded types for SQL strings
 type Brand<T, B> = T & { __brand: B };
@@ -51,6 +52,10 @@ export enum WrenAILanguage {
 export interface DeployData {
   manifest: Manifest;
   hash: string;
+  // project_id must match the value used at retrieval time, otherwise the
+  // AI service indexes documents under a different project and retrieval
+  // returns nothing (empty schema -> the LLM hallucinates table names)
+  projectId?: string;
 }
 
 // ask
@@ -75,6 +80,11 @@ export interface AskInput {
   deployId: string;
   histories?: ThreadResponse[];
   configurations?: ProjectConfigurations;
+  // project_id is sent so the AI service can pass it back to wren-ui's
+  // previewSql callback (engine: wren_ui); without it the callback has no
+  // session and falls back to the wrong project's deployment
+  projectId?: string;
+  ontology?: OntologyDefinition | null;
 }
 
 export interface AsyncQueryResponse {
@@ -301,6 +311,80 @@ export enum InstructionStatus {
 }
 export interface InstructionResult {
   status: InstructionStatus;
+  error?: WrenAIError;
+}
+
+// relationship recommendation
+export interface RelationshipRecommendationInput {
+  manifest: Manifest;
+  projectId?: string;
+  configuration?: ProjectConfigurations;
+}
+
+export enum RelationshipRecommendationStatus {
+  GENERATING = 'generating',
+  FINISHED = 'finished',
+  FAILED = 'failed',
+}
+
+export interface AIRelationship {
+  name: string;
+  fromModel: string;
+  fromColumn: string;
+  type: string;
+  toModel: string;
+  toColumn: string;
+  reason: string;
+}
+
+export interface RelationshipRecommendationResult {
+  status: RelationshipRecommendationStatus;
+  response?: { relationships: AIRelationship[] };
+  error?: WrenAIError;
+}
+
+// ontology recommendation
+export interface OntologyRecommendationInput {
+  manifest: Manifest;
+  projectId?: string;
+  configuration?: ProjectConfigurations;
+}
+
+export enum OntologyRecommendationStatus {
+  GENERATING = 'generating',
+  FINISHED = 'finished',
+  FAILED = 'failed',
+}
+
+export interface AIOntologyAttribute {
+  name: string;
+  sourceColumn: string;
+  description: string;
+}
+
+export interface AIOntologyEntity {
+  name: string;
+  displayName: string;
+  description: string;
+  sourceModel: string;
+  attributes: AIOntologyAttribute[];
+}
+
+export interface AIOntologyRelationship {
+  name: string;
+  fromEntity: string;
+  toEntity: string;
+  type: string;
+  description: string;
+  sourceRelation: string;
+}
+
+export interface OntologyRecommendationResult {
+  status: OntologyRecommendationStatus;
+  response?: {
+    entities: AIOntologyEntity[];
+    relationships: AIOntologyRelationship[];
+  };
   error?: WrenAIError;
 }
 

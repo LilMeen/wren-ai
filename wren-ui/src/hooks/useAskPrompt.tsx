@@ -63,6 +63,10 @@ export const isRecommendedFinished = (status: RecommendedQuestionsTaskStatus) =>
     RecommendedQuestionsTaskStatus.NOT_STARTED,
   ].includes(status);
 
+// Instant recommended (follow-up) question generation is disabled to save
+// tokens — the recommendation-question feature is temporarily limited.
+const RECOMMENDED_QUESTIONS_ENABLED: boolean = false;
+
 const isNeedRecommendedQuestions = (askingTask: AskingTask) => {
   const isGeneralOrMisleadingQuery = [
     AskingTaskType.GENERAL,
@@ -244,8 +248,11 @@ export default function useAskPrompt(threadId?: number) {
   }, [askingTask?.status, threadId, checkFetchAskingStreamTask]);
 
   useEffect(() => {
-    // handle instant recommended questions
-    if (isNeedRecommendedQuestions(askingTask)) {
+    // handle instant recommended questions (disabled to save tokens)
+    if (
+      RECOMMENDED_QUESTIONS_ENABLED &&
+      isNeedRecommendedQuestions(askingTask)
+    ) {
       startRecommendedQuestions();
     }
   }, [askingTask?.type]);
@@ -281,7 +288,10 @@ export default function useAskPrompt(threadId?: number) {
         variables: { responseId: threadResponse.id },
       });
       const { data } = await fetchAskingTask({
-        variables: { taskId: response.data.rerunAskingTask.id },
+        variables: {
+          taskId: response.data.rerunAskingTask.id,
+          threadId: threadId ? String(threadId) : undefined,
+        },
       });
       // update the asking task in cache manually
       handleUpdateRerunAskingTaskCache(
@@ -303,7 +313,10 @@ export default function useAskPrompt(threadId?: number) {
         variables: { data: { question: value, threadId } },
       });
       await fetchAskingTask({
-        variables: { taskId: response.data.createAskingTask.id },
+        variables: {
+          taskId: response.data.createAskingTask.id,
+          threadId: threadId ? String(threadId) : undefined,
+        },
       });
     } catch (error) {
       console.error(error);
@@ -312,7 +325,10 @@ export default function useAskPrompt(threadId?: number) {
 
   const onFetching = async (queryId: string) => {
     await fetchAskingTask({
-      variables: { taskId: queryId },
+      variables: {
+        taskId: queryId,
+        threadId: threadId ? String(threadId) : undefined,
+      },
     });
   };
 

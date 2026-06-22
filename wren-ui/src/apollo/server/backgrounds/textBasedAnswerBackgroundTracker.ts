@@ -4,7 +4,11 @@ import {
   TextBasedAnswerResult,
   TextBasedAnswerStatus,
 } from '../models/adaptor';
-import { ThreadResponse, IThreadResponseRepository } from '../repositories';
+import {
+  ThreadResponse,
+  IThreadResponseRepository,
+  IThreadRepository,
+} from '../repositories';
 import {
   IProjectService,
   IDeployService,
@@ -23,6 +27,7 @@ export class TextBasedAnswerBackgroundTracker {
   private intervalTime: number;
   private wrenAIAdaptor: IWrenAIAdaptor;
   private threadResponseRepository: IThreadResponseRepository;
+  private threadRepository: IThreadRepository;
   private projectService: IProjectService;
   private deployService: IDeployService;
   private queryService: IQueryService;
@@ -31,18 +36,21 @@ export class TextBasedAnswerBackgroundTracker {
   constructor({
     wrenAIAdaptor,
     threadResponseRepository,
+    threadRepository,
     projectService,
     deployService,
     queryService,
   }: {
     wrenAIAdaptor: IWrenAIAdaptor;
     threadResponseRepository: IThreadResponseRepository;
+    threadRepository: IThreadRepository;
     projectService: IProjectService;
     deployService: IDeployService;
     queryService: IQueryService;
   }) {
     this.wrenAIAdaptor = wrenAIAdaptor;
     this.threadResponseRepository = threadResponseRepository;
+    this.threadRepository = threadRepository;
     this.projectService = projectService;
     this.deployService = deployService;
     this.queryService = queryService;
@@ -62,6 +70,30 @@ export class TextBasedAnswerBackgroundTracker {
           }
           this.runningJobs.add(threadResponse.id);
 
+          // Without a SQL statement there is nothing to query. Sending a null
+          // SQL to the ibis server returns a 422 and used to surface as a
+          // confusing "Data connection error". Fail fast with a clear message
+          // instead of querying with an invalid SQL.
+          if (!threadResponse.sql) {
+            logger.warn(
+              `Thread response ${threadResponse.id} has no SQL, skipping answer generation`,
+            );
+            await this.threadResponseRepository.updateOne(threadResponse.id, {
+              answerDetail: {
+                ...threadResponse.answerDetail,
+                status: ThreadResponseAnswerStatus.FAILED,
+                error: {
+                  code: 'NO_RELEVANT_SQL',
+                  message: 'No SQL is available to answer this question.',
+                  shortMessage: 'No relevant SQL',
+                },
+              },
+            });
+            delete this.tasks[threadResponse.id];
+            this.runningJobs.delete(threadResponse.id);
+            return;
+          }
+
           // update the status to fetching data
           await this.threadResponseRepository.updateOne(threadResponse.id, {
             answerDetail: {
@@ -70,8 +102,22 @@ export class TextBasedAnswerBackgroundTracker {
             },
           });
 
-          // get sql data
-          const project = await this.projectService.getCurrentProject();
+          // get sql data — resolve the project that OWNS this thread response.
+          // This runs outside the request's auth context (setInterval), so
+          // getCurrentProject() would fall back to the first project and run
+          // this SQL against the wrong project's MDL/connection. Resolve the
+          // project from the thread instead.
+          const thread = await this.threadRepository.findOneBy({
+            id: threadResponse.threadId,
+          });
+          if (!thread) {
+            throw new Error(
+              `Thread ${threadResponse.threadId} not found for thread response ${threadResponse.id}`,
+            );
+          }
+          const project = await this.projectService.getProjectById(
+            thread.projectId,
+          );
           const deployment = await this.deployService.getLastDeployment(
             project.id,
           );

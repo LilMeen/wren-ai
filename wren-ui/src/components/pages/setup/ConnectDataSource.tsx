@@ -1,6 +1,6 @@
+import { Form, Row, Col, Alert, Button, Typography } from 'antd';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Alert, Typography, Form, Row, Col, Button } from 'antd';
 import styled from 'styled-components';
 import { DATA_SOURCES } from '@/utils/enum/dataSources';
 import { getDataSource, getPostgresErrorMessage } from './utils';
@@ -82,6 +82,7 @@ export default function ConnectDataSource(props: Props) {
             .
           </Col>
         </Row>
+
         <current.component />
       </StyledForm>
 

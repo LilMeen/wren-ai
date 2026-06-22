@@ -154,7 +154,7 @@ def stream_load(env: dict[str, str], database: str, table: str, csv_path: Path) 
         else:
             detail = err.read().decode("utf-8", errors="replace")
             raise SystemExit(f"Stream load failed for {database}.{table}: HTTP {err.code}\n{detail}") from err
-    except urllib.error.URLError as err:
+    except (urllib.error.URLError, TimeoutError, ConnectionAbortedError, OSError) as err:
         body = stream_load_with_curl(env, url, user, password, headers, csv_path, database, table, err)
     result = json.loads(body)
     status = result.get("Status")

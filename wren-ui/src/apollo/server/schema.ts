@@ -21,12 +21,22 @@ export const typeDefs = gql`
     GET_MODELS
     STREAM_ASK
     STREAM_GENERATE_SQL
+    CHAT_ASK
+    CHAT_TASK_RESULT
+    CHAT_CREATE_THREAD
+    CHAT_THREAD_RESPONSE
+    CHAT_PREVIEW_DATA
+    CHAT_ADJUST
+    CHAT_ADJUSTMENT_RESULT
+    CHAT_BREAKDOWN
+    CHAT_ANSWER
   }
 
   input ApiHistoryFilterInput {
     apiType: ApiType
     statusCode: Int
     threadId: String
+    userId: Int
     projectId: Int
     startDate: String
     endDate: String
@@ -42,6 +52,8 @@ export const typeDefs = gql`
     projectId: Int!
     apiType: ApiType!
     threadId: String
+    userId: Int
+    userEmail: String
     headers: JSON
     requestPayload: JSON
     responsePayload: JSON
@@ -1110,6 +1122,107 @@ export const typeDefs = gql`
     id: Int!
   }
 
+  enum RelationshipRecommendationStatus {
+    generating
+    finished
+    failed
+  }
+
+  type AIRelationship {
+    name: String!
+    fromModel: String!
+    fromColumn: String!
+    type: String!
+    toModel: String!
+    toColumn: String!
+    reason: String!
+    fromModelId: Int!
+    fromModelReferenceName: String!
+    fromColumnId: Int!
+    fromColumnReferenceName: String!
+    toModelId: Int!
+    toModelReferenceName: String!
+    toColumnId: Int!
+    toColumnReferenceName: String!
+  }
+
+  type RelationshipRecommendationTask {
+    status: RelationshipRecommendationStatus!
+    relationships: [AIRelationship!]
+    error: Error
+  }
+
+  # Ontology (Fabric IQ-style semantic layer)
+  enum OntologyRecommendationStatus {
+    generating
+    finished
+    failed
+  }
+
+  type OntologyAttribute {
+    name: String!
+    sourceColumn: String!
+    description: String
+  }
+
+  type OntologyEntity {
+    id: String
+    name: String!
+    displayName: String
+    description: String
+    sourceModel: String!
+    attributes: [OntologyAttribute!]
+  }
+
+  type OntologyRelationship {
+    id: String
+    name: String!
+    fromEntity: String!
+    toEntity: String!
+    type: String!
+    description: String
+    sourceRelation: String
+  }
+
+  type OntologyGraph {
+    entities: [OntologyEntity!]!
+    relationships: [OntologyRelationship!]!
+  }
+
+  type Ontology {
+    id: Int!
+    projectId: Int!
+    definition: OntologyGraph
+    status: String!
+    generatedBy: String
+  }
+
+  type OntologyRecommendationTask {
+    status: OntologyRecommendationStatus!
+    definition: OntologyGraph
+    error: Error
+  }
+
+  # OpenMetadata integration
+  type OMService {
+    name: String!
+    serviceType: String!
+    description: String
+    hostPort: String
+    username: String
+  }
+
+  type OMGlossary {
+    name: String!
+    displayName: String
+    description: String
+  }
+
+  input OpenMetadataProjectConfigInput {
+    serviceName: String
+    enabled: Boolean!
+  }
+
   # Query and Mutation
   type Query {
     # On Boarding Steps
@@ -1129,7 +1242,7 @@ export const typeDefs = gql`
     view(where: ViewWhereUniqueInput!): ViewInfo!
 
     # Ask
-    askingTask(taskId: String!): AskingTask
+    askingTask(taskId: String!, threadId: String): AskingTask
     suggestedQuestions: SuggestedQuestionResponse!
     threads: [Thread!]!
     thread(threadId: Int!): DetailedThread!
@@ -1137,7 +1250,7 @@ export const typeDefs = gql`
     nativeSql(responseId: Int!): String!
 
     # Adjustment
-    adjustmentTask(taskId: String!): AdjustmentTask
+    adjustmentTask(taskId: String!, threadId: String): AdjustmentTask
 
     # Settings
     settings: Settings!
@@ -1167,6 +1280,19 @@ export const typeDefs = gql`
       filter: ApiHistoryFilterInput
       pagination: ApiHistoryPaginationInput!
     ): ApiHistoryPaginatedResponse!
+
+    # Relationship recommendation
+    relationshipRecommendationTask(
+      taskId: String!
+    ): RelationshipRecommendationTask!
+
+    # Ontology
+    ontology: Ontology
+    ontologyRecommendationTask(taskId: String!): OntologyRecommendationTask!
+
+    # OpenMetadata
+    listOpenMetadataServices: [OMService!]!
+    listOpenMetadataGlossaries: [OMGlossary!]!
   }
 
   type Mutation {
@@ -1199,6 +1325,11 @@ export const typeDefs = gql`
     createRelation(data: RelationInput!): JSON!
     updateRelation(data: UpdateRelationInput!, where: WhereIdInput!): JSON!
     deleteRelation(where: WhereIdInput!): Boolean!
+    generateRelationshipRecommendations: Task!
+
+    # Ontology
+    generateOntologyRecommendations: Task!
+    saveOntology(data: JSON!): Ontology!
 
     # Calculated field
     createCalculatedField(data: CreateCalculatedFieldInput!): JSON!
@@ -1312,5 +1443,12 @@ export const typeDefs = gql`
       data: UpdateInstructionInput!
     ): Instruction!
     deleteInstruction(where: InstructionWhereInput!): Boolean!
+
+    # OpenMetadata
+    saveOpenMetadataConfig(data: OpenMetadataProjectConfigInput!): Boolean!
+    importOpenMetadataGlossary(glossaryNames: [String!]!): [Instruction!]!
+    # Force-sync OM table/column descriptions into existing model rows.
+    # Returns the number of model rows updated.
+    resyncOpenMetadataDescriptions: Int!
   }
 `;

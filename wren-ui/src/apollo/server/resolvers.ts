@@ -8,6 +8,7 @@ import { DashboardResolver } from './resolvers/dashboardResolver';
 import { SqlPairResolver } from './resolvers/sqlPairResolver';
 import { InstructionResolver } from './resolvers/instructionResolver';
 import { ApiHistoryResolver } from './resolvers/apiHistoryResolver';
+import { OntologyResolver } from './resolvers/ontologyResolver';
 import { convertColumnType } from '@server/utils';
 import { DialectSQLScalar } from './scalars';
 
@@ -20,6 +21,7 @@ const dashboardResolver = new DashboardResolver();
 const sqlPairResolver = new SqlPairResolver();
 const instructionResolver = new InstructionResolver();
 const apiHistoryResolver = new ApiHistoryResolver();
+const ontologyResolver = new OntologyResolver();
 const resolvers = {
   JSON: GraphQLJSON,
   DialectSQL: DialectSQLScalar,
@@ -75,6 +77,18 @@ const resolvers = {
 
     // API History
     apiHistory: apiHistoryResolver.getApiHistory,
+
+    // Relationship recommendation
+    relationshipRecommendationTask:
+      projectResolver.getRelationshipRecommendationTask,
+
+    // Ontology
+    ontology: ontologyResolver.getOntology,
+    ontologyRecommendationTask: ontologyResolver.getOntologyRecommendationTask,
+
+    // OpenMetadata
+    listOpenMetadataServices: projectResolver.listOpenMetadataServices,
+    listOpenMetadataGlossaries: projectResolver.listOpenMetadataGlossaries,
   },
   Mutation: {
     deploy: modelResolver.deploy,
@@ -100,6 +114,13 @@ const resolvers = {
     createRelation: modelResolver.createRelation,
     updateRelation: modelResolver.updateRelation,
     deleteRelation: modelResolver.deleteRelation,
+    generateRelationshipRecommendations:
+      projectResolver.generateRelationshipRecommendations,
+
+    // Ontology
+    generateOntologyRecommendations:
+      ontologyResolver.generateOntologyRecommendations,
+    saveOntology: ontologyResolver.saveOntology,
 
     // Ask
     createAskingTask: askingResolver.createAskingTask,
@@ -177,10 +198,28 @@ const resolvers = {
     createInstruction: instructionResolver.createInstruction,
     updateInstruction: instructionResolver.updateInstruction,
     deleteInstruction: instructionResolver.deleteInstruction,
+
+    // OpenMetadata
+    saveOpenMetadataConfig: projectResolver.saveOpenMetadataConfig,
+    importOpenMetadataGlossary: projectResolver.importOpenMetadataGlossary,
+    resyncOpenMetadataDescriptions:
+      projectResolver.resyncOpenMetadataDescriptions,
   },
   ThreadResponse: askingResolver.getThreadResponseNestedResolver(),
   DetailStep: askingResolver.getDetailStepNestedResolver(),
   ResultCandidate: askingResolver.getResultCandidateNestedResolver(),
+
+  // Guard the `Error.message` field (a String) against non-string values that
+  // may already be persisted in the DB (e.g. an old answer/breakdown task that
+  // stored a FastAPI `{ detail: [...] }` body). Without this, serializing such a
+  // value throws "String cannot represent value" and fails the whole thread
+  // query, leaving the UI stuck with no answers shown.
+  Error: {
+    message: (parent: any) =>
+      parent?.message == null || typeof parent.message === 'string'
+        ? parent?.message
+        : JSON.stringify(parent.message),
+  },
 
   // Handle struct type to record for UI
   DiagramModelField: { type: convertColumnType },

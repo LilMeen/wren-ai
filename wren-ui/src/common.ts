@@ -19,11 +19,15 @@ import {
   InstructionRepository,
   ApiHistoryRepository,
   DashboardItemRefreshJobRepository,
+  UserRepository,
+  UserSessionRepository,
+  OntologyRepository,
 } from '@server/repositories';
 import {
   WrenEngineAdaptor,
   WrenAIAdaptor,
   IbisAdaptor,
+  OpenMetadataAdaptor,
 } from '@server/adaptors';
 import {
   DataSourceMetadataService,
@@ -35,6 +39,8 @@ import {
   DashboardService,
   AskingTaskTracker,
   InstructionService,
+  AuthService,
+  OntologyService,
 } from '@server/services';
 import { PostHogTelemetry } from './apollo/server/telemetry/telemetry';
 import {
@@ -75,6 +81,9 @@ export const initComponents = () => {
   const apiHistoryRepository = new ApiHistoryRepository(knex);
   const dashboardItemRefreshJobRepository =
     new DashboardItemRefreshJobRepository(knex);
+  const userRepository = new UserRepository(knex);
+  const userSessionRepository = new UserSessionRepository(knex);
+  const ontologyRepository = new OntologyRepository(knex);
 
   // adaptors
   const wrenEngineAdaptor = new WrenEngineAdaptor({
@@ -86,11 +95,21 @@ export const initComponents = () => {
   const ibisAdaptor = new IbisAdaptor({
     ibisServerEndpoint: serverConfig.ibisServerEndpoint,
   });
+  // Only wire up OpenMetadata when both url and token are configured. Otherwise
+  // it stays null and all OM features are disabled.
+  const openMetadataAdaptor =
+    serverConfig.openMetadataUrl && serverConfig.openMetadataToken
+      ? new OpenMetadataAdaptor({
+          url: serverConfig.openMetadataUrl,
+          token: serverConfig.openMetadataToken,
+        })
+      : null;
 
   // services
   const metadataService = new DataSourceMetadataService({
     ibisAdaptor,
     wrenEngineAdaptor,
+    openMetadataAdaptor,
   });
   const queryService = new QueryService({
     ibisAdaptor,
@@ -123,6 +142,12 @@ export const initComponents = () => {
     threadResponseRepository,
     viewRepository,
   });
+  const ontologyService = new OntologyService({
+    ontologyRepository,
+    modelRepository,
+    modelColumnRepository,
+    projectRepository,
+  });
   const askingService = new AskingService({
     telemetry,
     wrenAIAdaptor,
@@ -135,6 +160,7 @@ export const initComponents = () => {
     mdlService,
     askingTaskTracker,
     askingTaskRepository,
+    ontologyService,
   });
   const dashboardService = new DashboardService({
     projectService,
@@ -149,6 +175,10 @@ export const initComponents = () => {
   const instructionService = new InstructionService({
     instructionRepository,
     wrenAIAdaptor,
+  });
+  const authService = new AuthService({
+    userRepository,
+    userSessionRepository,
   });
 
   // background trackers
@@ -196,11 +226,15 @@ export const initComponents = () => {
     apiHistoryRepository,
     instructionRepository,
     dashboardItemRefreshJobRepository,
+    userRepository,
+    userSessionRepository,
+    ontologyRepository,
 
     // adaptors
     wrenEngineAdaptor,
     wrenAIAdaptor,
     ibisAdaptor,
+    openMetadataAdaptor,
 
     // services
     metadataService,
@@ -212,6 +246,8 @@ export const initComponents = () => {
     dashboardService,
     sqlPairService,
     instructionService,
+    authService,
+    ontologyService,
     askingTaskTracker,
 
     // background trackers

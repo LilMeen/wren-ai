@@ -48,11 +48,20 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=on \
     PIP_DEFAULT_TIMEOUT=100 \
+    PIP_RETRIES=5 \
+    POETRY_HTTP_TIMEOUT=300 \
+    POETRY_REQUESTS_MAX_RETRIES=10 \
     POETRY_NO_INTERACTION=1 \
     POETRY_VIRTUALENVS_IN_PROJECT=1 \
     POETRY_VIRTUALENVS_CREATE=1
 
-RUN pip install poetry==1.8.3
+RUN python -m pip install --upgrade pip setuptools wheel \
+    && python -m pip install \
+        --no-cache-dir \
+        --index-url https://pypi.org/simple \
+        --retries 10 \
+        --timeout 300 \
+        poetry==1.8.3
 
 WORKDIR /app
 

@@ -110,6 +110,15 @@ export default function APIHistory() {
       },
     },
     {
+      title: 'User',
+      dataIndex: 'userEmail',
+      key: 'userEmail',
+      width: 180,
+      render: (userEmail: string) => (
+        <div className="gray-7">{userEmail || '-'}</div>
+      ),
+    },
+    {
       title: 'Thread ID',
       dataIndex: 'threadId',
       key: 'threadId',

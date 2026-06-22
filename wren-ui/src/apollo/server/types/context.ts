@@ -1,8 +1,10 @@
+import type { NextApiResponse } from 'next';
 import { IConfig } from '@server/config';
 import {
   IIbisAdaptor,
   IWrenAIAdaptor,
   IWrenEngineAdaptor,
+  IOpenMetadataAdaptor,
 } from '@server/adaptors';
 import {
   IModelColumnRepository,
@@ -20,6 +22,9 @@ import {
   IInstructionRepository,
   IApiHistoryRepository,
   IDashboardItemRefreshJobRepository,
+  IOntologyRepository,
+  IUserRepository,
+  User,
 } from '@server/repositories';
 import {
   IQueryService,
@@ -30,6 +35,7 @@ import {
   IProjectService,
   IDashboardService,
   IInstructionService,
+  IOntologyService,
 } from '@server/services';
 import { ITelemetry } from '@server/telemetry/telemetry';
 import {
@@ -44,10 +50,19 @@ export interface IContext {
   // telemetry
   telemetry: ITelemetry;
 
+  // authenticated user of the current request (null when not signed in)
+  currentUser?: User | null;
+
+  // raw response of the current request; used to set cookies (e.g. selecting
+  // the newly created project). Absent for non-HTTP callers / background jobs.
+  res?: NextApiResponse;
+
   // adaptor
   wrenEngineAdaptor: IWrenEngineAdaptor;
   ibisServerAdaptor: IIbisAdaptor;
   wrenAIAdaptor: IWrenAIAdaptor;
+  // null when OpenMetadata env vars are not configured
+  openMetadataAdaptor: IOpenMetadataAdaptor | null;
 
   // services
   projectService: IProjectService;
@@ -59,6 +74,7 @@ export interface IContext {
   dashboardService: IDashboardService;
   sqlPairService: ISqlPairService;
   instructionService: IInstructionService;
+  ontologyService: IOntologyService;
 
   // repository
   projectRepository: IProjectRepository;
@@ -75,7 +91,9 @@ export interface IContext {
   sqlPairRepository: ISqlPairRepository;
   instructionRepository: IInstructionRepository;
   apiHistoryRepository: IApiHistoryRepository;
+  userRepository: IUserRepository;
   dashboardItemRefreshJobRepository: IDashboardItemRefreshJobRepository;
+  ontologyRepository: IOntologyRepository;
 
   // background trackers
   projectRecommendQuestionBackgroundTracker: ProjectRecommendQuestionBackgroundTracker;

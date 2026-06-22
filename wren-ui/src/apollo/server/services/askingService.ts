@@ -19,6 +19,7 @@ import {
   ThreadResponseAdjustmentType,
 } from '../repositories/threadResponseRepository';
 import { getLogger } from '@server/utils';
+import { getAuthUser } from '@server/utils/authStorage';
 import { isEmpty, isNil } from 'lodash';
 import { safeFormatSQL } from '@server/utils/sqlFormat';
 import {
@@ -31,6 +32,8 @@ import {
   IViewRepository,
   Project,
 } from '../repositories';
+import { IOntologyService } from './ontologyService';
+import { OntologyDefinition } from '../repositories/ontologyRepository';
 import { IQueryService, PreviewDataResponse } from './queryService';
 import { IMDLService } from './mdlService';
 import {
@@ -62,6 +65,7 @@ export interface AskingPayload {
 
 export interface AskingTaskInput {
   question: string;
+  ontology?: OntologyDefinition | null;
 }
 
 export interface AskingDetailTaskInput {
@@ -416,6 +420,7 @@ export class AskingService implements IAskingService {
   private askingTaskTracker: IAskingTaskTracker;
   private askingTaskRepository: IAskingTaskRepository;
   private adjustmentBackgroundTracker: AdjustmentBackgroundTaskTracker;
+  private ontologyService: IOntologyService;
 
   constructor({
     telemetry,
@@ -429,6 +434,7 @@ export class AskingService implements IAskingService {
     queryService,
     mdlService,
     askingTaskTracker,
+    ontologyService,
   }: {
     telemetry: PostHogTelemetry;
     wrenAIAdaptor: IWrenAIAdaptor;
@@ -441,6 +447,7 @@ export class AskingService implements IAskingService {
     queryService: IQueryService;
     mdlService: IMDLService;
     askingTaskTracker: IAskingTaskTracker;
+    ontologyService: IOntologyService;
   }) {
     this.wrenAIAdaptor = wrenAIAdaptor;
     this.deployService = deployService;
@@ -459,6 +466,7 @@ export class AskingService implements IAskingService {
       new TextBasedAnswerBackgroundTracker({
         wrenAIAdaptor,
         threadResponseRepository,
+        threadRepository,
         projectService,
         deployService,
         queryService,
@@ -490,6 +498,7 @@ export class AskingService implements IAskingService {
     this.askingTaskRepository = askingTaskRepository;
     this.mdlService = mdlService;
     this.askingTaskTracker = askingTaskTracker;
+    this.ontologyService = ontologyService;
   }
 
   public async getThreadRecommendationQuestions(
@@ -519,6 +528,14 @@ export class AskingService implements IAskingService {
   public async generateThreadRecommendationQuestions(
     threadId: number,
   ): Promise<void> {
+    // Disabled by default in this fork to save AI tokens. Opt back in with
+    // ENABLE_RECOMMENDATION_QUESTIONS=true.
+    if (!config.recommendationQuestionsEnabled) {
+      logger.debug(
+        'Recommendation questions are disabled, skip thread recommendation generation',
+      );
+      return;
+    }
     const thread = await this.threadRepository.findOneBy({ id: threadId });
     if (!thread) {
       throw new Error(`Thread ${threadId} not found`);
@@ -545,6 +562,7 @@ export class AskingService implements IAskingService {
     const recommendQuestionData: RecommendationQuestionsInput = {
       manifest,
       previousQuestions: questions,
+      projectId: project.id.toString(),
       ...this.getThreadRecommendationQuestionsConfig(project),
     };
 
@@ -592,6 +610,7 @@ export class AskingService implements IAskingService {
     threadResponseId?: number,
   ): Promise<Task> {
     const { threadId, language } = payload;
+    const project = await this.projectService.getCurrentProject();
     const deployId = await this.getDeployId();
 
     // if it's a follow-up question, then the input will have a threadId
@@ -600,14 +619,18 @@ export class AskingService implements IAskingService {
     const histories = threadId
       ? await this.getAskingHistory(threadId, threadResponseId)
       : null;
+    const ontologyRecord = await this.ontologyService.getByProject(project.id);
+    const ontology = ontologyRecord?.definition ?? null;
     const response = await this.askingTaskTracker.createAskingTask({
       query: input.question,
       histories,
       deployId,
+      projectId: project.id.toString(),
       configurations: { language },
       rerunFromCancelled,
       previousTaskId,
       threadResponseId,
+      ontology,
     });
     return {
       id: response.queryId,
@@ -682,6 +705,7 @@ export class AskingService implements IAskingService {
     const { id } = await this.projectService.getCurrentProject();
     const thread = await this.threadRepository.createOne({
       projectId: id,
+      userId: getAuthUser()?.id,
       summary: input.question,
     });
 
@@ -708,7 +732,12 @@ export class AskingService implements IAskingService {
 
   public async listThreads(): Promise<Thread[]> {
     const { id } = await this.projectService.getCurrentProject();
-    return await this.threadRepository.listAllTimeDescOrder(id);
+    // scope the list to the current user so each user only sees
+    // their own threads inside the selected project
+    return await this.threadRepository.listAllTimeDescOrder(
+      id,
+      getAuthUser()?.id,
+    );
   }
 
   public async updateThread(
@@ -720,12 +749,14 @@ export class AskingService implements IAskingService {
       throw new Error('Update thread input is empty');
     }
 
+    await this.assertThreadAccess(threadId);
     return this.threadRepository.updateOne(threadId, {
       summary: input.summary,
     });
   }
 
   public async deleteThread(threadId: number): Promise<void> {
+    await this.assertThreadAccess(threadId);
     await this.threadRepository.deleteOne(threadId);
   }
 
@@ -740,6 +771,7 @@ export class AskingService implements IAskingService {
     if (!thread) {
       throw new Error(`Thread ${threadId} not found`);
     }
+    this.assertThreadOwnership(thread);
 
     const threadResponse = await this.threadResponseRepository.createOne({
       threadId: thread.id,
@@ -919,7 +951,31 @@ export class AskingService implements IAskingService {
   }
 
   public async getResponsesWithThread(threadId: number) {
+    await this.assertThreadAccess(threadId);
     return this.threadResponseRepository.getResponsesWithThread(threadId);
+  }
+
+  /**
+   * Ensures the current user (when present) owns the given thread and that
+   * the thread belongs to the currently selected project. Requests without
+   * an auth context (background jobs, auth disabled) are not restricted.
+   */
+  private async assertThreadAccess(threadId: number): Promise<void> {
+    const user = getAuthUser();
+    if (!user) return;
+    const thread = await this.threadRepository.findOneBy({ id: threadId });
+    if (!thread) {
+      throw new Error(`Thread ${threadId} not found`);
+    }
+    this.assertThreadOwnership(thread);
+  }
+
+  private assertThreadOwnership(thread: Thread): void {
+    const user = getAuthUser();
+    if (!user) return;
+    if (thread.userId && thread.userId !== user.id) {
+      throw new Error('Access denied: this thread belongs to another user');
+    }
   }
 
   public async getResponse(responseId: number) {
@@ -1005,6 +1061,7 @@ export class AskingService implements IAskingService {
     const response = await this.wrenAIAdaptor.generateRecommendationQuestions({
       manifest,
       previousQuestions: input.previousQuestions,
+      projectId: project.id.toString(),
       ...this.getThreadRecommendationQuestionsConfig(project),
     });
     return { id: response.queryId };
@@ -1056,6 +1113,11 @@ export class AskingService implements IAskingService {
   private async getDeployId() {
     const { id } = await this.projectService.getCurrentProject();
     const lastDeploy = await this.deployService.getLastDeployment(id);
+    if (!lastDeploy) {
+      throw new Error(
+        'No MDL deployment found for this project. Please complete the data model setup first.',
+      );
+    }
     return lastDeploy.hash;
   }
 

@@ -1,6 +1,6 @@
 import { ComponentRef, useMemo, useRef } from 'react';
 import { useRouter } from 'next/router';
-import { Button, Typography } from 'antd';
+import { Button, Tag, Typography } from 'antd';
 import { Logo } from '@/components/Logo';
 import { Path } from '@/utils/enum';
 import SiderLayout from '@/components/layouts/SiderLayout';
@@ -8,8 +8,6 @@ import Prompt from '@/components/pages/home/prompt';
 import DemoPrompt from '@/components/pages/home/prompt/DemoPrompt';
 import useHomeSidebar from '@/hooks/useHomeSidebar';
 import useAskPrompt from '@/hooks/useAskPrompt';
-import useRecommendedQuestionsInstruction from '@/hooks/useRecommendedQuestionsInstruction';
-import RecommendedQuestionsPrompt from '@/components/pages/home/prompt/RecommendedQuestionsPrompt';
 import {
   useSuggestedQuestionsQuery,
   useCreateThreadMutation,
@@ -45,44 +43,19 @@ const SampleQuestionsInstruction = (props) => {
   );
 };
 
-function RecommendedQuestionsInstruction(props) {
-  const { onSelect, loading } = props;
-
-  const {
-    buttonProps,
-    generating,
-    recommendedQuestions,
-    showRetry,
-    showRecommendedQuestionsPromptMode,
-  } = useRecommendedQuestionsInstruction();
-
-  return showRecommendedQuestionsPromptMode ? (
-    <div
-      className="d-flex align-center flex-column pt-10"
-      style={{ margin: 'auto' }}
-    >
-      <RecommendedQuestionsPrompt
-        recommendedQuestions={recommendedQuestions}
-        onSelect={onSelect}
-        loading={loading}
-      />
-      <div className="py-12" />
-    </div>
-  ) : (
+function RecommendedQuestionsInstruction() {
+  // Recommendation-question generation is temporarily disabled to save tokens.
+  return (
     <Wrapper>
-      <Button className="mt-6" {...buttonProps} />
-      {generating && (
-        <Text className="mt-3 text-sm gray-6">
-          Thinking of good questions for you... (about 1 minute)
-        </Text>
-      )}
-      {!generating && showRetry && (
-        <Text className="mt-3 text-sm gray-6 text-center">
-          We couldn't think of questions right now.
-          <br />
-          Let's try again later.
-        </Text>
-      )}
+      <Button className="mt-6" disabled>
+        What could I ask?
+        <Tag className="ml-2" color="default">
+          Limited
+        </Tag>
+      </Button>
+      <Text className="mt-3 text-sm gray-6 text-center">
+        Question suggestions are temporarily unavailable.
+      </Text>
     </Wrapper>
   );
 }
@@ -96,7 +69,7 @@ export default function Home() {
   const { data: suggestedQuestionsData } = useSuggestedQuestionsQuery({
     fetchPolicy: 'cache-and-network',
   });
-  const [createThread, { loading: threadCreating }] = useCreateThreadMutation({
+  const [createThread] = useCreateThreadMutation({
     onError: (error) => console.error(error),
     onCompleted: () => homeSidebar.refetch(),
   });
@@ -141,12 +114,7 @@ export default function Home() {
         />
       )}
 
-      {!isSampleDataset && (
-        <RecommendedQuestionsInstruction
-          onSelect={onCreateResponse}
-          loading={threadCreating}
-        />
-      )}
+      {!isSampleDataset && <RecommendedQuestionsInstruction />}
       <Prompt
         ref={$prompt}
         {...askPrompt}

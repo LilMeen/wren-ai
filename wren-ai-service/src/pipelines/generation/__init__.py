@@ -5,6 +5,7 @@ from .followup_sql_generation import FollowUpSQLGeneration
 from .followup_sql_generation_reasoning import FollowUpSQLGenerationReasoning
 from .intent_classification import IntentClassification
 from .misleading_assistance import MisleadingAssistance
+from .ontology_recommendation import OntologyRecommendation
 from .question_recommendation import QuestionRecommendation
 from .relationship_recommendation import RelationshipRecommendation
 from .semantics_description import SemanticsDescription
@@ -26,6 +27,7 @@ __all__ = [
     "IntentClassification",
     "QuestionRecommendation",
     "RelationshipRecommendation",
+    "OntologyRecommendation",
     "SemanticsDescription",
     "SQLAnswer",
     "SQLCorrection",
