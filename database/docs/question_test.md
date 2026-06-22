@@ -961,6 +961,373 @@ Trạng thái: `[ ]` chưa test · `[✅]` pass · `[❌]` fail · `[⚠]` SQL �
 
 ---
 
+## Domain: Dashboard KPIs — Thẻ chỉ số tổng quan
+
+> Nguồn: 4 KPI cards luôn hiển thị trên đầu dashboard (K1, K2, K3, K5)
+
+### T-DSH-01
+- **Status:** `[ ]`
+- **Question:** Tỷ lệ xe điện (EV) trong tổng số giao dịch 30 ngày qua là bao nhiêu %?
+- **Dashboard widget:** K1 — EV Penetration Rate
+- **Expected Result:** 1 số %, ví dụ `19.3%`
+- **Expected SQL:**
+  ```sql
+  SELECT
+    ROUND(100.0 * SUM(CASE WHEN vehicle_type IN ('eCar','eBicycle','eMotorbike') THEN 1 ELSE 0 END)
+          / NULLIF(COUNT(*), 0), 1) AS ev_penetration_pct
+  FROM sdp_golden_fct_vehicle_events
+  WHERE history_state = 'COMPLETED'
+    AND check_in_at >= NOW() - INTERVAL '30' DAY
+  ```
+- **Trap:** EV types = eCar, eBicycle, eMotorbike (lowercase, starts with 'e'); KHÔNG bao gồm car, bicycle, motorbike, truck; chia cho tổng giao dịch (bao gồm ICE), không phải chỉ known types; KHÔNG dùng `json_extract` hay subquery phức tạp
+
+---
+
+### T-DSH-02
+- **Status:** `[ ]`
+- **Question:** Tổng tiêu thụ điện của toàn bộ smart meter trong 3 ngày qua?
+- **Dashboard widget:** K3 — Total Energy Consumed (kWh, 3-day total across 36 meters)
+- **Expected Result:** 1 số kWh, ví dụ `744,300`
+- **Expected SQL:**
+  ```sql
+  WITH per_device AS (
+    SELECT deviceId,
+           MAX(energy_active_kwh_total) - MIN(energy_active_kwh_total) AS consumed_kwh
+    FROM sdp_near_realtime_stg_mv_dmp_tlm_energy_meter
+    WHERE tsDt >= NOW() - INTERVAL '3' DAY
+    GROUP BY deviceId
+  )
+  SELECT ROUND(SUM(consumed_kwh), 2) AS total_energy_kwh,
+         COUNT(DISTINCT deviceId) AS meter_count
+  FROM per_device
+  ```
+- **Trap:** Energy là cumulative counter → phải dùng MAX-MIN per device rồi SUM; KHÔNG dùng SUM(energy_active_kwh_total) trực tiếp; window = 3 ngày (không phải tháng)
+
+---
+
+### T-DSH-03
+- **Status:** `[ ]`
+- **Question:** Hiện tại tổng số xe đang đỗ trên toàn hệ thống là bao nhiêu?
+- **Dashboard widget:** K5 — Current Active Parked Vehicles (aggregate all lots)
+- **Expected Result:** 1 số nguyên, ví dụ `1310`
+- **Expected SQL:**
+  ```sql
+  SELECT SUM(current_occupancy) AS total_active_parked
+  FROM sdp_mart_fct_parking_occupancy
+  WHERE occupancy_hour = (
+    SELECT MAX(occupancy_hour) FROM sdp_mart_fct_parking_occupancy
+  )
+  ```
+- **Trap:** Phải lấy occupancy_hour MỚI NHẤT (không phải tổng tất cả giờ); SUM toàn bộ lots (không GROUP BY); `fct_parking_occupancy` dùng `current_occupancy` field
+
+---
+
+## Domain: Environmental — Năng lượng & Nước (Tab Environmental)
+
+> Nguồn: Tab Environmental của dashboard — E1, E2, E3
+
+### T-ENV-01
+- **Status:** `[ ]`
+- **Question:** Nhu cầu công suất điện theo từng giờ trong ngày hôm nay — peak, trung bình và thấp nhất?
+- **Dashboard widget:** E2 — Hourly Power Demand Profile (kW)
+- **Expected Result:** 24 hàng: `hour | peak_kw | avg_kw | min_kw`
+- **Expected SQL:**
+  ```sql
+  SELECT HOUR(tsDt) AS hour_of_day,
+         MAX(power_active_kw) AS peak_kw,
+         ROUND(AVG(power_active_kw), 2) AS avg_kw,
+         MIN(power_active_kw) AS min_kw
+  FROM sdp_near_realtime_stg_mv_dmp_tlm_energy_meter
+  WHERE tsDt >= DATE_FORMAT(NOW(), '%Y-%m-%d 00:00:00')
+  GROUP BY HOUR(tsDt)
+  ORDER BY hour_of_day
+  ```
+- **Trap:** Dùng `HOUR(tsDt)` (KHÔNG dùng `DATE_PART`, `DAYOFWEEK`, `EXTRACT(HOUR FROM ...)`); kết quả là 3 metrics: peak/avg/min (không phải 1 số); `power_active_kw` là instant reading (không phải cumulative → không cần MAX-MIN)
+
+---
+
+### T-ENV-02
+- **Status:** `[ ]`
+- **Question:** Xu hướng tiêu thụ điện và nước theo từng ngày trong 7 ngày qua?
+- **Dashboard widget:** E1 — Daily Energy & Water Consumption (dual line)
+- **Expected Result:** 7 hàng: `day | energy_kwh | water_m3`
+- **Expected SQL:**
+  ```sql
+  WITH daily AS (
+    SELECT DATE_FORMAT(tsDt, '%Y-%m-%d') AS day, deviceId,
+           MAX(energy_active_kwh_total) - MIN(energy_active_kwh_total) AS energy_kwh,
+           MAX(water_volume_m3_total)   - MIN(water_volume_m3_total)   AS water_m3
+    FROM sdp_near_realtime_stg_mv_dmp_tlm_energy_meter
+    WHERE tsDt >= NOW() - INTERVAL '7' DAY
+    GROUP BY DATE_FORMAT(tsDt, '%Y-%m-%d'), deviceId
+  )
+  SELECT day,
+         ROUND(SUM(energy_kwh), 2) AS total_energy_kwh,
+         ROUND(SUM(water_m3), 2)   AS total_water_m3
+  FROM daily
+  GROUP BY day
+  ORDER BY day
+  ```
+- **Trap:** Cả điện lẫn nước đều là cumulative counter → MAX-MIN per device per day rồi SUM; KHÔNG dùng `DATE()` function; "7 ngày qua" = 7 ngày rolling
+
+---
+
+### T-ENV-03
+- **Status:** `[ ]`
+- **Question:** Power factor trung bình, thấp nhất và tổng tiêu thụ điện, nước của từng smart meter trong 3 ngày qua?
+- **Dashboard widget:** E3 — Power Factor & Consumption by Device (table: Avg PF, Min PF, Total kWh, Total Water m³)
+- **Expected Result:** Nhiều hàng: `device_id | avg_pf | min_pf | total_kwh | total_water_m3`
+- **Expected SQL:**
+  ```sql
+  SELECT deviceId AS device_id,
+         ROUND(AVG(power_factor), 3)   AS avg_pf,
+         ROUND(MIN(power_factor), 3)   AS min_pf,
+         ROUND(MAX(energy_active_kwh_total) - MIN(energy_active_kwh_total), 2) AS total_kwh,
+         ROUND(MAX(water_volume_m3_total)   - MIN(water_volume_m3_total), 2)   AS total_water_m3
+  FROM sdp_near_realtime_stg_mv_dmp_tlm_energy_meter
+  WHERE tsDt >= NOW() - INTERVAL '3' DAY
+  GROUP BY deviceId
+  ORDER BY total_kwh DESC
+  ```
+- **Trap:** `power_factor` là instant reading → dùng AVG/MIN trực tiếp; `energy` và `water` là cumulative → MAX-MIN; join với dim_device nếu muốn device_name; KHÔNG dùng SUM cho energy/water
+
+---
+
+## Domain: Social Parking — Phân tích giao thông & Doanh thu (Tab Social)
+
+> Nguồn: Tab Social và Tab Environmental của dashboard — E4, E5, S1–S5
+
+### T-SOC-01
+- **Status:** `[ ]`
+- **Question:** Phân bố loại xe trong tổng số giao dịch tháng này (số lượng và tỷ lệ %)?
+- **Dashboard widget:** E4 — Vehicle Type Distribution (EV vs ICE pie chart)
+- **Expected Result:** 7 hàng: `vehicle_type | count | pct`
+- **Expected SQL:**
+  ```sql
+  SELECT vehicle_type,
+         COUNT(*) AS transaction_count,
+         ROUND(100.0 * COUNT(*) / SUM(COUNT(*)) OVER(), 2) AS pct
+  FROM sdp_golden_fct_vehicle_events
+  WHERE history_state = 'COMPLETED'
+    AND check_in_at >= DATE_FORMAT(NOW(), '%Y-%m-01')
+  GROUP BY vehicle_type
+  ORDER BY transaction_count DESC
+  ```
+- **Trap:** Bao gồm TẤT CẢ loại xe (không filter chỉ EV); `OVER()` không có PARTITION BY (tính tổng toàn bộ); kết quả có thể gồm NULL values; window = tháng hiện tại
+
+---
+
+### T-SOC-02
+- **Status:** `[ ]`
+- **Question:** Thời gian đỗ xe trung bình theo từng loại xe?
+- **Dashboard widget:** E5 — Avg Parking Duration by Vehicle Type (hour)
+- **Expected Result:** 7 hàng: `vehicle_type | avg_park_hours`
+- **Expected SQL:**
+  ```sql
+  SELECT vehicle_type,
+         ROUND(AVG(park_duration_ms) / 3600000.0, 2) AS avg_park_hours
+  FROM sdp_golden_fct_vehicle_events
+  WHERE history_state = 'COMPLETED'
+    AND check_out_at IS NOT NULL
+    AND park_duration_ms > 0
+  GROUP BY vehicle_type
+  ORDER BY avg_park_hours DESC
+  ```
+- **Trap:** Đơn vị là HOURS (chia 3,600,000 ms); filter `park_duration_ms > 0` để loại outliers; bao gồm TẤT CẢ loại xe (motorbike, car, eCar, eBicycle, eMotorbike, bicycle, truck)
+
+---
+
+### T-SOC-03
+- **Status:** `[ ]`
+- **Question:** Doanh thu theo từng loại xe trong tháng này?
+- **Dashboard widget:** S2 — Total Revenue by Vehicle Type (VND bar chart)
+- **Expected Result:** 7 hàng: `vehicle_type | revenue_vnd`
+- **Expected SQL:**
+  ```sql
+  SELECT vehicle_type,
+         SUM(amount_due) AS revenue_vnd
+  FROM sdp_golden_fct_vehicle_events
+  WHERE history_state = 'COMPLETED'
+    AND check_in_at >= DATE_FORMAT(NOW(), '%Y-%m-01')
+  GROUP BY vehicle_type
+  ORDER BY revenue_vnd DESC
+  ```
+- **Trap:** Dùng `amount_due` (không phải `parking_fee`); bao gồm TẤT CẢ vehicle types; "tháng này" = calendar month từ ngày 1
+
+---
+
+### T-SOC-04
+- **Status:** `[ ]`
+- **Question:** Số lượt xe vào theo từng giờ trong ngày — phân theo loại xe?
+- **Dashboard widget:** S4 — Hourly Parking Demand (grouped bar by hour × vehicle type)
+- **Expected Result:** Nhiều hàng: `hour_of_day | vehicle_type | vehicles_in`
+- **Expected SQL:**
+  ```sql
+  SELECT HOUR(occupancy_hour) AS hour_of_day,
+         vehicle_type,
+         SUM(vehicles_in) AS vehicles_in
+  FROM sdp_mart_fct_parking_occupancy
+  WHERE occupancy_date >= DATE_FORMAT(NOW() - INTERVAL '7' DAY, '%Y-%m-%d')
+  GROUP BY HOUR(occupancy_hour), vehicle_type
+  ORDER BY hour_of_day, vehicle_type
+  ```
+- **Trap:** Dùng `fct_parking_occupancy.vehicles_in` (không phải `fct_vehicle_events`); `HOUR(occupancy_hour)` để group theo giờ; `occupancy_hour` là datetime field
+
+---
+
+### T-SOC-05
+- **Status:** `[ ]`
+- **Question:** Tỷ lệ xe điện (EV) tại từng bãi đỗ trong tháng này?
+- **Dashboard widget:** S3 — EV Penetration by Location (horizontal bar per lot)
+- **Expected Result:** Nhiều hàng: `pk_lot_name | ev_count | total | ev_pct`
+- **Expected SQL:**
+  ```sql
+  SELECT l.pk_lot_name,
+         SUM(CASE WHEN e.vehicle_type IN ('eCar','eBicycle','eMotorbike') THEN 1 ELSE 0 END) AS ev_count,
+         COUNT(*) AS total_count,
+         ROUND(100.0 * SUM(CASE WHEN e.vehicle_type IN ('eCar','eBicycle','eMotorbike') THEN 1 ELSE 0 END)
+               / NULLIF(COUNT(*), 0), 1) AS ev_pct
+  FROM sdp_golden_fct_vehicle_events e
+  JOIN sdp_golden_dim_parking_lot l ON e.parking_lot_id = l.pk_lot_id
+  WHERE e.history_state = 'COMPLETED'
+    AND e.check_in_at >= DATE_FORMAT(NOW(), '%Y-%m-01')
+  GROUP BY l.pk_lot_name
+  ORDER BY ev_pct DESC
+  ```
+- **Trap:** EV types = eCar + eBicycle + eMotorbike (case-sensitive); `NULLIF(COUNT(*), 0)` để tránh chia 0; join với dim_parking_lot để lấy tên bãi
+
+---
+
+### T-SOC-06
+- **Status:** `[ ]`
+- **Question:** Tổng doanh thu theo từng phương thức thanh toán trong tháng này?
+- **Dashboard widget:** S5 — Revenue by Payment Channel (donut chart VND)
+- **Expected Result:** Nhiều hàng: `payment_type | revenue_vnd | pct`
+- **Expected SQL:**
+  ```sql
+  SELECT payment_type,
+         SUM(amount_due) AS revenue_vnd,
+         ROUND(100.0 * SUM(amount_due) / SUM(SUM(amount_due)) OVER(), 2) AS pct
+  FROM sdp_golden_fct_vehicle_events
+  WHERE history_state = 'COMPLETED'
+    AND check_in_at >= DATE_FORMAT(NOW(), '%Y-%m-01')
+  GROUP BY payment_type
+  ORDER BY revenue_vnd DESC
+  ```
+- **Trap:** Khác T-PRK-05 (tỷ lệ GIAO DỊCH) — câu này hỏi DOANH THU (VND) theo payment channel; `SUM(SUM(...)) OVER()` để tính % trên tổng revenue
+
+---
+
+## Domain: Governance — Quản trị (Tab Governance)
+
+> Nguồn: Tab Governance của dashboard — G1, G2
+
+### T-GOV-01
+- **Status:** `[ ]`
+- **Question:** Số xe đang đỗ hiện tại tại từng bãi, phân theo khu vực (area)?
+- **Dashboard widget:** G1 — Parking Lot Utilization by Org/Area (bar chart)
+- **Expected Result:** Nhiều hàng: `area_id | pk_lot_name | current_parked`
+- **Expected SQL:**
+  ```sql
+  SELECT l.area_id,
+         l.pk_lot_name,
+         SUM(o.current_occupancy) AS current_parked
+  FROM sdp_mart_fct_parking_occupancy o
+  JOIN sdp_golden_dim_parking_lot l ON o.parking_lot_id = l.pk_lot_id
+  WHERE o.occupancy_hour = (
+    SELECT MAX(occupancy_hour) FROM sdp_mart_fct_parking_occupancy
+  )
+  GROUP BY l.area_id, l.pk_lot_name
+  ORDER BY l.area_id, current_parked DESC
+  ```
+- **Trap:** Lấy giờ MỚI NHẤT (subquery MAX); GROUP BY cả area_id và pk_lot_name để hiển thị theo khu vực; không cần capacity (không có trong schema)
+
+---
+
+### T-GOV-02
+- **Status:** `[ ]`
+- **Question:** Danh sách các smart meter và tổng lượng điện tích lũy hiện tại của từng thiết bị?
+- **Dashboard widget:** G2 — Smart Meter Deployment (table: device name, total accumulated kWh)
+- **Expected Result:** Nhiều hàng: `device_name | latest_kwh_reading | latest_water_reading`
+- **Expected SQL:**
+  ```sql
+  SELECT d.device_name,
+         e.energy_active_kwh_total AS latest_energy_kwh,
+         e.water_volume_m3_total   AS latest_water_m3,
+         e.tsDt AS last_reading_time
+  FROM sdp_near_realtime_stg_mv_dmp_tlm_energy_meter e
+  JOIN sdp_golden_dim_device d ON e.deviceId = d.device_id
+  INNER JOIN (
+    SELECT deviceId, MAX(tsDt) AS latest
+    FROM sdp_near_realtime_stg_mv_dmp_tlm_energy_meter
+    GROUP BY deviceId
+  ) latest ON e.deviceId = latest.deviceId AND e.tsDt = latest.latest
+  ORDER BY d.device_name
+  ```
+- **Trap:** Dùng MAX(tsDt) per device để lấy bản ghi MỚI NHẤT (đây là accumulated meter reading, không cần MAX-MIN); kết quả = giá trị tích lũy hiện tại của odometer
+
+---
+
+## Domain: Parking Occupancy — Tab Parking Lot Occupancy
+
+> Nguồn: Tab Parking Lot Occupancy — P1, P3, P4
+
+### T-OCC-01
+- **Status:** `[ ]`
+- **Question:** Xu hướng tổng số xe đỗ tích lũy theo từng ngày trong 30 ngày qua?
+- **Dashboard widget:** P1 — Accumulated Occ Level KPIs (occupancy trend line)
+- **Expected Result:** 30 hàng: `day | total_occupancy`
+- **Expected SQL:**
+  ```sql
+  SELECT occupancy_date AS day,
+         SUM(current_occupancy) AS total_occupancy
+  FROM sdp_mart_fct_parking_occupancy
+  WHERE occupancy_date >= DATE_FORMAT(NOW() - INTERVAL '30' DAY, '%Y-%m-%d')
+  GROUP BY occupancy_date
+  ORDER BY occupancy_date
+  ```
+- **Trap:** `occupancy_date` là DATE field (không cần HOUR extraction); SUM tất cả lots và vehicle types; "accumulated" = tổng tại mỗi ngày, không phải running total
+
+---
+
+### T-OCC-02
+- **Status:** `[ ]`
+- **Question:** Tổng số xe đang đỗ hiện tại theo từng tên bãi đỗ?
+- **Dashboard widget:** P3 — Total Occ by Lot Name (bar chart per lot)
+- **Expected Result:** 8 hàng: `pk_lot_name | current_parked` (số lots theo config)
+- **Expected SQL:**
+  ```sql
+  SELECT l.pk_lot_name,
+         SUM(o.current_occupancy) AS current_parked
+  FROM sdp_mart_fct_parking_occupancy o
+  JOIN sdp_golden_dim_parking_lot l ON o.parking_lot_id = l.pk_lot_id
+  WHERE o.occupancy_hour = (
+    SELECT MAX(occupancy_hour) FROM sdp_mart_fct_parking_occupancy
+  )
+  GROUP BY l.pk_lot_name
+  ORDER BY current_parked DESC
+  ```
+- **Trap:** Khác T-PRK-07 — câu này GROUP BY pk_lot_name (text), không phải parking_lot_id; lấy giờ MỚI NHẤT
+
+---
+
+### T-OCC-03
+- **Status:** `[ ]`
+- **Question:** Số xe đỗ trung bình theo từng khung giờ trong ngày (trung bình theo lịch sử)?
+- **Dashboard widget:** P4 — Avg Occ by Hour Name (bar chart by hour 0-23)
+- **Expected Result:** 24 hàng: `hour_of_day | avg_occupancy`
+- **Expected SQL:**
+  ```sql
+  SELECT HOUR(occupancy_hour) AS hour_of_day,
+         ROUND(AVG(current_occupancy), 1) AS avg_occupancy
+  FROM sdp_mart_fct_parking_occupancy
+  GROUP BY HOUR(occupancy_hour)
+  ORDER BY hour_of_day
+  ```
+- **Trap:** AVG qua tất cả ngày lịch sử (không filter ngày cụ thể); `HOUR(occupancy_hour)` để extract giờ từ datetime; không cần JOIN (chỉ cần fct_parking_occupancy)
+
+---
+
 ## Summary
 
 | Domain | Tổng | Pass | Fail | Chưa test |
@@ -977,4 +1344,9 @@ Trạng thái: `[ ]` chưa test · `[✅]` pass · `[❌]` fail · `[⚠]` SQL �
 | Telemetry — Chiller & Trend | 3 | 0 | 0 | 3 |
 | Cross-Domain | 2 | 0 | 0 | 2 |
 | Ambiguity Defaults | 6 | 0 | 0 | 6 |
-| **Tổng** | **48** | **0** | **0** | **48** |
+| Dashboard KPIs | 3 | 0 | 0 | 3 |
+| Environmental (Energy+Water) | 3 | 0 | 0 | 3 |
+| Social Parking | 6 | 0 | 0 | 6 |
+| Governance | 2 | 0 | 0 | 2 |
+| Parking Occupancy | 3 | 0 | 0 | 3 |
+| **Tổng** | **65** | **0** | **0** | **65** |

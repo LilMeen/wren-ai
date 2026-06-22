@@ -417,17 +417,17 @@ sql_pairs:
       ORDER BY consumption_kwh DESC
 
   - id: SP-TLM-30
-    question: "Số liệu và xu hướng tiêu thụ điện tháng trước khu vực C?"
+    question: "Tiêu thụ điện tháng trước theo từng tòa nhà (group by building)?"
     sql: >
-      SELECT DATE_FORMAT(e.tsDt, '%Y-%m-%d') AS day,
+      SELECT asset_loc.asset_name AS building_name,
              ROUND(MAX(e.energy_active_kwh_total) - MIN(e.energy_active_kwh_total), 3) AS consumption_kwh
       FROM sdp_near_realtime_stg_mv_dmp_tlm_energy_meter e
       JOIN sdp_golden_dim_device dev ON e.deviceId = dev.device_id
       JOIN sdp_golden_dim_device_asset asset_loc ON dev.device_id = asset_loc.device_id
       WHERE DATE_FORMAT(e.tsDt, '%Y-%m') = DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 1 MONTH), '%Y-%m')
-        AND asset_loc.asset_name LIKE '%C%'
-      GROUP BY DATE_FORMAT(e.tsDt, '%Y-%m-%d')
-      ORDER BY day
+        AND asset_loc.asset_type = 'building'
+      GROUP BY asset_loc.asset_name
+      ORDER BY consumption_kwh DESC
 
   - id: SP-TLM-31
     question: "Danh sách camera đang bị hỏng hoặc offline (không gửi dữ liệu trong 24 giờ)?"
@@ -474,7 +474,7 @@ sql_pairs:
       ORDER BY deviation_pct DESC
 
   - id: SP-TLM-33
-    question: "Xu hướng và số liệu tiêu thụ điện tháng trước khu vực C?"
+    question: "Xu hướng tiêu thụ điện tháng trước theo từng ngày tại tòa nhà BUILDING_001?"
     sql: >
       SELECT DATE_FORMAT(e.tsDt, '%Y-%m-%d') AS day,
              ROUND(MAX(e.energy_active_kwh_total) - MIN(e.energy_active_kwh_total), 3) AS consumption_kwh
@@ -482,12 +482,12 @@ sql_pairs:
       JOIN sdp_golden_dim_device dev ON e.deviceId = dev.device_id
       JOIN sdp_golden_dim_device_asset asset_loc ON dev.device_id = asset_loc.device_id
       WHERE DATE_FORMAT(e.tsDt, '%Y-%m') = DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 1 MONTH), '%Y-%m')
-        AND asset_loc.asset_name LIKE '%C%'
+        AND asset_loc.asset_name = 'BUILDING_001'
       GROUP BY DATE_FORMAT(e.tsDt, '%Y-%m-%d')
       ORDER BY day
 
   - id: SP-TLM-34
-    question: "Xu hướng tiêu thụ điện khu vực B trong tuần qua?"
+    question: "Xu hướng tiêu thụ điện tại tòa nhà BUILDING_006 trong tuần qua?"
     sql: >
       SELECT DATE_FORMAT(e.tsDt, '%Y-%m-%d') AS day,
              ROUND(MAX(e.energy_active_kwh_total) - MIN(e.energy_active_kwh_total), 3) AS consumption_kwh
@@ -495,7 +495,7 @@ sql_pairs:
       JOIN sdp_golden_dim_device dev ON e.deviceId = dev.device_id
       JOIN sdp_golden_dim_device_asset asset_loc ON dev.device_id = asset_loc.device_id
       WHERE e.tsDt >= DATE_SUB(NOW(), INTERVAL 7 DAY)
-        AND asset_loc.asset_name LIKE '%B%'
+        AND asset_loc.asset_name = 'BUILDING_006'
       GROUP BY DATE_FORMAT(e.tsDt, '%Y-%m-%d')
       ORDER BY day
 
@@ -580,3 +580,17 @@ sql_pairs:
       FROM sdp_near_realtime_stg_mv_dmp_tlm_chiller c
       WHERE c.tsDt >= DATE_SUB(NOW(), INTERVAL 7 DAY)
       GROUP BY c.deviceId
+
+  # ── HOURLY POWER PROFILE (E2 dashboard) ───────────────────────
+
+  - id: SP-TLM-41
+    question: "Xu hướng công suất điện theo từng giờ trong ngày (7 ngày gần nhất)?"
+    sql: >
+      SELECT HOUR(e.tsDt) AS hour_of_day,
+             ROUND(AVG(e.power_active_kw), 3) AS avg_power_kw,
+             ROUND(MAX(e.power_active_kw), 3) AS peak_power_kw,
+             ROUND(MIN(e.power_active_kw), 3) AS min_power_kw
+      FROM sdp_near_realtime_stg_mv_dmp_tlm_energy_meter e
+      WHERE e.tsDt >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+      GROUP BY HOUR(e.tsDt)
+      ORDER BY hour_of_day

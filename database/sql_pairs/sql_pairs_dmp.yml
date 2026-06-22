@@ -201,3 +201,105 @@ sql_pairs:
       WHERE t.deviceId IS NULL
       GROUP BY d.device_id, d.device_name, d.device_type
       ORDER BY d.device_type, d.device_name
+
+  # ── 2D GROUPING: DEVICE TYPE × BUILDING ────────────────────────
+
+  - id: SP-DMP-13
+    question: "Phân bố thiết bị IoT theo loại thiết bị và từng tòa nhà?"
+    sql: >
+      SELECT d.device_type,
+             da.asset_name AS building_name,
+             COUNT(*) AS device_count
+      FROM sdp_golden_dim_device d
+      JOIN sdp_golden_dim_device_asset da ON d.device_id = da.device_id
+      WHERE da.asset_type = 'building'
+        AND d.is_active = 1
+      GROUP BY d.device_type, da.asset_name
+      ORDER BY da.asset_name, device_count DESC
+
+  # ── 3D GROUPING: ONLINE RATE BY DEVICE TYPE × BUILDING ─────────
+
+  - id: SP-DMP-14
+    question: "Tỷ lệ online theo từng loại thiết bị và từng tòa nhà?"
+    sql: >
+      SELECT d.device_type,
+             da.asset_name AS building_name,
+             COUNT(*) AS total_devices,
+             SUM(CAST(s.is_online AS INT)) AS online_count,
+             ROUND(100.0 * SUM(CAST(s.is_online AS INT)) / COUNT(*), 2) AS online_pct
+      FROM sdp_staging_stg_dmp_device_status_events s
+      INNER JOIN (
+        SELECT device_id, MAX(event_time) AS latest
+        FROM sdp_staging_stg_dmp_device_status_events
+        WHERE event_type = 'STATUS_CHANGE'
+        GROUP BY device_id
+      ) latest_evt ON s.device_id = latest_evt.device_id AND s.event_time = latest_evt.latest
+      JOIN sdp_golden_dim_device d ON s.device_id = d.device_id
+      JOIN sdp_golden_dim_device_asset da ON d.device_id = da.device_id
+      WHERE da.asset_type = 'building'
+      GROUP BY d.device_type, da.asset_name
+      ORDER BY da.asset_name, d.device_type
+
+  # ── ALL DEVICES IN ERROR OR MAINTENANCE ─────────────────────────
+
+  - id: SP-DMP-15
+    question: "Tất cả thiết bị đang ở trạng thái lỗi hoặc offline (không hoạt động) là gì?"
+    sql: >
+      SELECT s.device_id,
+             d.device_name,
+             d.device_type,
+             s.current_status,
+             da.asset_name AS location,
+             s.event_time AS status_since
+      FROM sdp_staging_stg_dmp_device_status_events s
+      INNER JOIN (
+        SELECT device_id, MAX(event_time) AS latest
+        FROM sdp_staging_stg_dmp_device_status_events
+        WHERE event_type = 'STATUS_CHANGE'
+        GROUP BY device_id
+      ) latest_evt ON s.device_id = latest_evt.device_id AND s.event_time = latest_evt.latest
+      JOIN sdp_golden_dim_device d ON s.device_id = d.device_id
+      LEFT JOIN sdp_golden_dim_device_asset da ON d.device_id = da.device_id
+      WHERE s.is_online = 0
+      ORDER BY d.device_type, s.event_time DESC
+
+  # ── SYSTEM OVERVIEW — MULTI-METRIC DASHBOARD ────────────────────
+
+  - id: SP-DMP-16
+    question: "Tổng quan hệ thống: bao nhiêu thiết bị, tỷ lệ online, điện hôm nay, xe hiện tại?"
+    sql: >
+      WITH active_devices AS (
+        SELECT COUNT(*) AS total_active
+        FROM sdp_golden_dim_device
+        WHERE is_active = 1
+      ),
+      online_devices AS (
+        SELECT SUM(CAST(s.is_online AS INT)) AS total_online,
+               COUNT(*) AS total_checked
+        FROM sdp_staging_stg_dmp_device_status_events s
+        INNER JOIN (
+          SELECT device_id, MAX(event_time) AS latest
+          FROM sdp_staging_stg_dmp_device_status_events
+          WHERE event_type = 'STATUS_CHANGE'
+          GROUP BY device_id
+        ) x ON s.device_id = x.device_id AND s.event_time = x.latest
+      ),
+      energy_today AS (
+        SELECT ROUND(MAX(energy_active_kwh_total) - MIN(energy_active_kwh_total), 3) AS total_kwh
+        FROM sdp_near_realtime_stg_mv_dmp_tlm_energy_meter
+        WHERE tsDt >= DATE_FORMAT(NOW(), '%Y-%m-%d 00:00:00')
+      ),
+      parking_now AS (
+        SELECT SUM(current_occupancy) AS total_vehicles
+        FROM sdp_mart_fct_parking_occupancy
+        WHERE occupancy_hour = (SELECT MAX(occupancy_hour) FROM sdp_mart_fct_parking_occupancy)
+      )
+      SELECT ad.total_active AS total_devices,
+             od.total_online AS devices_online,
+             ROUND(100.0 * od.total_online / ad.total_active, 2) AS online_pct,
+             et.total_kwh AS energy_kwh_today,
+             pn.total_vehicles AS vehicles_parked_now
+      FROM active_devices ad
+      CROSS JOIN online_devices od
+      CROSS JOIN energy_today et
+      CROSS JOIN parking_now pn

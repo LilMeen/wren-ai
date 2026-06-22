@@ -62,7 +62,7 @@ def build(devs,cfg):
     for i in range(cfg.asset_count):
         p=aps[i%len(aps)]; d=devs[i%len(devs)]; aid=su(f'asset-{i+1:04d}')
         assets.append({'asset_id':aid,'asset_sk':sk(aid,'ask'),'asset_profile_id':p['asset_profile_id'],'asset_profile_name':p['name'],'asset_profile_description':p['desc'],'asset_profile_is_default':i%len(aps)==0,'asset_name':f'{p["name"].upper()}_{i+1:03d}','asset_label':f'{p["name"]} {i+1}','asset_type':p['name'].lower(),'asset_customer_id':d.get('customer_id',''),'asset_tenant_id':d.get('tenant_id',''),'asset_external_id':su(f'asset-ext-{i}')})
-    lots=[{'pk_lot_id':f'LOT_{i:03d}','pk_lot_name':f'Parking Lot {i:03d}','area_id':f'AREA_{(i-1)//2+1:02d}'} for i in range(1,cfg.parking_lot_count+1)]
+    lots=[{'pk_lot_id':f'LOT_{i:03d}','pk_lot_name':f'Parking Lot {i:03d}','area_id':f'AREA_{(i-1)//2+1:02d}','capacity':(i%4+2)*100} for i in range(1,cfg.parking_lot_count+1)]
     dates=[cfg.start_date+timedelta(days=i) for i in range(cfg.days)]
     times=[]
     for h in range(24):
@@ -146,7 +146,10 @@ def gen_dev_events(reg,cfg,rng):
     return rc,sc,se,rt,mv
 
 def gen_parking(reg,cfg,rng):
-    raw=[]; stg=[]; facts=[]; snaps=[]; n=now(); vtypes=['CAR','MOTORBIKE','TRUCK','EV']; pays=['CASH','CARD','E_WALLET','MONTHLY_PASS']
+    # Vehicle type distribution matches real dashboard (motorbike dominant, EV subtypes)
+    raw=[]; stg=[]; facts=[]; snaps=[]; n=now()
+    vtypes=['motorbike','motorbike','motorbike','motorbike','eMotorbike','eMotorbike','car','car','eCar','eBicycle','bicycle','truck']
+    pays=['MONTHLY_PASS','MONTHLY_PASS','MONTHLY_PASS','E_WALLET','E_WALLET','CARD','CASH']
     for l in reg['lots']: snaps.append({**l,'dbt_scd_id':sk(l['pk_lot_id'],'scd'),'dbt_updated_at':n,'dbt_valid_from':n,'dbt_valid_to':''})
     eid=0
     for d in reg['dates']:

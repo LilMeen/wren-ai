@@ -37,7 +37,7 @@ sql_pairs:
       LIMIT 5
 
   - id: SP-PRK-04
-    question: "So sánh doanh thu theo loại xe CAR, MOTORBIKE, TRUCK, EV"
+    question: "So sánh doanh thu theo từng loại xe (car, motorbike, truck, bicycle, eCar, eBicycle, eMotorbike)"
     sql: >
       SELECT e.vehicle_type,
              SUM(e.amount_due) AS revenue_vnd,
@@ -135,7 +135,7 @@ sql_pairs:
       FROM sdp_golden_fct_vehicle_events e
       JOIN sdp_golden_dim_date d ON e.check_in_date_key = d.date_key
       WHERE e.history_state = 'COMPLETED'
-        AND d.year_week = DATE_FORMAT(NOW(), '%Y-W%v')
+        AND YEARWEEK(d.full_date) = YEARWEEK(CURRENT_DATE)
       GROUP BY e.lane_in_name, e.entry_point_in_name
       ORDER BY transactions DESC
       LIMIT 5
@@ -349,7 +349,7 @@ sql_pairs:
       JOIN sdp_golden_dim_parking_lot l ON e.parking_lot_id = l.pk_lot_id
       JOIN sdp_golden_dim_date d ON e.check_out_date_key = d.date_key
       WHERE e.history_state = 'COMPLETED'
-        AND e.vehicle_type = 'TRUCK'
+        AND e.vehicle_type = 'truck'
         AND d.year = YEAR(NOW()) AND d.month = MONTH(NOW())
       GROUP BY e.parking_lot_id, l.pk_lot_name, l.area_id
       ORDER BY truck_count DESC
@@ -370,7 +370,7 @@ sql_pairs:
           JOIN sdp_golden_dim_date d ON e.check_out_date_key = d.date_key
           WHERE e.history_state = 'COMPLETED'
             AND e.check_out_date_key >= CAST(DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 30 DAY), '%Y%m%d') AS INT)
-            AND DAYOFWEEK(d.full_date) IN (1, 7)
+            AND d.is_weekend = 1
           GROUP BY e.check_out_date_key
         ) sub
       ) wknd,
@@ -383,7 +383,7 @@ sql_pairs:
           JOIN sdp_golden_dim_date d ON e.check_out_date_key = d.date_key
           WHERE e.history_state = 'COMPLETED'
             AND e.check_out_date_key >= CAST(DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 30 DAY), '%Y%m%d') AS INT)
-            AND DAYOFWEEK(d.full_date) NOT IN (1, 7)
+            AND d.is_weekend = 0
           GROUP BY e.check_out_date_key
         ) sub
       ) wkdy
@@ -476,3 +476,41 @@ sql_pairs:
       WHERE processing_day = DATE_FORMAT(NOW(), '%Y-%m-%d')
       GROUP BY pk_lot_id, pk_lot_name
       ORDER BY raw_transactions DESC
+
+  # ── ESG KPI K1 — EV PENETRATION RATE ──────────────────────────
+
+  - id: SP-PRK-31
+    question: "Tỷ lệ xe điện (eCar + eBicycle + eMotorbike) trong tổng lượt xe tháng này?"
+    sql: >
+      SELECT SUM(CASE WHEN vehicle_type IN ('eCar','eBicycle','eMotorbike') THEN 1 ELSE 0 END) AS ev_count,
+             COUNT(*) AS total_vehicles,
+             ROUND(100.0 * SUM(CASE WHEN vehicle_type IN ('eCar','eBicycle','eMotorbike') THEN 1 ELSE 0 END) / COUNT(*), 2) AS ev_pct
+      FROM sdp_golden_fct_vehicle_events
+      WHERE history_state = 'COMPLETED'
+        AND check_out_date_key >= CAST(DATE_FORMAT(NOW(), '%Y%m01') AS INT)
+
+  # ── ESG KPI K2 — DIGITAL PAYMENT RATE ─────────────────────────
+
+  - id: SP-PRK-32
+    question: "Tỷ lệ thanh toán không dùng tiền mặt (CARD + E_WALLET) tháng này?"
+    sql: >
+      SELECT SUM(CASE WHEN payment_type IN ('CARD','E_WALLET') THEN 1 ELSE 0 END) AS digital_count,
+             SUM(CASE WHEN payment_type = 'CASH' THEN 1 ELSE 0 END) AS cash_count,
+             COUNT(*) AS total_transactions,
+             ROUND(100.0 * SUM(CASE WHEN payment_type IN ('CARD','E_WALLET') THEN 1 ELSE 0 END) / COUNT(*), 2) AS digital_pct
+      FROM sdp_golden_fct_vehicle_events
+      WHERE history_state = 'COMPLETED'
+        AND check_out_date_key >= CAST(DATE_FORMAT(NOW(), '%Y%m01') AS INT)
+
+  # ── HOURLY OCCUPANCY PATTERN (S4 dashboard) ────────────────────
+
+  - id: SP-PRK-33
+    question: "Phân bổ số xe đỗ trung bình theo từng giờ trong ngày (30 ngày qua)?"
+    sql: >
+      SELECT HOUR(o.occupancy_hour) AS hour_of_day,
+             ROUND(AVG(o.current_occupancy), 1) AS avg_vehicles,
+             MAX(o.current_occupancy) AS peak_vehicles
+      FROM sdp_mart_fct_parking_occupancy o
+      WHERE o.occupancy_hour >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+      GROUP BY HOUR(o.occupancy_hour)
+      ORDER BY hour_of_day
